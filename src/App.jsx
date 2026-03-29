@@ -3515,7 +3515,7 @@ export default function App({ session, onSignOut }) {
               <button onClick={() => setDarkMode(d => !d)} className="p-2 rounded-lg text-slate-400 hover:text-yellow-300 hover:bg-slate-700 transition-colors" title={darkMode ? t("lightMode") : t("darkMode")}>
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
-              {isAdmin && (
+              {session && isAdmin && (
                 <button onClick={() => setEditing({})} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
                   <Plus size={16} /> {t("addFirm")}
                 </button>
@@ -3562,7 +3562,7 @@ export default function App({ session, onSignOut }) {
             <button onClick={() => setTab("metrics")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "metrics" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
               {t("tabMetrics")}
             </button>
-            {isAdmin && (
+            {session && isAdmin && (
               <button onClick={() => setTab("admin")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-1 ${tab === "admin" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
                 <Shield size={14} /> {t("tabAdmin")}
               </button>
@@ -3643,7 +3643,7 @@ export default function App({ session, onSignOut }) {
         )}
       </div>
 
-      {editing !== null && isAdmin && (
+      {editing !== null && session && isAdmin && (
         <FirmForm
           initial={editing.id ? editing : null}
           onSave={handleSave}
