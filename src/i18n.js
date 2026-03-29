@@ -656,6 +656,22 @@ const translations = {
   mgDescription: { en: "What it means", ro: "Ce înseamnă" },
   mgExample: { en: "Example", ro: "Exemplu" },
   mgNote: { en: "Note", ro: "Notă" },
+
+  // ── Auth ──
+  authSignIn: { en: "Sign In", ro: "Autentificare" },
+  authSignUp: { en: "Sign Up", ro: "Înregistrare" },
+  authEmail: { en: "Email", ro: "Email" },
+  authPassword: { en: "Password", ro: "Parolă" },
+  authSignInBtn: { en: "Sign In", ro: "Autentifică-te" },
+  authSignUpBtn: { en: "Create Account", ro: "Creează Cont" },
+  authToggleSignUp: { en: "Don't have an account? Sign up", ro: "Nu ai cont? Înregistrează-te" },
+  authToggleSignIn: { en: "Already have an account? Sign in", ro: "Ai deja cont? Autentifică-te" },
+  authGoogleBtn: { en: "Continue with Google", ro: "Continuă cu Google" },
+  authOr: { en: "or", ro: "sau" },
+  authError: { en: "Authentication error", ro: "Eroare de autentificare" },
+  authCheckEmail: { en: "Check your email for a confirmation link!", ro: "Verifică email-ul pentru linkul de confirmare!" },
+  authSignOut: { en: "Sign Out", ro: "Deconectare" },
+  authWelcome: { en: "Welcome", ro: "Bine ai venit" },
 };
 
 // ── Language state ──

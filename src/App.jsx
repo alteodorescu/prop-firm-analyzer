@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut } from "lucide-react";
 import { t, getLang, setLang } from "./i18n.js";
+import { useSupabaseData } from "./useSupabaseData.js";
 
 // ═══════════════════════════════════════════════════════════
 // TOOLTIP HELP TEXTS
@@ -43,26 +44,7 @@ const TIPS = {
 // ═══════════════════════════════════════════════════════════
 // INITIAL FIRMS DATA
 // ═══════════════════════════════════════════════════════════
-const STORAGE_KEY = "propFirmAnalyzerData";
-
-function loadFirms() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch (e) { /* ignore corrupt data */ }
-  return [];
-}
-
-function saveFirms(firms) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(firms)); } catch (e) { /* quota etc */ }
-}
-
-const INITIAL_FIRMS = loadFirms();
-
-let nextId = INITIAL_FIRMS.length > 0 ? Math.max(...INITIAL_FIRMS.map(f => f.id || 0)) + 1 : 1;
+let nextId = 1;
 
 // ═══════════════════════════════════════════════════════════
 // CALCULATIONS
@@ -1131,26 +1113,7 @@ function ComparisonTable({ firms, sortKey, onSort, onFirmClick }) {
 // ═══════════════════════════════════════════════════════════
 // ACCOUNT TRACKER
 // ═══════════════════════════════════════════════════════════
-const ACCOUNTS_KEY = "propFirmTrackerAccounts";
 let nextAccountId = 1;
-
-function loadAccounts() {
-  try {
-    const raw = localStorage.getItem(ACCOUNTS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        nextAccountId = Math.max(...parsed.map(a => a.id || 0)) + 1;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [];
-}
-
-function saveAccounts(accounts) {
-  try { localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts)); } catch (e) {}
-}
 
 function calcLiveMetrics(account, firmData) {
   if (!firmData) return {};
@@ -3207,31 +3170,50 @@ function AccountTracker({ accounts, onUpdate, firms }) {
 // ═══════════════════════════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════════════════════════
-export default function App() {
-  const [firms, setFirms] = useState(INITIAL_FIRMS);
-  const [accounts, setAccounts] = useState(loadAccounts);
+export default function App({ userId, userEmail, onSignOut }) {
+  // ── Supabase data layer ──
+  const {
+    firms, setFirms, saveFirm: saveFirmToDb, deleteFirm: deleteFirmFromDb,
+    accounts, setAccounts, saveAccount: saveAccountToDb, deleteAccount: deleteAccountFromDb,
+    preferences, savePreferences, loading: dataLoading,
+  } = useSupabaseData(userId);
+
+  // Sync nextId counters from loaded data
+  useEffect(() => {
+    if (firms.length > 0) nextId = Math.max(...firms.map(f => f.id || 0)) + 1;
+  }, [firms]);
+  useEffect(() => {
+    if (accounts.length > 0) nextAccountId = Math.max(...accounts.map(a => a.id || 0)) + 1;
+  }, [accounts]);
+
   const [editing, setEditing] = useState(null);
   const [sortBy, setSortBy] = useState("overallEase");
   const [showGuide, setShowGuide] = useState(false);
-  const [tab, setTab] = useState("compare"); // "compare" | "details" | "tracker" | "dashboard"
+  const [tab, setTab] = useState("compare");
   const [focusFirmId, setFocusFirmId] = useState(null);
-  const [darkMode, setDarkMode] = useState(() => {
-    try { return localStorage.getItem("propFirmDarkMode") === "true"; } catch { return false; }
-  });
-  const [lang, setLangState] = useState(getLang);
+  const [darkMode, setDarkMode] = useState(preferences.darkMode);
+  const [lang, setLangState] = useState(preferences.lang || getLang());
+
+  // Sync preferences when they load from Supabase
+  useEffect(() => {
+    setDarkMode(preferences.darkMode);
+    if (preferences.lang) {
+      setLang(preferences.lang);
+      setLangState(preferences.lang);
+    }
+  }, [preferences]);
+
   const toggleLang = () => {
     const next = lang === "en" ? "ro" : "en";
     setLang(next);
     setLangState(next);
+    savePreferences({ ...preferences, darkMode, lang: next });
   };
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    try { localStorage.setItem("propFirmDarkMode", darkMode); } catch {}
+    savePreferences({ darkMode, lang });
   }, [darkMode]);
-
-  useEffect(() => { saveFirms(firms); }, [firms]);
-  useEffect(() => { saveAccounts(accounts); }, [accounts]);
 
   const computed = useMemo(() => {
     const opts = getSortOpts();
@@ -3247,17 +3229,13 @@ export default function App() {
     });
   }, [firms, sortBy]);
 
-  const handleSave = (firm) => {
-    setFirms(fs => {
-      const idx = fs.findIndex(f => f.id === firm.id);
-      if (idx >= 0) { const next = [...fs]; next[idx] = firm; return next; }
-      return [...fs, firm];
-    });
+  const handleSave = async (firm) => {
+    await saveFirmToDb(firm);
     setEditing(null);
   };
 
-  const handleDelete = (id) => {
-    if (confirm(t("alertDeleteFirm"))) setFirms(fs => fs.filter(f => f.id !== id));
+  const handleDelete = async (id) => {
+    if (confirm(t("alertDeleteFirm"))) await deleteFirmFromDb(id);
   };
 
   const handleFirmClick = (id) => {
@@ -3277,6 +3255,14 @@ export default function App() {
       }, 100);
     }
   }, [tab, focusFirmId]);
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500 text-lg">Loading your data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -3301,6 +3287,11 @@ export default function App() {
               <button onClick={() => setEditing({})} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
                 <Plus size={16} /> {t("addFirm")}
               </button>
+              {onSignOut && (
+                <button onClick={onSignOut} className="p-2 rounded-lg text-slate-400 hover:text-red-300 hover:bg-slate-700 transition-colors" title={t("authSignOut")}>
+                  <LogOut size={18} />
+                </button>
+              )}
             </div>
           </div>
           {best && (
