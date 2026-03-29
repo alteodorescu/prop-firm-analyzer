@@ -5,9 +5,9 @@ import { supabase } from "./supabaseClient";
  * Mapping functions: Convert between camelCase (app) and snake_case (database)
  */
 
-function mapFirmToDb(firm, userId) {
+function mapFirmToDb(firm) {
   const row = {
-    user_id: userId,
+    user_id: null, // Firms are global, no user ownership
     name: firm.name,
     model: firm.model,
     cost: firm.cost,
@@ -108,12 +108,18 @@ function mapDbToAccount(row) {
 
 /**
  * Custom React hook for Supabase data management.
- * Replaces localStorage operations with Supabase queries.
  *
- * @param {string} userId - The authenticated user's ID
+ * Architecture:
+ * - Firms are PUBLIC (loaded without auth, writable only by admins)
+ * - Accounts are PER-USER (require authentication)
+ * - Preferences are PER-USER (require authentication)
+ *
+ * @param {Object|null} session - The Supabase auth session (null if not logged in)
  * @returns {Object} Data and mutation functions
  */
-export function useSupabaseData(userId) {
+export function useSupabaseData(session) {
+  const userId = session?.user?.id || null;
+
   const [firms, setFirmsState] = useState([]);
   const [accounts, setAccountsState] = useState([]);
   const [preferences, setPreferencesState] = useState({
@@ -121,59 +127,85 @@ export function useSupabaseData(userId) {
     lang: "en",
   });
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Debounce timers for batch operations
   const debounceTimers = useRef({});
 
   /**
-   * Load all data from Supabase on mount
+   * Check if current user is an admin
    */
-  async function loadAllData() {
+  async function checkAdminStatus() {
     if (!userId) {
-      setLoading(false);
+      setIsAdmin(false);
       return;
     }
+    try {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
 
+      setIsAdmin(!error && !!data);
+    } catch {
+      setIsAdmin(false);
+    }
+  }
+
+  /**
+   * Load all data from Supabase on mount
+   * Firms are loaded publicly (no user_id filter)
+   * Accounts & preferences are loaded per-user (only if authenticated)
+   */
+  async function loadAllData() {
     setLoading(true);
     try {
-      const [firmsRes, accountsRes, prefsRes] = await Promise.all([
-        supabase
-          .from("firms")
-          .select("*")
-          .eq("user_id", userId)
-          .order("id"),
-        supabase
-          .from("accounts")
-          .select("*")
-          .eq("user_id", userId)
-          .order("id"),
-        supabase
-          .from("user_preferences")
-          .select("*")
-          .eq("user_id", userId)
-          .single(),
-      ]);
+      // Always load firms (public)
+      const firmsRes = await supabase
+        .from("firms")
+        .select("*")
+        .order("id");
 
       if (firmsRes.data) {
         setFirmsState(firmsRes.data.map(mapDbToFirm));
       }
 
-      if (accountsRes.data) {
-        setAccountsState(accountsRes.data.map(mapDbToAccount));
-      }
+      // Only load user-specific data if authenticated
+      if (userId) {
+        const [accountsRes, prefsRes] = await Promise.all([
+          supabase
+            .from("accounts")
+            .select("*")
+            .eq("user_id", userId)
+            .order("id"),
+          supabase
+            .from("user_preferences")
+            .select("*")
+            .eq("user_id", userId)
+            .single(),
+        ]);
 
-      if (prefsRes.data) {
-        setPreferencesState({
-          darkMode: prefsRes.data.dark_mode || false,
-          lang: prefsRes.data.language || "en",
-        });
-      } else if (!prefsRes.error || prefsRes.error.code === "PGRST116") {
-        // No preferences record yet, create default
-        await supabase.from("user_preferences").insert({
-          user_id: userId,
-          dark_mode: false,
-          language: "en",
-        });
+        if (accountsRes.data) {
+          setAccountsState(accountsRes.data.map(mapDbToAccount));
+        }
+
+        if (prefsRes.data) {
+          setPreferencesState({
+            darkMode: prefsRes.data.dark_mode || false,
+            lang: prefsRes.data.language || "en",
+          });
+        } else if (!prefsRes.error || prefsRes.error.code === "PGRST116") {
+          // No preferences record yet, create default
+          await supabase.from("user_preferences").insert({
+            user_id: userId,
+            dark_mode: false,
+            language: "en",
+          });
+        }
+
+        // Check admin status
+        await checkAdminStatus();
       }
     } catch (e) {
       console.error("Failed to load data from Supabase:", e);
@@ -187,14 +219,14 @@ export function useSupabaseData(userId) {
   }, [userId]);
 
   /**
-   * Save a single firm to Supabase
+   * Save a single firm to Supabase (admin only — RLS enforced)
    */
   const saveFirm = useCallback(
     async (firm) => {
-      if (!userId) return { data: null, error: "No user ID" };
+      if (!isAdmin) return { data: null, error: "Not authorized" };
 
       try {
-        const dbFirm = mapFirmToDb(firm, userId);
+        const dbFirm = mapFirmToDb(firm);
         const { data, error } = await supabase
           .from("firms")
           .upsert(dbFirm, { onConflict: "id" })
@@ -223,22 +255,21 @@ export function useSupabaseData(userId) {
         return { data: null, error: e.message };
       }
     },
-    [userId]
+    [isAdmin]
   );
 
   /**
-   * Delete a firm from Supabase
+   * Delete a firm from Supabase (admin only — RLS enforced)
    */
   const deleteFirm = useCallback(
     async (firmId) => {
-      if (!userId) return { error: "No user ID" };
+      if (!isAdmin) return { error: "Not authorized" };
 
       try {
         const { error } = await supabase
           .from("firms")
           .delete()
-          .eq("id", firmId)
-          .eq("user_id", userId);
+          .eq("id", firmId);
 
         if (error) throw error;
 
@@ -249,11 +280,11 @@ export function useSupabaseData(userId) {
         return { error: e.message };
       }
     },
-    [userId]
+    [isAdmin]
   );
 
   /**
-   * Save a single account to Supabase
+   * Save a single account to Supabase (per-user)
    */
   const saveAccount = useCallback(
     async (account) => {
@@ -293,7 +324,7 @@ export function useSupabaseData(userId) {
   );
 
   /**
-   * Delete an account from Supabase
+   * Delete an account from Supabase (per-user)
    */
   const deleteAccount = useCallback(
     async (accountId) => {
@@ -366,11 +397,11 @@ export function useSupabaseData(userId) {
   );
 
   /**
-   * Bulk update firms with debounced sync to Supabase
+   * Bulk update firms (admin only) with debounced sync to Supabase
    */
   const setFirms = useCallback(
     async (updater) => {
-      if (!userId) return;
+      if (!isAdmin) return;
 
       const newFirms =
         typeof updater === "function" ? updater(firms) : updater;
@@ -378,30 +409,27 @@ export function useSupabaseData(userId) {
       // Update local state immediately for responsiveness
       setFirmsState(newFirms);
 
-      // Debounce the Supabase sync to avoid too many requests
+      // Debounce the Supabase sync
       if (debounceTimers.current.firms) {
         clearTimeout(debounceTimers.current.firms);
       }
 
       debounceTimers.current.firms = setTimeout(async () => {
         try {
-          // Upsert all firms
           for (const firm of newFirms) {
-            const dbFirm = mapFirmToDb(firm, userId);
+            const dbFirm = mapFirmToDb(firm);
             await supabase
               .from("firms")
               .upsert(dbFirm, { onConflict: "id" });
           }
 
-          // Delete firms that were removed
           const newIds = new Set(newFirms.map((f) => f.id));
           for (const firm of firms) {
             if (!newIds.has(firm.id)) {
               await supabase
                 .from("firms")
                 .delete()
-                .eq("id", firm.id)
-                .eq("user_id", userId);
+                .eq("id", firm.id);
             }
           }
         } catch (e) {
@@ -409,7 +437,7 @@ export function useSupabaseData(userId) {
         }
       }, 1000);
     },
-    [firms, userId]
+    [firms, isAdmin]
   );
 
   /**
@@ -438,11 +466,74 @@ export function useSupabaseData(userId) {
   );
 
   /**
+   * Admin: get list of all admin users
+   */
+  const getAdminUsers = useCallback(async () => {
+    if (!isAdmin) return [];
+    try {
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("*")
+        .order("created_at");
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error("Error fetching admin users:", e);
+      return [];
+    }
+  }, [isAdmin]);
+
+  /**
+   * Admin: add a new admin user by their auth user_id
+   */
+  const addAdminUser = useCallback(
+    async (targetUserId) => {
+      if (!isAdmin) return { error: "Not authorized" };
+      try {
+        const { data, error } = await supabase
+          .from("admin_users")
+          .insert({ user_id: targetUserId })
+          .select()
+          .single();
+        if (error) throw error;
+        return { data, error: null };
+      } catch (e) {
+        console.error("Error adding admin:", e);
+        return { data: null, error: e.message };
+      }
+    },
+    [isAdmin]
+  );
+
+  /**
+   * Admin: remove an admin user
+   */
+  const removeAdminUser = useCallback(
+    async (targetUserId) => {
+      if (!isAdmin) return { error: "Not authorized" };
+      // Don't allow removing yourself
+      if (targetUserId === userId) return { error: "Cannot remove yourself" };
+      try {
+        const { error } = await supabase
+          .from("admin_users")
+          .delete()
+          .eq("user_id", targetUserId);
+        if (error) throw error;
+        return { error: null };
+      } catch (e) {
+        console.error("Error removing admin:", e);
+        return { error: e.message };
+      }
+    },
+    [isAdmin, userId]
+  );
+
+  /**
    * Force a full reload of all data
    */
   const reload = useCallback(() => {
     loadAllData();
-  }, []);
+  }, [userId]);
 
   return {
     // State
@@ -450,19 +541,25 @@ export function useSupabaseData(userId) {
     accounts,
     preferences,
     loading,
+    isAdmin,
 
-    // Firms operations
+    // Firms operations (admin only for mutations)
     setFirms,
     saveFirm,
     deleteFirm,
 
-    // Accounts operations
+    // Accounts operations (per-user)
     setAccounts,
     saveAccount,
     deleteAccount,
 
-    // Preferences operations
+    // Preferences operations (per-user)
     savePreferences,
+
+    // Admin operations
+    getAdminUsers,
+    addAdminUser,
+    removeAdminUser,
 
     // Utilities
     reload,

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import Auth from './Auth.jsx'
 import { supabase } from './supabaseClient.js'
 import './index.css'
 
@@ -34,11 +33,13 @@ function Root() {
     );
   }
 
-  if (!session) {
-    return <Auth onAuth={setSession} />;
-  }
-
-  return <App userId={session.user.id} userEmail={session.user.email} onSignOut={() => supabase.auth.signOut()} />;
+  // Always render App — auth is optional. Public tabs work without login.
+  return (
+    <App
+      session={session}
+      onSignOut={() => supabase.auth.signOut()}
+    />
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

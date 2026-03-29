@@ -672,6 +672,20 @@ const translations = {
   authCheckEmail: { en: "Check your email for a confirmation link!", ro: "Verifică email-ul pentru linkul de confirmare!" },
   authSignOut: { en: "Sign Out", ro: "Deconectare" },
   authWelcome: { en: "Welcome", ro: "Bine ai venit" },
+  authRequiredTitle: { en: "Sign in to continue", ro: "Autentifică-te pentru a continua" },
+  authRequiredDesc: { en: "Account Tracker and Dashboard require authentication to save your personal trading data.", ro: "Urmărirea conturilor și Panoul de control necesită autentificare pentru a salva datele tale personale de tranzacționare." },
+
+  // ── Admin ──
+  tabAdmin: { en: "Admin", ro: "Admin" },
+  adminTitle: { en: "Admin User Management", ro: "Gestionare Utilizatori Admin" },
+  adminEmailPlaceholder: { en: "Enter user email to add as admin...", ro: "Introdu email-ul utilizatorului pentru a-l adăuga ca admin..." },
+  adminAdd: { en: "Add Admin", ro: "Adaugă Admin" },
+  adminRemove: { en: "Remove", ro: "Elimină" },
+  adminYou: { en: "you", ro: "tu" },
+  adminUserNotFound: { en: "User not found. They must sign up first.", ro: "Utilizator negăsit. Trebuie să se înregistreze mai întâi." },
+  adminUserAdded: { en: "Admin user added successfully!", ro: "Utilizator admin adăugat cu succes!" },
+  adminConfirmRemove: { en: "Remove this user from admins?", ro: "Elimini acest utilizator din adminii?" },
+  loading: { en: "Loading", ro: "Se încarcă" },
 };
 
 // ── Language state ──
