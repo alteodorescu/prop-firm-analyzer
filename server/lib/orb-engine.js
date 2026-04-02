@@ -123,26 +123,19 @@ class OrbSession {
         this.state = "triggered";
         this.breakoutDirection = "buy";
         this.entryPrice = price;
-        this.stopPrice = this.orLow;
-        this.targetPrice = this.entryPrice + range * config.orbTargetMultiplier;
-
-        const riskPoints = this.entryPrice - this.stopPrice;
-        const rewardPoints = this.targetPrice - this.entryPrice;
 
         log.trade(TAG, `${name} LONG BREAKOUT at ${price}`);
-        log.trade(TAG, `  Entry: ${this.entryPrice} | Stop: ${this.stopPrice} | Target: ${this.targetPrice.toFixed(2)}`);
-        log.trade(TAG, `  Risk: ${riskPoints.toFixed(2)}pts | Reward: ${rewardPoints.toFixed(2)}pts`);
+        log.trade(TAG, `  OR High: ${this.orHigh} | OR Low: ${this.orLow} | Range: ${range.toFixed(2)}pts`);
 
+        // Signal only carries direction + entry. Stop/target are set by the risk engine
+        // based on each account's Today's Trading Plan.
         return {
           session: name,
           direction: "buy",
           entry: this.entryPrice,
-          stop: this.stopPrice,
-          target: parseFloat(this.targetPrice.toFixed(2)),
-          riskPoints: parseFloat(riskPoints.toFixed(2)),
-          rewardPoints: parseFloat(rewardPoints.toFixed(2)),
           orHigh: this.orHigh,
           orLow: this.orLow,
+          orRange: parseFloat(range.toFixed(2)),
           timestamp,
         };
       }
@@ -152,26 +145,17 @@ class OrbSession {
         this.state = "triggered";
         this.breakoutDirection = "sell";
         this.entryPrice = price;
-        this.stopPrice = this.orHigh;
-        this.targetPrice = this.entryPrice - range * config.orbTargetMultiplier;
-
-        const riskPoints = this.stopPrice - this.entryPrice;
-        const rewardPoints = this.entryPrice - this.targetPrice;
 
         log.trade(TAG, `${name} SHORT BREAKOUT at ${price}`);
-        log.trade(TAG, `  Entry: ${this.entryPrice} | Stop: ${this.stopPrice} | Target: ${this.targetPrice.toFixed(2)}`);
-        log.trade(TAG, `  Risk: ${riskPoints.toFixed(2)}pts | Reward: ${rewardPoints.toFixed(2)}pts`);
+        log.trade(TAG, `  OR High: ${this.orHigh} | OR Low: ${this.orLow} | Range: ${range.toFixed(2)}pts`);
 
         return {
           session: name,
           direction: "sell",
           entry: this.entryPrice,
-          stop: this.stopPrice,
-          target: parseFloat(this.targetPrice.toFixed(2)),
-          riskPoints: parseFloat(riskPoints.toFixed(2)),
-          rewardPoints: parseFloat(rewardPoints.toFixed(2)),
           orHigh: this.orHigh,
           orLow: this.orLow,
+          orRange: parseFloat(range.toFixed(2)),
           timestamp,
         };
       }

@@ -14,7 +14,7 @@ import { config } from "./config.js";
 import { log } from "./lib/logger.js";
 import { createFeed } from "./lib/data-feed.js";
 import { OrbEngine } from "./lib/orb-engine.js";
-import { evaluateAllAccounts } from "./lib/risk-engine.js";
+import { evaluateAllAccounts, recordSessionResult } from "./lib/risk-engine.js";
 import { executeAll } from "./lib/execution.js";
 import { getAutomatedAccounts, logTrade } from "./lib/supabase.js";
 import webhookRoutes from "./routes/webhook.js";
@@ -170,6 +170,19 @@ async function startPipeline() {
       };
 
       log.trade(TAG, `Execution complete: ${results.length} orders sent`);
+
+      // Record session results so NY can adjust if London already traded
+      // In dry run mode, we simulate a pending result (P&L unknown until fill)
+      // In live mode, the actual fill webhook will call recordSessionResult
+      if (signal.session.toLowerCase() === "london") {
+        for (const { account, evaluation } of approved) {
+          // For now, record the EXPECTED target P&L (best case)
+          // The actual fill webhook should update this with real P&L
+          const expectedPnl = evaluation.plan.rewardDollars || 0;
+          recordSessionResult(account.id, expectedPnl, evaluation.plan.contracts);
+          log.info(TAG, `Recorded London expected result for "${account.label}": $${expectedPnl}`);
+        }
+      }
 
       // Log trades to Supabase for approved accounts (dry run mode)
       for (const result of results) {
