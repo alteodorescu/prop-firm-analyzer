@@ -233,10 +233,75 @@ class DxFeed extends DataFeed {
 }
 
 // ─────────────────────────────────────────────────────────
+// Databento Bridge — Connects to Python bridge WebSocket
+// ─────────────────────────────────────────────────────────
+class DatabentoBridge extends DataFeed {
+  constructor() {
+    super();
+    this.ws = null;
+    this.reconnectDelay = 3000;
+    this.bridgeUrl = `ws://localhost:${config.databentoBridgePort || 3002}`;
+  }
+
+  async connect() {
+    log.info(TAG, `Connecting to Databento bridge: ${this.bridgeUrl}`);
+    this._connect();
+  }
+
+  _connect() {
+    this.ws = new WebSocket(this.bridgeUrl);
+
+    this.ws.on("open", () => {
+      log.info(TAG, "Connected to Databento bridge — receiving live NQ trades");
+      this.connected = true;
+    });
+
+    this.ws.on("message", (raw) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        if (msg.type === "tick" && msg.price) {
+          const price = parseFloat(msg.price);
+          if (!isNaN(price) && price > 0) {
+            this.emitTick(price, new Date(msg.timestamp || Date.now()));
+          }
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
+    });
+
+    this.ws.on("close", () => {
+      log.warn(TAG, `Databento bridge disconnected. Reconnecting in ${this.reconnectDelay / 1000}s...`);
+      this.connected = false;
+      setTimeout(() => this._connect(), this.reconnectDelay);
+    });
+
+    this.ws.on("error", (err) => {
+      if (err.code === "ECONNREFUSED") {
+        log.error(TAG, "Databento bridge not running. Start it with: python feed-bridge.py");
+      } else {
+        log.error(TAG, "Databento bridge error:", err.message);
+      }
+    });
+  }
+
+  async disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.connected = false;
+    log.info(TAG, "Databento bridge disconnected");
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 // Factory — Create the right feed based on config
 // ─────────────────────────────────────────────────────────
 export function createFeed() {
   switch (config.feedType) {
+    case "databento":
+      return new DatabentoBridge();
     case "dxfeed":
       return new DxFeed();
     case "mock":

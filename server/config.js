@@ -6,9 +6,10 @@ export const config = {
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || "",
 
   // ── Data Feed ──
-  feedType: process.env.FEED_TYPE || "mock", // "mock" | "dxfeed"
+  feedType: process.env.FEED_TYPE || "mock", // "mock" | "dxfeed" | "databento"
   dxfeedWsUrl: process.env.DXFEED_WS_URL || "",
   dxfeedAuthToken: process.env.DXFEED_AUTH_TOKEN || "",
+  databentoBridgePort: parseInt(process.env.DATABENTO_BRIDGE_PORT || "3002", 10),
 
   // ── Symbol ──
   symbol: process.env.SYMBOL || "NQM6",
