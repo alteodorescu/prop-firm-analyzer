@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap } from "lucide-react";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
 import { supabase } from "./supabaseClient.js";
@@ -1773,6 +1773,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
   const [showPayouts, setShowPayouts] = useState(false);
   const [addingReset, setAddingReset] = useState(false);
   const [showResets, setShowResets] = useState(false);
+  const [showAutoSettings, setShowAutoSettings] = useState(false);
   const fileInputRef = useRef(null);
   const [importMsg, setImportMsg] = useState(null);
   const m = calcLiveMetrics(account, firmData);
@@ -1899,10 +1900,23 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 </span>
               )}
               {m.totalPayouts > 0 && <span>Paid: <b className="text-emerald-600">{money(m.totalPayouts)}</b></span>}
+              {account.autoEnabled && <span className="flex items-center gap-0.5 text-emerald-600 border-l border-gray-300 pl-3"><Zap size={10} className="fill-emerald-500" /> Auto</span>}
             </div>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => {
+              const newVal = !account.autoEnabled;
+              onUpdate({ ...account, autoEnabled: newVal });
+              if (newVal && !collapsed) setShowAutoSettings(true);
+            }}
+            className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${account.autoEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`}
+            title={account.autoEnabled ? t("autoEnabled") : t("autoDisabled")}
+          >
+            <Zap size={12} className={account.autoEnabled ? "fill-emerald-500" : ""} />
+            {t("autoToggle")}
+          </button>
           {!firmData?.instant && <button onClick={togglePhase} className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded" title="Switch phase">↔ Phase</button>}
           <button onClick={() => onDelete(account.id)} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
         </div>
@@ -1912,6 +1926,45 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
         {payouts.length > 0 && <> • <span className="text-emerald-600 font-medium">{payouts.length} {t("payoutN")}{payouts.length !== 1 ? "s" : ""} ({money(m.totalPayouts)})</span></>}
         {resets.length > 0 && <> • <span className="text-amber-600 font-medium">{resets.length} {t("resetN")}{resets.length !== 1 ? "s" : ""} ({money(m.totalResetCost)})</span></>}
       </div>
+
+      {/* Automation Settings Panel */}
+      {!collapsed && account.autoEnabled && (
+        <div className="border-t border-gray-100">
+          <div className="px-4 py-3 bg-emerald-50/50">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Zap size={14} className="text-emerald-600 fill-emerald-500" />
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">{t("autoSettings")}</span>
+              </div>
+              <span className="text-xs text-emerald-600 font-medium">{t("autoStatusActive")}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoSession")}</label>
+                <select
+                  value={account.autoSessions || "both"}
+                  onChange={(e) => onUpdate({ ...account, autoSessions: e.target.value })}
+                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                >
+                  <option value="london">{t("autoSessionLondon")}</option>
+                  <option value="ny">{t("autoSessionNy")}</option>
+                  <option value="both">{t("autoSessionBoth")}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoWebhookUrl")}</label>
+                <input
+                  type="text"
+                  value={account.pmtWebhookUrl || ""}
+                  onChange={(e) => onUpdate({ ...account, pmtWebhookUrl: e.target.value })}
+                  placeholder={t("autoWebhookPlaceholder")}
+                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Metrics Dashboard — collapsible */}
       {!collapsed && <div className="border-t border-gray-100" />}

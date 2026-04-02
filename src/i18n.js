@@ -686,6 +686,20 @@ const translations = {
   adminUserAdded: { en: "Admin user added successfully!", ro: "Utilizator admin adăugat cu succes!" },
   adminConfirmRemove: { en: "Remove this user from admins?", ro: "Elimini acest utilizator din adminii?" },
   loading: { en: "Loading", ro: "Se încarcă" },
+
+  // ── Automation ──
+  autoToggle: { en: "Auto", ro: "Auto" },
+  autoEnabled: { en: "Automation ON", ro: "Automatizare PORNITĂ" },
+  autoDisabled: { en: "Automation OFF", ro: "Automatizare OPRITĂ" },
+  autoSettings: { en: "Automation Settings", ro: "Setări Automatizare" },
+  autoSession: { en: "Session", ro: "Sesiune" },
+  autoSessionLondon: { en: "London", ro: "Londra" },
+  autoSessionNy: { en: "New York", ro: "New York" },
+  autoSessionBoth: { en: "Both", ro: "Ambele" },
+  autoWebhookUrl: { en: "PickMyTrade Webhook URL", ro: "URL Webhook PickMyTrade" },
+  autoWebhookPlaceholder: { en: "https://api.pickmytrade.trade/v2/...", ro: "https://api.pickmytrade.trade/v2/..." },
+  autoStatusActive: { en: "ORB automation active", ro: "Automatizare ORB activă" },
+  autoStatusInactive: { en: "ORB automation inactive", ro: "Automatizare ORB inactivă" },
 };
 
 // ── Language state ──
