@@ -26,16 +26,21 @@ export async function executeViaPMT(account, plan) {
     return { success: false, error: "No webhook URL configured" };
   }
 
-  // Build PickMyTrade JSON payload (v2/add-trade-data-latest format)
-  // Use exact price levels for SL and TP (most reliable method).
-  // Set dollar_/percentage_ variants to 0 so PMT uses the price levels.
+  // Build PickMyTrade Indicator JSON payload (v2/add-trade-data-latest format)
+  // Docs: https://docs.pickmytrade.trade/docs/tradingview-json-alert-configuration/
+  //
+  // - sl/tp: exact price levels (used directly when provided)
+  // - price: 0 = use latest market price (combined with order_type: "MKT")
+  // - reverse_order_close: true = close any opposite position before opening
+  // - pyramid: false = don't stack positions, one trade at a time
   const payload = {
     symbol: config.symbol,
     date: new Date().toISOString(),
     data: plan.direction,        // "buy" or "sell"
     quantity: plan.contracts,
     risk_percentage: 0,
-    price: plan.entry,
+    price: 0,                    // 0 = use current market price
+    order_type: "MKT",           // market order for instant fill
     gtd_in_second: 0,
     tp: plan.target,             // exact TP price level
     percentage_tp: 0,
@@ -50,6 +55,8 @@ export async function executeViaPMT(account, plan) {
     update_tp: false,
     update_sl: false,
     breakeven: 0,
+    pyramid: false,              // one position at a time
+    reverse_order_close: true,   // close opposite position before opening
   };
 
   log.trade(TAG, `Sending to PickMyTrade for "${account.label}":`, JSON.stringify(payload));
