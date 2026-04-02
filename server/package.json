@@ -1,0 +1,18 @@
+{
+  "name": "prop-firm-automation-server",
+  "version": "2.0.0",
+  "description": "ORB automation engine for Futures Prop Firm Analyzer",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "mock": "FEED_TYPE=mock node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0",
+    "ws": "^8.16.0"
+  }
+}

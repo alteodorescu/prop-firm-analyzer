@@ -5,3 +5,5 @@ dist/
 .env.production
 *.timestamp-*.mjs
 .DS_Store
+server/node_modules/
+server/.env
