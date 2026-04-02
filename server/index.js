@@ -32,6 +32,7 @@ app.use("/api/webhook", webhookRoutes);
 
 // Status endpoint
 let engineStatus = { feed: "disconnected", orb: {}, lastSignal: null, lastExecution: null };
+let activeFeed = null; // Expose feed for TradingView webhook route
 
 app.get("/api/status", (req, res) => {
   res.json({
@@ -55,6 +56,44 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// TradingView webhook tick endpoint
+// Accepts: POST /api/tv-tick with body { "price": 18400.50 }
+// Also supports TradingView alert message format: just a number "18400.50"
+app.post("/api/tv-tick", (req, res) => {
+  if (!activeFeed || typeof activeFeed.injectTick !== "function") {
+    return res.status(400).json({ error: "Feed is not in TradingView mode. Set FEED_TYPE=tradingview" });
+  }
+  let price;
+  if (req.body && req.body.price != null) {
+    price = parseFloat(req.body.price);
+  } else if (typeof req.body === "string" || typeof req.body === "number") {
+    price = parseFloat(req.body);
+  }
+  // Also handle TradingView's plain text body
+  if (isNaN(price) && req.headers["content-type"]?.includes("text")) {
+    price = parseFloat(req.body);
+  }
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: "Invalid price. Send { \"price\": 18400.50 }" });
+  }
+  activeFeed.injectTick(price);
+  res.json({ ok: true });
+});
+
+// Also accept plain text from TradingView alerts
+app.use("/api/tv-tick-text", express.text());
+app.post("/api/tv-tick-text", (req, res) => {
+  if (!activeFeed || typeof activeFeed.injectTick !== "function") {
+    return res.status(400).json({ error: "Feed is not in TradingView mode" });
+  }
+  const price = parseFloat(req.body);
+  if (isNaN(price) || price <= 0) {
+    return res.status(400).json({ error: "Invalid price" });
+  }
+  activeFeed.injectTick(price);
+  res.json({ ok: true });
+});
+
 // ─────────────────────────────────────────────────────────
 // Core pipeline: Feed → ORB → Risk → Execute
 // ─────────────────────────────────────────────────────────
@@ -69,6 +108,7 @@ async function startPipeline() {
 
   // 1. Create data feed
   const feed = createFeed();
+  activeFeed = feed; // Expose for TradingView webhook route
 
   // 2. Create ORB engine
   const orb = new OrbEngine();

@@ -296,10 +296,46 @@ class DatabentoBridge extends DataFeed {
 }
 
 // ─────────────────────────────────────────────────────────
+// TradingView Webhook — Receives price via HTTP POST
+// ─────────────────────────────────────────────────────────
+// TradingView sends alert webhooks with the current price.
+// This feed exposes an .injectTick(price) method that the
+// Express route handler calls when a webhook arrives.
+// ─────────────────────────────────────────────────────────
+class TradingViewFeed extends DataFeed {
+  constructor() {
+    super();
+    this.tickCount = 0;
+  }
+
+  async connect() {
+    log.info(TAG, "TradingView webhook feed active — waiting for alerts");
+    log.info(TAG, "POST /api/tv-tick with JSON { \"price\": 18400.50 }");
+    this.connected = true;
+  }
+
+  /** Called by the Express route when a TradingView webhook arrives */
+  injectTick(price) {
+    this.tickCount++;
+    if (this.tickCount <= 5 || this.tickCount % 50 === 0) {
+      log.info(TAG, `TV tick #${this.tickCount}: ${config.symbol} @ ${price}`);
+    }
+    this.emitTick(price, new Date());
+  }
+
+  async disconnect() {
+    this.connected = false;
+    log.info(TAG, "TradingView feed stopped");
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 // Factory — Create the right feed based on config
 // ─────────────────────────────────────────────────────────
 export function createFeed() {
   switch (config.feedType) {
+    case "tradingview":
+      return new TradingViewFeed();
     case "databento":
       return new DatabentoBridge();
     case "dxfeed":
