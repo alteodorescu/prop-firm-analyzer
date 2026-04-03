@@ -18,6 +18,7 @@ import { evaluateAllAccounts, recordSessionResult } from "./lib/risk-engine.js";
 import { executeAll } from "./lib/execution.js";
 import { logTrade } from "./lib/supabase.js";
 import { refreshAccounts, getCachedAccounts, getCacheStatus } from "./lib/account-cache.js";
+import { tradeTracker } from "./lib/trade-tracker.js";
 import webhookRoutes from "./routes/webhook.js";
 
 const TAG = "MAIN";
@@ -43,6 +44,7 @@ app.get("/api/status", (req, res) => {
     lastSignal: engineStatus.lastSignal,
     lastExecution: engineStatus.lastExecution,
     accountCache: getCacheStatus(),
+    openTrades: tradeTracker.getOpenTrades(),
     config: {
       symbol: config.symbol,
       feedType: config.feedType,
@@ -130,11 +132,16 @@ async function startPipeline() {
   // 2. Create ORB engine
   const orb = new OrbEngine();
 
-  // 3. Wire: feed ticks → ORB engine
+  // 3. Wire: feed ticks → ORB engine + Trade tracker
   let tickCount = 0;
   feed.on("tick", (tick) => {
     tickCount++;
+
+    // ORB engine: detects OR formation and breakout signals
     orb.processTick(tick);
+
+    // Trade tracker: checks if any open trade hit TP or SL this candle
+    tradeTracker.checkCandle(tick);
 
     // Update status (throttled)
     if (tickCount % 10 === 0) {
@@ -162,6 +169,43 @@ async function startPipeline() {
 
   // Initial load on startup
   refreshAccounts("startup");
+
+  // ── Trade tracker: automatic journal write on TP/SL hit ─
+  // When a candle crosses the TP or SL of an open trade,
+  // trade-tracker.js emits "trade_closed" with exact P&L.
+  // We write that to Supabase so the account tracker is always
+  // up to date — zero manual intervention needed.
+  tradeTracker.on("trade_closed", async ({ trade, result }) => {
+    const { accountId, label, direction, session, contracts } = trade;
+    const { outcome, exitPrice, pnl, newBalance } = result;
+
+    log.trade(TAG, `Auto-journaling "${label}": ${outcome.toUpperCase()} P&L=$${pnl >= 0 ? "+" : ""}${pnl}`);
+
+    try {
+      // Write journal entry to Supabase
+      const journalEntry = {
+        date:      new Date().toISOString().slice(0, 10),
+        balance:   newBalance,
+        pnl,
+        trades:    1,
+        notes:     `ORB Auto: ${direction.toUpperCase()} ${session} → ${outcome.toUpperCase()} @ ${exitPrice}`,
+        flags:     "auto",
+      };
+      await logTrade(accountId, journalEntry);
+
+      // Record actual (not estimated) London result so NY session adjusts correctly
+      if (session.toLowerCase() === "london") {
+        recordSessionResult(accountId, pnl, contracts);
+        log.info(TAG, `Recorded ACTUAL London result for "${label}": $${pnl}`);
+      }
+
+      // Refresh cache so the next session uses the updated balance
+      refreshAccounts(`trade closed (${label} ${outcome.toUpperCase()})`);
+
+    } catch (err) {
+      log.error(TAG, `Failed to auto-journal trade for "${label}":`, err.message);
+    }
+  });
 
   // 4b. Wire: ORB signals → Risk evaluation → Execution
   orb.on("signal", async (signal) => {
@@ -213,32 +257,37 @@ async function startPipeline() {
 
       log.trade(TAG, `Execution complete: ${results.length} orders sent`);
 
-      // Record session results so NY can adjust if London already traded
-      // In dry run mode, we simulate a pending result (P&L unknown until fill)
-      // In live mode, the actual fill webhook will call recordSessionResult
-      if (signal.session.toLowerCase() === "london") {
-        for (const { account, evaluation } of approved) {
-          // For now, record the EXPECTED target P&L (best case)
-          // The actual fill webhook should update this with real P&L
-          const expectedPnl = evaluation.plan.rewardDollars || 0;
-          recordSessionResult(account.id, expectedPnl, evaluation.plan.contracts);
-          log.info(TAG, `Recorded London expected result for "${account.label}": $${expectedPnl}`);
-        }
+      // Register each successfully sent trade with the tracker.
+      // The tracker watches every incoming candle and fires "trade_closed"
+      // when price crosses TP or SL — triggering automatic journal write.
+      for (const result of results) {
+        if (!result.execution.success && !result.execution.dryRun) continue;
+
+        // Find the matching account evaluation to get prevBalance
+        const matchedEval = approved.find((e) => e.account.id === result.accountId);
+        if (!matchedEval) continue;
+
+        tradeTracker.openTrade({
+          accountId:   result.accountId,
+          label:       result.accountLabel,
+          direction:   result.direction,
+          entry:       result.entry,
+          stop:        result.stop,
+          target:      result.target,
+          contracts:   result.contracts,
+          prevBalance: result.balance,    // balance at signal time from risk engine
+          session:     result.session,
+        });
       }
 
-      // Log trades to Supabase for approved accounts (dry run mode)
-      for (const result of results) {
-        if (result.execution.dryRun) {
-          // In dry run, simulate the trade result in the journal
-          const journalEntry = {
-            date: new Date().toISOString().slice(0, 10),
-            balance: result.balance || 0, // Will be updated by actual fill
-            pnl: 0, // Unknown until trade closes
-            trades: 1,
-            notes: `ORB ${result.direction} ${result.session} [PENDING]`,
-            flags: "auto,pending",
-          };
-          // Don't log pending trades — wait for actual result via webhook
+      // London session: record EXPECTED P&L so NY can do its own planning.
+      // This is a temporary estimate — trade_closed event will overwrite it
+      // with the actual P&L once TP or SL is confirmed.
+      if (signal.session.toLowerCase() === "london") {
+        for (const { account, evaluation } of approved) {
+          const expectedPnl = evaluation.plan.rewardDollars || 0;
+          recordSessionResult(account.id, expectedPnl, evaluation.plan.contracts);
+          log.info(TAG, `London trade open for "${account.label}" — estimated P&L: $${expectedPnl} (will update on close)`);
         }
       }
     } catch (err) {
