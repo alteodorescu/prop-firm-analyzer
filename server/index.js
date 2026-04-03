@@ -57,26 +57,40 @@ app.get("/api/health", (req, res) => {
 });
 
 // TradingView webhook tick endpoint
-// Accepts: POST /api/tv-tick with body { "price": 18400.50 }
-// Also supports TradingView alert message format: just a number "18400.50"
+// Accepts 5-min OHLC from TradingView alert:
+//   {"open":{{open}},"high":{{high}},"low":{{low}},"close":{{close}}}
+// Also accepts legacy format for backward compat:
+//   {"price": 18400.50} or plain number
 app.post("/api/tv-tick", (req, res) => {
   if (!activeFeed || typeof activeFeed.injectTick !== "function") {
     return res.status(400).json({ error: "Feed is not in TradingView mode. Set FEED_TYPE=tradingview" });
   }
-  let price;
-  if (req.body && req.body.price != null) {
-    price = parseFloat(req.body.price);
+
+  let candle = {};
+
+  if (req.body && typeof req.body === "object") {
+    // Full OHLC format (preferred): {"open":X,"high":X,"low":X,"close":X}
+    if (req.body.close != null) {
+      candle.close = parseFloat(req.body.close);
+      candle.open  = req.body.open  != null ? parseFloat(req.body.open)  : candle.close;
+      candle.high  = req.body.high  != null ? parseFloat(req.body.high)  : candle.close;
+      candle.low   = req.body.low   != null ? parseFloat(req.body.low)   : candle.close;
+    }
+    // Legacy format: {"price": X}
+    else if (req.body.price != null) {
+      const p = parseFloat(req.body.price);
+      candle = { open: p, high: p, low: p, close: p };
+    }
   } else if (typeof req.body === "string" || typeof req.body === "number") {
-    price = parseFloat(req.body);
+    const p = parseFloat(req.body);
+    candle = { open: p, high: p, low: p, close: p };
   }
-  // Also handle TradingView's plain text body
-  if (isNaN(price) && req.headers["content-type"]?.includes("text")) {
-    price = parseFloat(req.body);
+
+  if (isNaN(candle.close) || candle.close <= 0) {
+    return res.status(400).json({ error: 'Invalid candle. Send {"open":X,"high":X,"low":X,"close":X}' });
   }
-  if (isNaN(price) || price <= 0) {
-    return res.status(400).json({ error: "Invalid price. Send { \"price\": 18400.50 }" });
-  }
-  activeFeed.injectTick(price);
+
+  activeFeed.injectTick(candle);
   res.json({ ok: true });
 });
 

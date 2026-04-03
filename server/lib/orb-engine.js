@@ -1,8 +1,17 @@
 // ═══════════════════════════════════════════════════════════
 // ORB ENGINE — Opening Range Breakout Detection
 // ═══════════════════════════════════════════════════════════
-// Monitors price data, identifies Opening Ranges for London
-// and NY sessions, and emits signals on breakout.
+//
+// Strategy:
+//   1. Session opens (London 07:00 UTC, NY 13:30 UTC)
+//   2. The FIRST closed 5-min candle sets the Opening Range (high/low)
+//   3. Watch subsequent 5-min candles. When a candle CLOSES more than
+//      50 ticks (12.5 pts) beyond the OR, a breakout is confirmed.
+//   4. Entry = OPEN of the NEXT 5-min candle after the breakout candle.
+//
+// TradingView alert must be on a 5-min chart, "Once Per Bar Close":
+//   Message: {"open":{{open}},"high":{{high}},"low":{{low}},"close":{{close}}}
+//
 // ═══════════════════════════════════════════════════════════
 
 import { EventEmitter } from "events";
@@ -11,216 +20,194 @@ import { log } from "./logger.js";
 
 const TAG = "ORB";
 
+// Breakout confirmation: 50 ticks × 0.25 pts/tick = 12.5 pts
+const BREAKOUT_TICKS = 50;
+const BREAKOUT_POINTS = BREAKOUT_TICKS * 0.25; // 12.5 pts
+
 /**
- * Parse "HH:MM" → { hours, minutes }
+ * Parse "HH:MM" → total minutes since midnight
  */
-function parseTime(str) {
+function parseTimeMin(str) {
   const [h, m] = str.split(":").map(Number);
-  return { hours: h, minutes: m };
+  return h * 60 + m;
 }
 
 /**
- * Get minutes-since-midnight from a Date (UTC)
+ * Get UTC minutes-since-midnight from a Date
  */
 function utcMinutes(date) {
   return date.getUTCHours() * 60 + date.getUTCMinutes();
 }
 
-/**
- * Session definition
- */
-function createSession(name, startStr, endStr) {
-  const start = parseTime(startStr);
-  const end = parseTime(endStr);
-  return {
-    name,
-    startMin: start.hours * 60 + start.minutes,
-    endMin: end.hours * 60 + end.minutes,
-  };
-}
-
-/**
- * ORB state for a single session
- */
+// ─────────────────────────────────────────────────────────
+// OrbSession — Handles one session (London or NY)
+// ─────────────────────────────────────────────────────────
 class OrbSession {
-  constructor(session) {
-    this.session = session;
+  constructor(name, startStr, endStr) {
+    this.name = name;
+    this.startMin = parseTimeMin(startStr);
+    this.endMin = parseTimeMin(endStr); // session expiry (no breakout → give up)
     this.reset();
   }
 
   reset() {
-    this.state = "waiting"; // waiting | forming | watching | triggered | done
-    this.orHigh = -Infinity;
-    this.orLow = Infinity;
+    // States: waiting → or_forming → watching → awaiting_entry → triggered | done
+    this.state = "waiting";
+    this.orHigh = null;
+    this.orLow = null;
     this.breakoutDirection = null;
-    this.entryPrice = null;
-    this.stopPrice = null;
-    this.targetPrice = null;
-    this.lastDate = null; // Track which day we're on
+    this.lastDate = null;
   }
 
   /**
-   * Process a tick and return a signal if breakout detected
-   * @param {number} price
+   * Process a 5-min bar (called once per closed candle from TradingView)
+   *
+   * @param {{ open: number, high: number, low: number, close: number }} candle
    * @param {Date} timestamp
-   * @returns {object|null} Signal object or null
+   * @returns {object|null} Signal if entry triggered, else null
    */
-  processTick(price, timestamp) {
+  processTick(candle, timestamp) {
+    const { open, high, low, close } = candle;
     const now = utcMinutes(timestamp);
     const today = timestamp.toISOString().slice(0, 10);
 
-    // Reset on new day
+    // ── Daily reset ──
     if (this.lastDate && this.lastDate !== today) {
+      log.info(TAG, `${this.name} new day — resetting ORB state`);
       this.reset();
     }
     this.lastDate = today;
 
-    const { startMin, endMin, name } = this.session;
-
-    // ── STATE: waiting ──
-    // Before the OR window opens
+    // ── STATE: waiting — before session start ──
     if (this.state === "waiting") {
-      if (now >= startMin && now < endMin) {
-        this.state = "forming";
-        this.orHigh = price;
-        this.orLow = price;
-        log.info(TAG, `${name} Opening Range forming... first price: ${price}`);
+      if (now >= this.startMin) {
+        // First candle after session open → sets the Opening Range
+        this.orHigh = high;
+        this.orLow = low;
+        const range = (this.orHigh - this.orLow).toFixed(2);
+        log.signal(TAG, `${this.name} OR SET from first candle: High=${this.orHigh} Low=${this.orLow} Range=${range}pts (Close=${close})`);
+
+        if (this.orHigh - this.orLow <= 0) {
+          log.warn(TAG, `${this.name} OR range is zero — skipping session`);
+          this.state = "done";
+          return null;
+        }
+
+        this.state = "watching";
       }
       return null;
     }
 
-    // ── STATE: forming ──
-    // During the OR window — track high/low
-    if (this.state === "forming") {
-      if (now < endMin) {
-        if (price > this.orHigh) this.orHigh = price;
-        if (price < this.orLow) this.orLow = price;
-        return null;
-      }
-
-      // OR window just closed
-      const range = this.orHigh - this.orLow;
-      log.signal(TAG, `${name} Opening Range set: High=${this.orHigh} Low=${this.orLow} Range=${range.toFixed(2)}pts`);
-
-      // Validate range
-      if (range <= 0 || range > config.orbMaxRiskPoints) {
-        log.warn(TAG, `${name} Range ${range.toFixed(2)}pts exceeds max risk (${config.orbMaxRiskPoints}pts) or is zero. Skipping.`);
-        this.state = "done";
-        return null;
-      }
-
-      this.state = "watching";
-      // Fall through to check current price against range
+    // ── Session expiry ──
+    if (now >= this.endMin && this.state !== "triggered" && this.state !== "done") {
+      log.warn(TAG, `${this.name} session expired at ${now} UTC mins — no breakout`);
+      this.state = "done";
+      return null;
     }
 
-    // ── STATE: watching ──
-    // After OR closed — waiting for breakout
+    // ── STATE: watching — check each closed candle for a confirmed breakout ──
     if (this.state === "watching") {
-      const range = this.orHigh - this.orLow;
+      const longBreakout = close > this.orHigh + BREAKOUT_POINTS;
+      const shortBreakout = close < this.orLow - BREAKOUT_POINTS;
 
-      // Breakout LONG — price exceeds OR high
-      if (price > this.orHigh) {
-        this.state = "triggered";
+      if (longBreakout) {
+        log.trade(TAG, `${this.name} LONG breakout candle closed at ${close}`);
+        log.trade(TAG, `  OR High=${this.orHigh} + ${BREAKOUT_POINTS}pts = ${this.orHigh + BREAKOUT_POINTS} | Close=${close}`);
         this.breakoutDirection = "buy";
-        this.entryPrice = price;
-
-        log.trade(TAG, `${name} LONG BREAKOUT at ${price}`);
-        log.trade(TAG, `  OR High: ${this.orHigh} | OR Low: ${this.orLow} | Range: ${range.toFixed(2)}pts`);
-
-        // Signal only carries direction + entry. Stop/target are set by the risk engine
-        // based on each account's Today's Trading Plan.
-        return {
-          session: name,
-          direction: "buy",
-          entry: this.entryPrice,
-          orHigh: this.orHigh,
-          orLow: this.orLow,
-          orRange: parseFloat(range.toFixed(2)),
-          timestamp,
-        };
+        this.state = "awaiting_entry";
+        return null; // Wait for next candle's open
       }
 
-      // Breakout SHORT — price drops below OR low
-      if (price < this.orLow) {
-        this.state = "triggered";
+      if (shortBreakout) {
+        log.trade(TAG, `${this.name} SHORT breakout candle closed at ${close}`);
+        log.trade(TAG, `  OR Low=${this.orLow} - ${BREAKOUT_POINTS}pts = ${this.orLow - BREAKOUT_POINTS} | Close=${close}`);
         this.breakoutDirection = "sell";
-        this.entryPrice = price;
-
-        log.trade(TAG, `${name} SHORT BREAKOUT at ${price}`);
-        log.trade(TAG, `  OR High: ${this.orHigh} | OR Low: ${this.orLow} | Range: ${range.toFixed(2)}pts`);
-
-        return {
-          session: name,
-          direction: "sell",
-          entry: this.entryPrice,
-          orHigh: this.orHigh,
-          orLow: this.orLow,
-          orRange: parseFloat(range.toFixed(2)),
-          timestamp,
-        };
+        this.state = "awaiting_entry";
+        return null; // Wait for next candle's open
       }
 
       return null;
     }
 
-    // ── STATE: triggered / done ──
-    // Already fired for this session today
+    // ── STATE: awaiting_entry — this is the candle AFTER the breakout ──
+    // Entry = open of this candle
+    if (this.state === "awaiting_entry") {
+      const entry = open;
+      const orRange = parseFloat((this.orHigh - this.orLow).toFixed(2));
+      this.state = "triggered";
+
+      log.trade(TAG, `${this.name} ${this.breakoutDirection.toUpperCase()} ENTRY at ${entry} (open of next candle)`);
+      log.trade(TAG, `  OR High=${this.orHigh} | OR Low=${this.orLow} | Range=${orRange}pts`);
+
+      return {
+        session: this.name,
+        direction: this.breakoutDirection,
+        entry,
+        orHigh: this.orHigh,
+        orLow: this.orLow,
+        orRange,
+        timestamp,
+      };
+    }
+
+    // triggered / done — no more signals today
     return null;
   }
 }
 
 // ─────────────────────────────────────────────────────────
-// ORB Engine — Manages both sessions
+// ORB Engine — Manages London + NY sessions
 // ─────────────────────────────────────────────────────────
 export class OrbEngine extends EventEmitter {
   constructor() {
     super();
 
-    this.londonSession = new OrbSession(
-      createSession("London", config.londonOrStart, config.londonOrEnd)
-    );
-    this.nySession = new OrbSession(
-      createSession("NY", config.nyOrStart, config.nyOrEnd)
-    );
+    this.londonSession = new OrbSession("London", config.londonOrStart, config.londonOrEnd);
+    this.nySession = new OrbSession("NY", config.nyOrStart, config.nyOrEnd);
 
-    log.info(TAG, `London OR: ${config.londonOrStart}-${config.londonOrEnd} UTC`);
-    log.info(TAG, `NY OR: ${config.nyOrStart}-${config.nyOrEnd} UTC`);
+    log.info(TAG, `London OR: ${config.londonOrStart} UTC (expires ${config.londonOrEnd} UTC)`);
+    log.info(TAG, `NY OR:     ${config.nyOrStart} UTC (expires ${config.nyOrEnd} UTC)`);
+    log.info(TAG, `Breakout confirmation: ${BREAKOUT_TICKS} ticks (${BREAKOUT_POINTS}pts) beyond OR`);
   }
 
   /**
-   * Process a price tick from the data feed
-   * @param {{ price: number, timestamp: Date, symbol: string }} tick
+   * Process a 5-min candle tick from the data feed.
+   * Each tick must carry { open, high, low, close } (from TradingView 5-min alert).
+   *
+   * @param {{ open: number, high: number, low: number, close: number, timestamp: Date, symbol: string }} tick
    */
   processTick(tick) {
-    const { price, timestamp } = tick;
+    const { open, high, low, close, price, timestamp } = tick;
 
-    // Check London session
-    const londonSignal = this.londonSession.processTick(price, timestamp);
-    if (londonSignal) {
-      this.emit("signal", londonSignal);
-    }
+    // Build a complete candle — fall back to price if OHLC not provided
+    const candle = {
+      open:  open  ?? price,
+      high:  high  ?? price,
+      low:   low   ?? price,
+      close: close ?? price,
+    };
 
-    // Check NY session
-    const nySignal = this.nySession.processTick(price, timestamp);
-    if (nySignal) {
-      this.emit("signal", nySignal);
-    }
+    const londonSignal = this.londonSession.processTick(candle, timestamp);
+    if (londonSignal) this.emit("signal", londonSignal);
+
+    const nySignal = this.nySession.processTick(candle, timestamp);
+    if (nySignal) this.emit("signal", nySignal);
   }
 
   /**
-   * Get current state summary
+   * Get current state summary for the /api/status endpoint
    */
   getStatus() {
     return {
       london: {
         state: this.londonSession.state,
-        orHigh: this.londonSession.orHigh === -Infinity ? null : this.londonSession.orHigh,
-        orLow: this.londonSession.orLow === Infinity ? null : this.londonSession.orLow,
+        orHigh: this.londonSession.orHigh,
+        orLow: this.londonSession.orLow,
       },
       ny: {
         state: this.nySession.state,
-        orHigh: this.nySession.orHigh === -Infinity ? null : this.nySession.orHigh,
-        orLow: this.nySession.orLow === Infinity ? null : this.nySession.orLow,
+        orHigh: this.nySession.orHigh,
+        orLow: this.nySession.orLow,
       },
     };
   }

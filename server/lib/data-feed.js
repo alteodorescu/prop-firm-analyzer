@@ -315,12 +315,31 @@ class TradingViewFeed extends DataFeed {
   }
 
   /** Called by the Express route when a TradingView webhook arrives */
-  injectTick(price) {
+  injectTick(candle) {
     this.tickCount++;
+    // candle = { open, high, low, close } or legacy number
+    const isOHLC = typeof candle === "object" && candle !== null;
+    const close = isOHLC ? candle.close : candle;
+
     if (this.tickCount <= 5 || this.tickCount % 50 === 0) {
-      log.info(TAG, `TV tick #${this.tickCount}: ${config.symbol} @ ${price}`);
+      if (isOHLC && candle.high !== candle.close) {
+        log.info(TAG, `TV tick #${this.tickCount}: ${config.symbol} O=${candle.open} H=${candle.high} L=${candle.low} C=${candle.close}`);
+      } else {
+        log.info(TAG, `TV tick #${this.tickCount}: ${config.symbol} @ ${close}`);
+      }
     }
-    this.emitTick(price, new Date());
+
+    // Emit full candle data so ORB engine gets OHLC
+    const now = new Date();
+    this.emit("tick", {
+      symbol: config.symbol,
+      price: close,
+      open:  isOHLC ? candle.open  : close,
+      high:  isOHLC ? candle.high  : close,
+      low:   isOHLC ? candle.low   : close,
+      close: close,
+      timestamp: now,
+    });
   }
 
   async disconnect() {
