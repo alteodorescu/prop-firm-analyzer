@@ -4,6 +4,7 @@
 
 import { Router } from "express";
 import { logTrade } from "../lib/supabase.js";
+import { refreshAccounts } from "../lib/account-cache.js";
 import { log } from "../lib/logger.js";
 
 const TAG = "WEBHOOK";
@@ -51,6 +52,9 @@ router.post("/trade-result", async (req, res) => {
 
     await logTrade(body.accountId, journalEntry);
 
+    // Refresh cache so next session has up-to-date metrics
+    refreshAccounts("trade closed");
+
     res.json({ success: true, logged: journalEntry });
   } catch (err) {
     log.error(TAG, "Error processing trade result:", err.message);
@@ -85,6 +89,8 @@ router.post("/pmt-callback/:accountId", async (req, res) => {
 
     if (journalEntry.balance > 0) {
       await logTrade(accountId, journalEntry);
+      // Refresh cache so next session has up-to-date metrics
+      refreshAccounts(`PMT fill account ${accountId}`);
     }
 
     res.json({ success: true });

@@ -51,7 +51,7 @@ class OrbSession {
   }
 
   reset() {
-    // States: waiting → or_forming (3 candles) → watching → awaiting_entry → triggered | done
+    // States: waiting → or_forming (3 candles) → watching → triggered | done
     this.state = "waiting";
     this.orHigh = null;
     this.orLow = null;
@@ -92,6 +92,8 @@ class OrbSession {
         this.orCandleCount = 1;
         log.signal(TAG, `${this.name} OR candle 1/3: O=${open} H=${high} L=${low} C=${close}`);
         this.state = "or_forming";
+        // Signal OR formation started — refresh account metrics now
+        return { type: "or_forming", session: this.name };
       }
       return null;
     }
@@ -119,7 +121,7 @@ class OrbSession {
       return null;
     }
 
-    // ── Session expiry ──
+    // ── Session expiry — only cancel if no breakout confirmed yet ──
     if (now >= this.endMin && this.state !== "triggered" && this.state !== "done") {
       log.warn(TAG, `${this.name} session expired at ${now} UTC mins — no breakout`);
       this.state = "done";
@@ -127,49 +129,34 @@ class OrbSession {
     }
 
     // ── STATE: watching — check each closed candle for a confirmed breakout ──
+    // Entry fires IMMEDIATELY at close of breakout candle (market order)
+    // No waiting for next candle — 5 minutes of slippage is too costly
     if (this.state === "watching") {
       const longBreakout = close > this.orHigh + BREAKOUT_POINTS;
       const shortBreakout = close < this.orLow - BREAKOUT_POINTS;
 
-      if (longBreakout) {
-        log.trade(TAG, `${this.name} LONG breakout candle closed at ${close}`);
-        log.trade(TAG, `  OR High=${this.orHigh} + ${BREAKOUT_POINTS}pts = ${this.orHigh + BREAKOUT_POINTS} | Close=${close}`);
-        this.breakoutDirection = "buy";
-        this.state = "awaiting_entry";
-        return null; // Wait for next candle's open
-      }
+      if (longBreakout || shortBreakout) {
+        const direction = longBreakout ? "buy" : "sell";
+        const entry = close; // market order at breakout candle close
+        const orRange = parseFloat((this.orHigh - this.orLow).toFixed(2));
+        this.state = "triggered";
 
-      if (shortBreakout) {
-        log.trade(TAG, `${this.name} SHORT breakout candle closed at ${close}`);
-        log.trade(TAG, `  OR Low=${this.orLow} - ${BREAKOUT_POINTS}pts = ${this.orLow - BREAKOUT_POINTS} | Close=${close}`);
-        this.breakoutDirection = "sell";
-        this.state = "awaiting_entry";
-        return null; // Wait for next candle's open
+        log.trade(TAG, `${this.name} ${direction.toUpperCase()} BREAKOUT — entering immediately at ${entry}`);
+        log.trade(TAG, `  OR High=${this.orHigh} | OR Low=${this.orLow} | Close=${close}`);
+
+        return {
+          type: "signal",
+          session: this.name,
+          direction,
+          entry,
+          orHigh: this.orHigh,
+          orLow: this.orLow,
+          orRange,
+          timestamp,
+        };
       }
 
       return null;
-    }
-
-    // ── STATE: awaiting_entry — this is the candle AFTER the breakout ──
-    // Entry = open of this candle
-    if (this.state === "awaiting_entry") {
-      const entry = open;
-      const orRange = parseFloat((this.orHigh - this.orLow).toFixed(2));
-      this.state = "triggered";
-
-      log.trade(TAG, `${this.name} ${this.breakoutDirection.toUpperCase()} ENTRY at ${entry} (open of next candle)`);
-      log.trade(TAG, `  OR High=${this.orHigh} | OR Low=${this.orLow} | Range=${orRange}pts`);
-
-      return {
-        type: "signal",
-        session: this.name,
-        direction: this.breakoutDirection,
-        entry,
-        orHigh: this.orHigh,
-        orLow: this.orLow,
-        orRange,
-        timestamp,
-      };
     }
 
     // triggered / done — no more signals today
@@ -210,12 +197,14 @@ export class OrbEngine extends EventEmitter {
     };
 
     const londonResult = this.londonSession.processTick(candle, timestamp);
-    if (londonResult?.type === "or_set") this.emit("or_set", londonResult);
-    if (londonResult?.type === "signal") this.emit("signal", londonResult);
+    if (londonResult?.type === "or_forming") this.emit("or_forming", londonResult);
+    if (londonResult?.type === "or_set")     this.emit("or_set",     londonResult);
+    if (londonResult?.type === "signal")     this.emit("signal",     londonResult);
 
     const nyResult = this.nySession.processTick(candle, timestamp);
-    if (nyResult?.type === "or_set") this.emit("or_set", nyResult);
-    if (nyResult?.type === "signal") this.emit("signal", nyResult);
+    if (nyResult?.type === "or_forming") this.emit("or_forming", nyResult);
+    if (nyResult?.type === "or_set")     this.emit("or_set",     nyResult);
+    if (nyResult?.type === "signal")     this.emit("signal",     nyResult);
   }
 
   /**

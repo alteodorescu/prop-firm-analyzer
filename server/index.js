@@ -16,7 +16,8 @@ import { createFeed } from "./lib/data-feed.js";
 import { OrbEngine } from "./lib/orb-engine.js";
 import { evaluateAllAccounts, recordSessionResult } from "./lib/risk-engine.js";
 import { executeAll } from "./lib/execution.js";
-import { getAutomatedAccounts, logTrade } from "./lib/supabase.js";
+import { logTrade } from "./lib/supabase.js";
+import { refreshAccounts, getCachedAccounts, getCacheStatus } from "./lib/account-cache.js";
 import webhookRoutes from "./routes/webhook.js";
 
 const TAG = "MAIN";
@@ -41,6 +42,7 @@ app.get("/api/status", (req, res) => {
     orb: engineStatus.orb,
     lastSignal: engineStatus.lastSignal,
     lastExecution: engineStatus.lastExecution,
+    accountCache: getCacheStatus(),
     config: {
       symbol: config.symbol,
       feedType: config.feedType,
@@ -141,21 +143,25 @@ async function startPipeline() {
     }
   });
 
-  // 4a. Pre-fetch accounts as soon as the OR is set (during ORB formation)
-  //     This ensures metrics are fresh BEFORE the breakout signal fires,
-  //     capturing any manual trades logged in the app during the OR candle.
-  let prefetchedAccounts = null;
-
-  orb.on("or_set", async ({ session, orHigh, orLow }) => {
-    log.info(TAG, `OR set for ${session} (High=${orHigh} Low=${orLow}) — pre-fetching account metrics...`);
-    try {
-      prefetchedAccounts = await getAutomatedAccounts();
-      log.info(TAG, `Pre-fetched ${prefetchedAccounts.length} account(s) during ${session} OR formation`);
-    } catch (err) {
-      log.warn(TAG, `Account pre-fetch failed: ${err.message} — will fetch fresh at signal time`);
-      prefetchedAccounts = null;
-    }
+  // ── Account cache refresh triggers ──────────────────────
+  // 1. OR formation starts (first candle of session window)
+  orb.on("or_forming", ({ session }) => {
+    log.info(TAG, `${session} OR forming — refreshing account metrics`);
+    refreshAccounts(`${session} OR forming`);
   });
+
+  // 2. OR locked (all 3 candles done — metrics will be ready by signal time)
+  orb.on("or_set", ({ session, orHigh, orLow }) => {
+    log.info(TAG, `OR set for ${session} (High=${orHigh} Low=${orLow}) — refreshing account metrics`);
+    refreshAccounts(`${session} OR locked`);
+  });
+
+  // 3. Hourly refresh — catches manual journal updates throughout the day
+  setInterval(() => refreshAccounts("hourly"), 60 * 60 * 1000);
+  log.info(TAG, "Account cache: refreshing every hour + at OR formation + at OR lock + after trade close");
+
+  // Initial load on startup
+  refreshAccounts("startup");
 
   // 4b. Wire: ORB signals → Risk evaluation → Execution
   orb.on("signal", async (signal) => {
@@ -166,14 +172,12 @@ async function startPipeline() {
     engineStatus.lastSignal = { ...signal, timestamp: new Date().toISOString() };
 
     try {
-      // Use accounts pre-fetched during OR formation (already fresh).
-      // Fall back to a live fetch if pre-fetch didn't happen for some reason.
-      let accounts = prefetchedAccounts;
-      prefetchedAccounts = null; // consume the cache
-
+      // Use shared cache — already refreshed at OR forming + OR lock.
+      // Fall back to live fetch if cache is empty for any reason.
+      let accounts = getCachedAccounts();
       if (!accounts) {
-        log.warn(TAG, "No pre-fetched accounts — fetching fresh now...");
-        accounts = await getAutomatedAccounts();
+        log.warn(TAG, "Account cache empty — fetching fresh now...");
+        accounts = await refreshAccounts("signal fallback");
       }
 
       if (accounts.length === 0) {
