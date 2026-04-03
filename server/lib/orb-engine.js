@@ -20,9 +20,9 @@ import { log } from "./logger.js";
 
 const TAG = "ORB";
 
-// Breakout confirmation: 50 ticks × 0.25 pts/tick = 12.5 pts
-const BREAKOUT_TICKS = 50;
-const BREAKOUT_POINTS = BREAKOUT_TICKS * 0.25; // 12.5 pts
+// Breakout confirmation: 0 ticks — any close beyond OR high/low triggers
+const BREAKOUT_TICKS = 0;
+const BREAKOUT_POINTS = 0;
 
 /**
  * Parse "HH:MM" → total minutes since midnight
@@ -51,10 +51,11 @@ class OrbSession {
   }
 
   reset() {
-    // States: waiting → or_forming → watching → awaiting_entry → triggered | done
+    // States: waiting → or_forming (3 candles) → watching → awaiting_entry → triggered | done
     this.state = "waiting";
     this.orHigh = null;
     this.orLow = null;
+    this.orCandleCount = 0;   // counts candles during OR formation (target: 3)
     this.breakoutDirection = null;
     this.lastDate = null;
   }
@@ -80,20 +81,40 @@ class OrbSession {
 
     // ── STATE: waiting — before session start ──
     if (this.state === "waiting") {
-      if (now >= this.startMin) {
-        // First candle after session open → sets the Opening Range
+      if (now === this.startMin) {
+        // This candle CLOSED at session start → it opened BEFORE the session (e.g. 06:55–07:00)
+        // Skip it — the next candle will open exactly at session start
+        log.info(TAG, `${this.name} session boundary candle skipped (opened before session, closes at ${this.startMin} UTC min)`);
+      } else if (now > this.startMin) {
+        // First candle that opened AT session start — begin OR formation
         this.orHigh = high;
         this.orLow = low;
+        this.orCandleCount = 1;
+        log.signal(TAG, `${this.name} OR candle 1/3: O=${open} H=${high} L=${low} C=${close}`);
+        this.state = "or_forming";
+      }
+      return null;
+    }
+
+    // ── STATE: or_forming — collecting the first 3 candles ──
+    if (this.state === "or_forming") {
+      this.orCandleCount++;
+      this.orHigh = Math.max(this.orHigh, high);
+      this.orLow  = Math.min(this.orLow, low);
+      log.signal(TAG, `${this.name} OR candle ${this.orCandleCount}/3: O=${open} H=${high} L=${low} C=${close} | Running OR: ${this.orLow}–${this.orHigh}`);
+
+      if (this.orCandleCount >= 3) {
         const range = (this.orHigh - this.orLow).toFixed(2);
-        log.signal(TAG, `${this.name} OR SET from first candle: High=${this.orHigh} Low=${this.orLow} Range=${range}pts (Close=${close})`);
+        log.signal(TAG, `${this.name} OR LOCKED: High=${this.orHigh} Low=${this.orLow} Range=${range}pts`);
 
         if (this.orHigh - this.orLow <= 0) {
-          log.warn(TAG, `${this.name} OR range is zero — skipping session`);
+          log.warn(TAG, `${this.name} OR range is zero after 3 candles — skipping session`);
           this.state = "done";
           return null;
         }
 
         this.state = "watching";
+        return { type: "or_set", session: this.name, orHigh: this.orHigh, orLow: this.orLow };
       }
       return null;
     }
@@ -140,6 +161,7 @@ class OrbSession {
       log.trade(TAG, `  OR High=${this.orHigh} | OR Low=${this.orLow} | Range=${orRange}pts`);
 
       return {
+        type: "signal",
         session: this.name,
         direction: this.breakoutDirection,
         entry,
@@ -187,11 +209,13 @@ export class OrbEngine extends EventEmitter {
       close: close ?? price,
     };
 
-    const londonSignal = this.londonSession.processTick(candle, timestamp);
-    if (londonSignal) this.emit("signal", londonSignal);
+    const londonResult = this.londonSession.processTick(candle, timestamp);
+    if (londonResult?.type === "or_set") this.emit("or_set", londonResult);
+    if (londonResult?.type === "signal") this.emit("signal", londonResult);
 
-    const nySignal = this.nySession.processTick(candle, timestamp);
-    if (nySignal) this.emit("signal", nySignal);
+    const nyResult = this.nySession.processTick(candle, timestamp);
+    if (nyResult?.type === "or_set") this.emit("or_set", nyResult);
+    if (nyResult?.type === "signal") this.emit("signal", nyResult);
   }
 
   /**
@@ -203,11 +227,13 @@ export class OrbEngine extends EventEmitter {
         state: this.londonSession.state,
         orHigh: this.londonSession.orHigh,
         orLow: this.londonSession.orLow,
+        orCandleCount: this.londonSession.orCandleCount,
       },
       ny: {
         state: this.nySession.state,
         orHigh: this.nySession.orHigh,
         orLow: this.nySession.orLow,
+        orCandleCount: this.nySession.orCandleCount,
       },
     };
   }

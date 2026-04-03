@@ -90,6 +90,7 @@ app.post("/api/tv-tick", (req, res) => {
     return res.status(400).json({ error: 'Invalid candle. Send {"open":X,"high":X,"low":X,"close":X}' });
   }
 
+  log.info("TV", `Raw payload: ${JSON.stringify(req.body)} → parsed candle O=${candle.open} H=${candle.high} L=${candle.low} C=${candle.close}`);
   activeFeed.injectTick(candle);
   res.json({ ok: true });
 });
@@ -140,7 +141,23 @@ async function startPipeline() {
     }
   });
 
-  // 4. Wire: ORB signals → Risk evaluation → Execution
+  // 4a. Pre-fetch accounts as soon as the OR is set (during ORB formation)
+  //     This ensures metrics are fresh BEFORE the breakout signal fires,
+  //     capturing any manual trades logged in the app during the OR candle.
+  let prefetchedAccounts = null;
+
+  orb.on("or_set", async ({ session, orHigh, orLow }) => {
+    log.info(TAG, `OR set for ${session} (High=${orHigh} Low=${orLow}) — pre-fetching account metrics...`);
+    try {
+      prefetchedAccounts = await getAutomatedAccounts();
+      log.info(TAG, `Pre-fetched ${prefetchedAccounts.length} account(s) during ${session} OR formation`);
+    } catch (err) {
+      log.warn(TAG, `Account pre-fetch failed: ${err.message} — will fetch fresh at signal time`);
+      prefetchedAccounts = null;
+    }
+  });
+
+  // 4b. Wire: ORB signals → Risk evaluation → Execution
   orb.on("signal", async (signal) => {
     log.signal(TAG, "════════════════════════════════════════");
     log.signal(TAG, `ORB SIGNAL: ${signal.direction.toUpperCase()} @ ${signal.entry} (${signal.session})`);
@@ -149,8 +166,15 @@ async function startPipeline() {
     engineStatus.lastSignal = { ...signal, timestamp: new Date().toISOString() };
 
     try {
-      // Load all automated accounts from Supabase
-      const accounts = await getAutomatedAccounts();
+      // Use accounts pre-fetched during OR formation (already fresh).
+      // Fall back to a live fetch if pre-fetch didn't happen for some reason.
+      let accounts = prefetchedAccounts;
+      prefetchedAccounts = null; // consume the cache
+
+      if (!accounts) {
+        log.warn(TAG, "No pre-fetched accounts — fetching fresh now...");
+        accounts = await getAutomatedAccounts();
+      }
 
       if (accounts.length === 0) {
         log.warn(TAG, "No automated accounts found. Signal ignored.");

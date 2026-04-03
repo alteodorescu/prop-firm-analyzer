@@ -29,6 +29,8 @@ export const config = {
   // ── PickMyTrade ──
   pickmytradeEnabled: process.env.PICKMYTRADE_ENABLED === "true",
   pickmytradeWebhookUrl: process.env.PICKMYTRADE_WEBHOOK_URL || "",
+  pickmytradeToken: process.env.PICKMYTRADE_TOKEN || "",
+  tradovateAccountId: process.env.TRADOVATE_ACCOUNT_ID || "",
 
   // ── Server ──
   port: parseInt(process.env.PORT || "3001", 10),

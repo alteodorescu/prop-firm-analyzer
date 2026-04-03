@@ -18,45 +18,59 @@ const TAG = "EXEC";
  * @returns {object} { success, response, error }
  */
 export async function executeViaPMT(account, plan) {
-  // Each account stores its own PickMyTrade webhook URL
-  const webhookUrl = account.pmtWebhookUrl || config.pickmytradeWebhookUrl;
+  // Use the clean base URL (token goes in JSON body, not URL)
+  const webhookUrl = config.pickmytradeWebhookUrl || "https://api.pickmytrade.io/v2/add-trade-data-latest";
 
   if (!webhookUrl) {
     log.warn(TAG, `No PickMyTrade webhook URL for account "${account.label}"`);
     return { success: false, error: "No webhook URL configured" };
   }
 
-  // Build PickMyTrade Indicator JSON payload (v2/add-trade-data-latest format)
-  // Docs: https://docs.pickmytrade.trade/docs/tradingview-json-alert-configuration/
+  // Build PickMyTrade Indicator JSON payload
+  // Matches the exact format from PMT's Generate Alert page.
   //
-  // - sl/tp: exact price levels (used directly when provided)
-  // - price: 0 = use latest market price (combined with order_type: "MKT")
-  // - reverse_order_close: true = close any opposite position before opening
-  // - pyramid: false = don't stack positions, one trade at a time
+  // URL: https://api.pickmytrade.trade/v2/add-trade-data-latest?t=<userId>
+  // Body: token = alert token (required), multiple_accounts = which Tradovate account to trade
+  // sl/tp: exact price levels
+  const token = account.pmtToken || config.pickmytradeToken;
+  const accountId = account.tradovateAccountId || config.tradovateAccountId;
   const payload = {
+    strategy_name: "server",
     symbol: config.symbol,
     date: new Date().toISOString(),
     data: plan.direction,        // "buy" or "sell"
     quantity: plan.contracts,
     risk_percentage: 0,
-    price: 0,                    // 0 = use current market price
-    order_type: "MKT",           // market order for instant fill
+    price: plan.entry,           // entry price
+    order_type: "MKT",
     gtd_in_second: 0,
+    stp_limit_stp_price: 0,
     tp: plan.target,             // exact TP price level
     percentage_tp: 0,
     dollar_tp: 0,
     sl: plan.stop,               // exact SL price level
     percentage_sl: 0,
     dollar_sl: 0,
-    trail: 0,                    // no trailing stop
+    trail: 0,
     trail_stop: 0,
     trail_trigger: 0,
     trail_freq: 0,
     update_tp: false,
     update_sl: false,
     breakeven: 0,
-    pyramid: false,              // one position at a time
-    reverse_order_close: true,   // close opposite position before opening
+    breakeven_offset: 0,
+    token,                       // alert token in body (required)
+    pyramid: false,
+    same_direction_ignore: false,
+    reverse_order_close: true,
+    multiple_accounts: [
+      {
+        token,
+        account_id: accountId,   // Tradovate account ID (routes trade to correct account)
+        risk_percentage: 0,
+        quantity_multiplier: 1,
+      },
+    ],
   };
 
   log.trade(TAG, `Sending to PickMyTrade for "${account.label}":`, JSON.stringify(payload));
