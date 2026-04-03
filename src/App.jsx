@@ -1952,12 +1952,12 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoWebhookUrl")}</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovateId")}</label>
                 <input
                   type="text"
-                  value={account.pmtWebhookUrl || ""}
-                  onChange={(e) => onUpdate({ ...account, pmtWebhookUrl: e.target.value })}
-                  placeholder={t("autoWebhookPlaceholder")}
+                  value={account.tradovateAccountId || ""}
+                  onChange={(e) => onUpdate({ ...account, tradovateAccountId: e.target.value })}
+                  placeholder={t("autoTradovateIdPlaceholder")}
                   className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
                 />
               </div>

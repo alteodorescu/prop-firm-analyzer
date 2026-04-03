@@ -698,6 +698,8 @@ const translations = {
   autoSessionBoth: { en: "Both", ro: "Ambele" },
   autoWebhookUrl: { en: "PickMyTrade Webhook URL", ro: "URL Webhook PickMyTrade" },
   autoWebhookPlaceholder: { en: "https://api.pickmytrade.trade/v2/...", ro: "https://api.pickmytrade.trade/v2/..." },
+  autoTradovateId: { en: "Tradovate Account ID", ro: "ID Cont Tradovate" },
+  autoTradovateIdPlaceholder: { en: "e.g. TDFYG25927935874", ro: "ex. TDFYG25927935874" },
   autoStatusActive: { en: "ORB automation active", ro: "Automatizare ORB activă" },
   autoStatusInactive: { en: "ORB automation inactive", ro: "Automatizare ORB inactivă" },
 };
