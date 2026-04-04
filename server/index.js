@@ -1,12 +1,18 @@
 // ═══════════════════════════════════════════════════════════
 // PROP FIRM AUTOMATION SERVER
 // ═══════════════════════════════════════════════════════════
-// Path B Architecture:
-//   Data Feed → ORB Engine → Risk Engine → PickMyTrade
+// Architecture:
+//   Data Feed → ORB Engine → Risk Engine → Execution
 //
-// Our app is the brain: detects ORB breakouts, evaluates
-// each account's rules, and sends per-account trade signals
-// to PickMyTrade for execution on Tradovate.
+// Execution methods:
+//   1. Playwright — direct Tradovate browser automation (primary)
+//   2. PickMyTrade — legacy webhook fallback
+//
+// Data feed sources:
+//   - playwright: reads price from Tradovate via browser
+//   - tradingview: receives price via HTTP webhook
+//   - mock: simulated price action for testing
+//   - dxfeed / databento: real-time market data feeds
 // ═══════════════════════════════════════════════════════════
 
 import express from "express";
@@ -15,10 +21,11 @@ import { log } from "./lib/logger.js";
 import { createFeed } from "./lib/data-feed.js";
 import { OrbEngine } from "./lib/orb-engine.js";
 import { evaluateAllAccounts, recordSessionResult } from "./lib/risk-engine.js";
-import { executeAll } from "./lib/execution.js";
+import { executeAll, setSessionManager } from "./lib/execution.js";
 import { logTrade } from "./lib/supabase.js";
 import { refreshAccounts, getCachedAccounts, getCacheStatus } from "./lib/account-cache.js";
 import { tradeTracker } from "./lib/trade-tracker.js";
+import { TradovateSessionManager } from "./lib/tradovate-browser.js";
 import webhookRoutes from "./routes/webhook.js";
 
 const TAG = "MAIN";
@@ -33,8 +40,9 @@ app.use(express.json());
 app.use("/api/webhook", webhookRoutes);
 
 // Status endpoint
-let engineStatus = { feed: "disconnected", orb: {}, lastSignal: null, lastExecution: null };
+let engineStatus = { feed: "disconnected", orb: {}, lastSignal: null, lastExecution: null, playwright: {} };
 let activeFeed = null; // Expose feed for TradingView webhook route
+let browserManager = null; // TradovateSessionManager for Playwright
 
 app.get("/api/status", (req, res) => {
   res.json({
@@ -45,11 +53,14 @@ app.get("/api/status", (req, res) => {
     lastExecution: engineStatus.lastExecution,
     accountCache: getCacheStatus(),
     openTrades: tradeTracker.getOpenTrades(),
+    playwright: browserManager ? browserManager.getStatus() : {},
     config: {
       symbol: config.symbol,
       feedType: config.feedType,
+      executionMethod: config.executionMethod,
       londonOr: `${config.londonOrStart}-${config.londonOrEnd}`,
       nyOr: `${config.nyOrStart}-${config.nyOrEnd}`,
+      playwrightEnabled: config.playwrightEnabled,
       pickmytradeEnabled: config.pickmytradeEnabled,
     },
   });
@@ -67,7 +78,7 @@ app.get("/api/health", (req, res) => {
 //   {"price": 18400.50} or plain number
 app.post("/api/tv-tick", (req, res) => {
   if (!activeFeed || typeof activeFeed.injectTick !== "function") {
-    return res.status(400).json({ error: "Feed is not in TradingView mode. Set FEED_TYPE=tradingview" });
+    return res.status(400).json({ error: "Feed is not in TradingView/Playwright mode. Set FEED_TYPE=tradingview or FEED_TYPE=playwright" });
   }
 
   let candle = {};
@@ -103,7 +114,7 @@ app.post("/api/tv-tick", (req, res) => {
 app.use("/api/tv-tick-text", express.text());
 app.post("/api/tv-tick-text", (req, res) => {
   if (!activeFeed || typeof activeFeed.injectTick !== "function") {
-    return res.status(400).json({ error: "Feed is not in TradingView mode" });
+    return res.status(400).json({ error: "Feed is not in TradingView/Playwright mode" });
   }
   const price = parseFloat(req.body);
   if (isNaN(price) || price <= 0) {
@@ -114,16 +125,44 @@ app.post("/api/tv-tick-text", (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────
+// Playwright session management API
+// ─────────────────────────────────────────────────────────
+
+// Get browser session status
+app.get("/api/playwright/status", (req, res) => {
+  res.json({
+    active: !!browserManager,
+    sessions: browserManager ? browserManager.getStatus() : {},
+  });
+});
+
+// ─────────────────────────────────────────────────────────
 // Core pipeline: Feed → ORB → Risk → Execute
 // ─────────────────────────────────────────────────────────
 async function startPipeline() {
   log.info(TAG, "═══════════════════════════════════════════════");
-  log.info(TAG, "  Prop Firm ORB Automation Server v2.0");
+  log.info(TAG, "  Prop Firm ORB Automation Server v3.0");
   log.info(TAG, "═══════════════════════════════════════════════");
   log.info(TAG, `Symbol: ${config.symbol}`);
   log.info(TAG, `Feed: ${config.feedType}`);
+  log.info(TAG, `Execution: ${config.executionMethod}`);
+  log.info(TAG, `Playwright: ${config.playwrightEnabled ? "LIVE" : "DRY RUN"} (headless=${config.playwrightHeadless})`);
   log.info(TAG, `PickMyTrade: ${config.pickmytradeEnabled ? "LIVE" : "DRY RUN"}`);
   log.info(TAG, "");
+
+  // ── Initialize Playwright session manager ──
+  browserManager = new TradovateSessionManager({
+    headless: config.playwrightHeadless,
+    encryptionKey: config.credentialEncryptionKey,
+  });
+
+  // Wire session manager into execution module
+  setSessionManager(browserManager);
+
+  // Forward login errors to status
+  browserManager.on("login_error", ({ session, error }) => {
+    log.error(TAG, `Playwright login failed for "${session}": ${error}`);
+  });
 
   // 1. Create data feed
   const feed = createFeed();
@@ -131,6 +170,16 @@ async function startPipeline() {
 
   // 2. Create ORB engine
   const orb = new OrbEngine();
+
+  // ── If using Playwright feed, wire browser ticks → feed ──
+  if (config.feedType === "playwright") {
+    browserManager.on("tick", (tick) => {
+      if (typeof activeFeed.injectTick === "function") {
+        activeFeed.injectTick(tick);
+      }
+    });
+    log.info(TAG, "Playwright feed: browser ticks will be forwarded to ORB engine");
+  }
 
   // 3. Wire: feed ticks → ORB engine + Trade tracker
   let tickCount = 0;
@@ -295,10 +344,44 @@ async function startPipeline() {
     }
   });
 
+  // ── If Playwright feed, start price polling after first session connects ──
+  if (config.feedType === "playwright") {
+    // Price feed starts when the first account cache refresh triggers
+    // a session login. We hook into the account cache refresh.
+    const startPriceFeedOnce = () => {
+      if (browserManager.sessions.size > 0) {
+        browserManager.startPriceFeed(config.symbol, 1000);
+        log.info(TAG, "Playwright price feed started from first active session");
+      }
+    };
+
+    // Check every 5 seconds until a session is available
+    const priceFeedWatcher = setInterval(() => {
+      if (browserManager.sessions.size > 0) {
+        startPriceFeedOnce();
+        clearInterval(priceFeedWatcher);
+      }
+    }, 5000);
+  }
+
   // 5. Connect feed
   await feed.connect();
   engineStatus.feed = "connected";
 }
+
+// ─────────────────────────────────────────────────────────
+// Graceful shutdown
+// ─────────────────────────────────────────────────────────
+async function shutdown() {
+  log.info(TAG, "Shutting down...");
+  if (browserManager) {
+    await browserManager.closeAll();
+  }
+  process.exit(0);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 // ─────────────────────────────────────────────────────────
 // Start everything

@@ -89,8 +89,11 @@ function mapAccountToDb(account, userId) {
     // Automation fields
     auto_enabled: account.autoEnabled || false,
     auto_sessions: account.autoSessions || "both",
-    pmt_webhook_url: account.pmtWebhookUrl || null,
+    tradovate_username: account.tradovateUsername || null,
+    tradovate_password: account.tradovatePassword || null,
     tradovate_account_id: account.tradovateAccountId || null,
+    // Legacy PMT fields
+    pmt_webhook_url: account.pmtWebhookUrl || null,
   };
   if (account.id) row.id = account.id;
   return row;
@@ -111,8 +114,11 @@ function mapDbToAccount(row) {
     // Automation fields
     autoEnabled: row.auto_enabled || false,
     autoSessions: row.auto_sessions || "both",
-    pmtWebhookUrl: row.pmt_webhook_url || "",
+    tradovateUsername: row.tradovate_username || "",
+    tradovatePassword: row.tradovate_password || "",
     tradovateAccountId: row.tradovate_account_id || "",
+    // Legacy PMT fields
+    pmtWebhookUrl: row.pmt_webhook_url || "",
   };
 }
 

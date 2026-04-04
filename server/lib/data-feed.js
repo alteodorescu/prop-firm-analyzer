@@ -349,10 +349,58 @@ class TradingViewFeed extends DataFeed {
 }
 
 // ─────────────────────────────────────────────────────────
+// Playwright Feed — Receives ticks from TradovateSessionManager
+// ─────────────────────────────────────────────────────────
+// Unlike other feeds, PlaywrightFeed doesn't connect to an
+// external source on its own. Instead, the TradovateSessionManager
+// emits "tick" events, and the main pipeline calls injectTick()
+// to forward them into the ORB engine.
+// ─────────────────────────────────────────────────────────
+class PlaywrightFeed extends DataFeed {
+  constructor() {
+    super();
+    this.tickCount = 0;
+  }
+
+  async connect() {
+    log.info(TAG, "Playwright feed active — waiting for ticks from Tradovate browser sessions");
+    this.connected = true;
+  }
+
+  /** Called by the main pipeline when TradovateSessionManager emits a tick */
+  injectTick(tick) {
+    this.tickCount++;
+    const { price, open, high, low, close, symbol, timestamp } = tick;
+    const closePrice = close || price;
+
+    if (this.tickCount <= 5 || this.tickCount % 50 === 0) {
+      log.info(TAG, `Playwright tick #${this.tickCount}: ${symbol || config.symbol} @ ${closePrice}`);
+    }
+
+    this.emit("tick", {
+      symbol: symbol || config.symbol,
+      price: closePrice,
+      open:  open  || closePrice,
+      high:  high  || closePrice,
+      low:   low   || closePrice,
+      close: closePrice,
+      timestamp: timestamp || new Date(),
+    });
+  }
+
+  async disconnect() {
+    this.connected = false;
+    log.info(TAG, "Playwright feed stopped");
+  }
+}
+
+// ─────────────────────────────────────────────────────────
 // Factory — Create the right feed based on config
 // ─────────────────────────────────────────────────────────
 export function createFeed() {
   switch (config.feedType) {
+    case "playwright":
+      return new PlaywrightFeed();
     case "tradingview":
       return new TradingViewFeed();
     case "databento":

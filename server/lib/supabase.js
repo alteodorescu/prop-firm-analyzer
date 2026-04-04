@@ -65,8 +65,11 @@ function mapDbToAccount(row) {
     // Automation fields
     autoEnabled: row.auto_enabled || false,
     autoSessions: row.auto_sessions || "both", // "london", "ny", "both"
+    tradovateUsername: row.tradovate_username || null,
+    tradovatePassword: row.tradovate_password || null, // encrypted
+    tradovateAccountId: row.tradovate_account_id || null,
+    // Legacy PMT fields (kept for backward compatibility)
     pmtWebhookUrl: row.pmt_webhook_url || null,
-    tradovateAccountId: row.tradovate_account_id || null, // Tradovate account ID for PMT routing
   };
 }
 

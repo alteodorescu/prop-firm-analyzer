@@ -6,7 +6,7 @@ export const config = {
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY || "",
 
   // ── Data Feed ──
-  feedType: process.env.FEED_TYPE || "mock", // "mock" | "dxfeed" | "databento" | "tradingview"
+  feedType: process.env.FEED_TYPE || "mock", // "mock" | "dxfeed" | "databento" | "tradingview" | "playwright"
   dxfeedWsUrl: process.env.DXFEED_WS_URL || "",
   dxfeedAuthToken: process.env.DXFEED_AUTH_TOKEN || "",
   databentoBridgePort: parseInt(process.env.DATABENTO_BRIDGE_PORT || "3002", 10),
@@ -26,7 +26,18 @@ export const config = {
   tickValue: parseFloat(process.env.TICK_VALUE || "5.00"),    // NQ tick = $5 (0.25 points)
   pointValue: parseFloat(process.env.POINT_VALUE || "20.00"), // NQ 1 point = $20
 
-  // ── PickMyTrade ──
+  // ── Execution Method ──
+  // "playwright" = direct browser automation (primary)
+  // "pickmytrade" = legacy webhook (fallback)
+  // "auto" = use Playwright if credentials exist, else PMT
+  executionMethod: process.env.EXECUTION_METHOD || "auto",
+
+  // ── Playwright (Tradovate Browser Automation) ──
+  playwrightEnabled: process.env.PLAYWRIGHT_ENABLED === "true",
+  playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS !== "false", // default true
+  credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY || "change-me-in-production",
+
+  // ── PickMyTrade (Legacy) ──
   pickmytradeEnabled: process.env.PICKMYTRADE_ENABLED === "true",
   pickmytradeWebhookUrl: process.env.PICKMYTRADE_WEBHOOK_URL || "",
   pickmytradeToken: process.env.PICKMYTRADE_TOKEN || "",

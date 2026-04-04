@@ -1962,6 +1962,29 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovateUsername")}</label>
+                <input
+                  type="text"
+                  value={account.tradovateUsername || ""}
+                  onChange={(e) => onUpdate({ ...account, tradovateUsername: e.target.value })}
+                  placeholder={t("autoTradovateUsernamePlaceholder")}
+                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovatePassword")}</label>
+                <input
+                  type="password"
+                  value={account.tradovatePassword || ""}
+                  onChange={(e) => onUpdate({ ...account, tradovatePassword: e.target.value })}
+                  placeholder={t("autoTradovatePasswordPlaceholder")}
+                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">{t("autoTradovateCredNote")}</p>
           </div>
         </div>
       )}
