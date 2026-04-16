@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff, Copy, Code2 } from "lucide-react";
 import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState } from "./ui";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
@@ -4464,31 +4464,116 @@ const WARN_CONFIG = {
   },
 };
 
-function UnifiedObjectiveCard({ withMetrics }) {
-  const result = useMemo(() => calcUnifiedObjective(withMetrics), [withMetrics]);
-  const { unified, active, excluded, warnings, firmGroups } = result;
-  const [expanded, setExpanded] = useState(false);
+// NQ futures — $20 per point per contract, 4 ticks per point
+const NQ_POINT_VALUE = 20;
+const roundTick = (v) => Math.round(v * 4) / 4;
+const moneyAbs = (n) => `$${Math.round(Math.abs(n)).toLocaleString()}`;
 
-  // ── Empty state: no eligible accounts ─────────────────────────────────────
+function UnifiedObjectiveCard({ withMetrics, firms }) {
+  // ── Group filter state (null = All accounts, otherwise a firmId) ──
+  const [groupFilter, setGroupFilter] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+  const [nsExpanded, setNsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Build available group options from the firms represented in withMetrics
+  const groupOptions = useMemo(() => {
+    const byFirm = new Map();
+    for (const { acc, firmData } of withMetrics) {
+      const id = acc.firmId;
+      if (!byFirm.has(id)) {
+        const label = firmData ? `${firmData.name}${firmData.model ? " " + firmData.model : ""}`.trim() : `Firm #${id}`;
+        byFirm.set(id, { firmId: id, label, count: 0 });
+      }
+      byFirm.get(id).count += 1;
+    }
+    return Array.from(byFirm.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [withMetrics, firms]);
+
+  // Narrow metrics to the selected group (or show all)
+  const scopedMetrics = useMemo(() => {
+    if (groupFilter == null) return withMetrics;
+    return withMetrics.filter(({ acc }) => acc.firmId === groupFilter);
+  }, [withMetrics, groupFilter]);
+
+  const result = useMemo(() => calcUnifiedObjective(scopedMetrics), [scopedMetrics]);
+  const { unified, active, excluded, warnings, firmGroups } = result;
+
+  const activeGroup = groupOptions.find(g => g.firmId === groupFilter) || null;
+  const scopeLabel = activeGroup ? activeGroup.label : "All accounts";
+  const profileName = activeGroup
+    ? `${activeGroup.label.replace(/\s+/g, "-")}-group`
+    : "Unified";
+
+  // ── Empty state: no eligible accounts in the selected scope ──
   if (!unified) {
     return (
-      <div
-        role="alert"
-        aria-live="polite"
-        className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950/40"
-      >
-        <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-        <div className="text-sm">
-          <div className="font-semibold text-red-900 dark:text-red-200">Trade Copier — No eligible accounts</div>
-          <div className="mt-0.5 text-red-700 dark:text-red-300">{warnings[0]?.msg || "No accounts are eligible to trade today."}</div>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+        {/* Always render the group selector so the user can switch away */}
+        {groupOptions.length > 1 && (
+          <div className="border-b border-slate-100 px-5 py-3 dark:border-slate-800">
+            <GroupSelector
+              options={groupOptions}
+              allCount={withMetrics.length}
+              value={groupFilter}
+              onChange={setGroupFilter}
+            />
+          </div>
+        )}
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex items-start gap-3 border-t border-red-200 bg-red-50 px-5 py-3 first:border-t-0 dark:border-red-900 dark:bg-red-950/40"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+          <div className="text-sm">
+            <div className="font-semibold text-red-900 dark:text-red-200">
+              Trade Copier — No eligible accounts{activeGroup ? ` in ${activeGroup.label}` : ""}
+            </div>
+            <div className="mt-0.5 text-red-700 dark:text-red-300">
+              {warnings[0]?.msg || "No accounts are eligible to trade today."}
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  const money = (n) => `$${Math.round(Math.abs(n)).toLocaleString()}`;
+  const money = moneyAbs;  // local alias so existing money(...) calls below still work
   const totalAccounts = active.length + excluded.length;
   const panelId = "unified-obj-details";
+  const nsPanelId = "unified-ns-params";
+
+  // ── Derive NinjaScript parameters from the unified plan ──
+  const nsContracts = unified.contracts || 1;
+  const nsTpPoints = roundTick(unified.target / nsContracts / NQ_POINT_VALUE);
+  const nsSlFixedPoints = unified.maxLoss > 0
+    ? roundTick(unified.maxLoss / nsContracts / NQ_POINT_VALUE)
+    : 0;
+  const nsMaxDailyLoss = Math.round(Math.abs(unified.maxLoss || 0));
+
+  const nsParams = [
+    { key: "ProfileName",    label: "Profile name",      value: profileName,              hint: "Shown in NinjaTrader logs" },
+    { key: "SessionMode",    label: "Session",           value: "NewYork",                hint: "NewYork | London | Both" },
+    { key: "OpeningRange",   label: "Opening range (min)", value: "15",                   hint: "Standard 15-min OR" },
+    { key: "Contracts",      label: "Contracts",         value: nsContracts,              hint: "min across accounts" },
+    { key: "TpPoints",       label: "Take profit (pt)",  value: nsTpPoints,               hint: `target $${Math.round(unified.target).toLocaleString()} ÷ ${nsContracts} ÷ $${NQ_POINT_VALUE}` },
+    { key: "SlMode",         label: "Stop loss mode",    value: "OrOpposite",             hint: "or: FixedPoints (see below)" },
+    { key: "SlFixedPoints",  label: "SL fixed points",   value: nsSlFixedPoints,          hint: `max loss −${money(unified.maxLoss)} ÷ ${nsContracts} ÷ $${NQ_POINT_VALUE}` },
+    { key: "MaxDailyLoss",   label: "Max daily loss",    value: nsMaxDailyLoss,           hint: "absolute $, positive" },
+  ];
+
+  const handleCopyParams = async () => {
+    const text = nsParams.map(p => `${p.key.padEnd(18)} = ${p.value}`).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch (e) {
+      // Fallback for non-HTTPS contexts
+      window.prompt("Copy NinjaScript parameters:", text);
+    }
+  };
 
   return (
     <section
@@ -4496,28 +4581,30 @@ function UnifiedObjectiveCard({ withMetrics }) {
       className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900"
     >
       {/* ── HEADER BAR ──────────────────────────────────────────── */}
-      <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3 dark:border-slate-800">
-        <div className="flex items-center gap-2.5">
+      <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
+        <div className="flex items-start gap-2.5 min-w-0">
           <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
             aria-hidden="true"
           >
             <Zap size={14} className="text-white" strokeWidth={2.5} />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2
               id="unified-obj-title"
-              className="text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100"
+              className="truncate text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100"
             >
               Trade Copier — Unified Daily Objective
             </h2>
-            <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">
-              Single plan that copies across all accounts
+            <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">
+              {activeGroup
+                ? <>Scoped to <span className="font-medium text-slate-700 dark:text-slate-300">{activeGroup.label}</span> · plan copies within this group only</>
+                : "Single plan that copies across all accounts"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {unified.hasConflict && (
             <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
               <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
@@ -4533,6 +4620,18 @@ function UnifiedObjectiveCard({ withMetrics }) {
           </span>
         </div>
       </header>
+
+      {/* ── GROUP SELECTOR (only if >1 firm represented) ──────── */}
+      {groupOptions.length > 1 && (
+        <div className="border-b border-slate-100 bg-slate-50/50 px-5 py-2.5 dark:border-slate-800 dark:bg-slate-950/30">
+          <GroupSelector
+            options={groupOptions}
+            allCount={withMetrics.length}
+            value={groupFilter}
+            onChange={setGroupFilter}
+          />
+        </div>
+      )}
 
       {/* ── HERO KPI ROW ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-0 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:divide-x md:divide-slate-100 md:dark:divide-slate-800">
@@ -4778,7 +4877,141 @@ function UnifiedObjectiveCard({ withMetrics }) {
           </div>
         </div>
       </div>
+
+      {/* ── NINJASCRIPT PARAMS TRIGGER ──────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setNsExpanded(v => !v)}
+        aria-expanded={nsExpanded}
+        aria-controls={nsPanelId}
+        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
+      >
+        <Code2
+          size={13}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className="text-slate-400 dark:text-slate-500"
+        />
+        <span>{nsExpanded ? "Hide NinjaScript parameters" : "Show NinjaScript parameters"}</span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className={`transition-transform duration-200 ease-out ${nsExpanded ? "rotate-0" : "-rotate-90"}`}
+        />
+      </button>
+
+      {/* ── NINJASCRIPT PARAMS PANEL ────────────────────────────── */}
+      <div
+        id={nsPanelId}
+        className={`grid overflow-hidden border-t border-slate-100 transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none dark:border-slate-800 ${
+          nsExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="bg-slate-50/60 px-5 py-4 dark:bg-slate-950/30">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                  <Code2 size={11} strokeWidth={2.5} aria-hidden="true" className="text-blue-600 dark:text-blue-400" />
+                  UnifiedOrbStrategy inputs
+                </div>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                  Paste these into NinjaTrader's strategy properties. Values are derived from the {scopeLabel.toLowerCase()} plan above.
+                </p>
+              </div>
+              <Button
+                size="xs"
+                variant="secondary"
+                leftIcon={copied ? <Check size={11} strokeWidth={2.5} /> : <Copy size={11} strokeWidth={2.5} />}
+                onClick={handleCopyParams}
+                aria-label="Copy NinjaScript parameters"
+              >
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+              <table className="w-full text-[12.5px]">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {nsParams.map(p => (
+                    <tr key={p.key}>
+                      <td className="w-44 px-3 py-2 text-slate-500 dark:text-slate-400">
+                        <div className="font-mono text-[11.5px] text-slate-700 dark:text-slate-300">{p.key}</div>
+                        <div className="text-[10.5px] leading-tight text-slate-400 dark:text-slate-500">{p.label}</div>
+                      </td>
+                      <td className="px-3 py-2 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                        {p.value}
+                      </td>
+                      <td className="hidden px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400 sm:table-cell">
+                        {p.hint}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-2 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+              <Info size={11} strokeWidth={2.5} aria-hidden="true" className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500" />
+              <div>
+                Strategy file: <code className="hiw-code">ninjascript/UnifiedOrbStrategy.cs</code>. See the README
+                there for setup and deployment guidance (Unified vs per-group master account routing via Tradesyncer).
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
+  );
+}
+
+// ─── Group selector (segmented control used inside UnifiedObjectiveCard) ───
+function GroupSelector({ options, allCount, value, onChange }) {
+  const pillBase =
+    "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-medium " +
+    "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
+  const active =
+    "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300";
+  const inactive =
+    "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/60";
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        Scope
+      </span>
+      <div role="tablist" aria-label="Account group filter" className="flex flex-wrap items-center gap-1.5">
+        <button
+          role="tab"
+          aria-selected={value == null}
+          type="button"
+          onClick={() => onChange(null)}
+          className={`${pillBase} ${value == null ? active : inactive}`}
+        >
+          <span>All</span>
+          <span className={value == null ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}>
+            {allCount}
+          </span>
+        </button>
+        {options.map(opt => (
+          <button
+            key={opt.firmId}
+            role="tab"
+            aria-selected={value === opt.firmId}
+            type="button"
+            onClick={() => onChange(opt.firmId)}
+            className={`${pillBase} ${value === opt.firmId ? active : inactive}`}
+          >
+            <span className="truncate max-w-[180px]">{opt.label}</span>
+            <span className={value === opt.firmId ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}>
+              {opt.count}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -5084,7 +5317,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
 
       {/* ── Unified Trade Copier Objective ── */}
       {withMetrics.length >= 2 && (
-        <UnifiedObjectiveCard withMetrics={withMetrics} />
+        <UnifiedObjectiveCard withMetrics={withMetrics} firms={firms} />
       )}
 
       {activeAccounts.length === 0 && !adding && (
