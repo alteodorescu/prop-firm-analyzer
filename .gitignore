@@ -9,3 +9,7 @@ server/node_modules/
 server/.env
 package-lock.json
 .vercel
+
+# Local-only reference docs and stray clones
+SKILL.md
+/prop-firm-analyzer/
