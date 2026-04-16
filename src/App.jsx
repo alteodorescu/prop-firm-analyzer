@@ -3023,6 +3023,220 @@ const getTrackerSortOpts = () => [
   { key: "ease_desc", label: t("sortLiveEase") },
 ];
 
+// ═══════════════════════════════════════════════════════════
+// UNIFIED DAILY OBJECTIVE — Trade Copier Card
+// ═══════════════════════════════════════════════════════════
+function calcUnifiedObjective(withMetrics) {
+  // Partition: active (can trade today) vs excluded (breached/passed/no data)
+  const active = withMetrics.filter(({ m }) =>
+    m.todayPlan && !m.todayPlan.isBreached && !m.todayPlan.isTargetHit && m.todayPlan.idealDailyTarget > 0
+  );
+  const excluded = withMetrics.filter(({ m }) =>
+    !m.todayPlan || m.todayPlan.isBreached || m.todayPlan.isTargetHit || m.todayPlan.idealDailyTarget <= 0
+  );
+
+  if (active.length === 0) {
+    return { active: [], excluded, unified: null, warnings: [{ level: "critical", msg: "No accounts are eligible to trade today." }] };
+  }
+
+  const warnings = [];
+
+  // Unified contracts = min across all active
+  const unifiedContracts = Math.min(...active.map(({ m }) => m.todayPlan.contractsAllowed || 1));
+  const reducedAccounts = active.filter(({ m }) => (m.todayPlan.contractsAllowed || 1) > unifiedContracts);
+  if (reducedAccounts.length > 0) {
+    warnings.push({ level: "info", msg: `Contracts reduced to ${unifiedContracts} (${reducedAccounts.length} account${reducedAccounts.length > 1 ? "s" : ""} could use more).` });
+  }
+
+  // Unified target: max(idealDailyTarget) capped at min(maxDailyProfit)
+  const maxTarget = Math.max(...active.map(({ m }) => m.todayPlan.idealDailyTarget));
+  const caps = active.map(({ m }) => m.todayPlan.maxDailyProfit).filter(c => c != null && c > 0);
+  const minCap = caps.length > 0 ? Math.min(...caps) : Infinity;
+  const hasConflict = maxTarget > minCap;
+  const unifiedTarget = hasConflict ? minCap : maxTarget;
+
+  if (hasConflict) {
+    const capAccounts = active.filter(({ m }) => m.todayPlan.maxDailyProfit != null && m.todayPlan.maxDailyProfit === minCap);
+    warnings.push({ level: "warning", msg: `Target capped at $${Math.round(minCap).toLocaleString()} (${capAccounts.map(({ acc }) => acc.label || acc.id).join(", ")} daily cap) — ${active.filter(({ m }) => m.todayPlan.idealDailyTarget > minCap).length} account(s) need more.` });
+  }
+
+  // Unified max daily loss = min across all
+  const unifiedMaxLoss = Math.min(...active.map(({ m }) => m.todayPlan.maxDailyLoss));
+
+  // Per-account impact: days at individual vs unified target
+  const accountDetails = active.map(({ acc, firmData, m }) => {
+    const remaining = m.remainingProfit || 0;
+    const daysIndividual = m.todayPlan.minDaysToComplete || 1;
+    const daysUnified = unifiedTarget > 0 ? Math.max(1, Math.ceil(remaining / unifiedTarget)) : daysIndividual;
+    const diff = daysUnified - daysIndividual;
+    let impact = null;
+    if (diff > 0) impact = `+${diff} day${diff > 1 ? "s" : ""}`;
+    else if (diff < 0) impact = `${diff} day${Math.abs(diff) > 1 ? "s" : ""}`;
+    return { acc, firmData, m, daysIndividual, daysUnified, impact };
+  });
+
+  // Days impact warning
+  const impacted = accountDetails.filter(d => d.impact && d.impact.startsWith("+"));
+  if (impacted.length > 0) {
+    warnings.push({ level: "warning", msg: `Unified target adds days for ${impacted.length} account(s).` });
+  }
+
+  // Group by firm
+  const firmGroups = {};
+  accountDetails.forEach(d => {
+    const fname = d.firmData ? `${d.firmData.name} ${d.firmData.model || ""}`.trim() : "Unknown";
+    if (!firmGroups[fname]) firmGroups[fname] = { active: 0, targets: [] };
+    firmGroups[fname].active++;
+    firmGroups[fname].targets.push(d.m.todayPlan.idealDailyTarget);
+  });
+
+  return {
+    active: accountDetails,
+    excluded,
+    unified: { target: Math.round(unifiedTarget), contracts: unifiedContracts, maxLoss: unifiedMaxLoss, hasConflict },
+    warnings,
+    firmGroups,
+  };
+}
+
+function UnifiedObjectiveCard({ withMetrics }) {
+  const result = useMemo(() => calcUnifiedObjective(withMetrics), [withMetrics]);
+  const { unified, active, excluded, warnings, firmGroups } = result;
+  const [expanded, setExpanded] = useState(false);
+
+  if (!unified) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+        <b>Trade Copier:</b> {warnings[0]?.msg || "No accounts eligible."}
+      </div>
+    );
+  }
+
+  const money = (n) => `$${Math.round(n).toLocaleString()}`;
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      {/* Main stats row */}
+      <div className="px-5 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Zap size={16} className="text-amber-500" />
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Trade Copier — Unified Daily Objective</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {unified.hasConflict && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">⚠ CONFLICT</span>
+            )}
+            <span className="text-[10px] text-gray-400">{active.length}/{active.length + excluded.length} active</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-6 text-center">
+          <div>
+            <div className="text-2xl font-bold text-emerald-600">{money(unified.target)}</div>
+            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Daily Target</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-blue-600">{unified.contracts}</div>
+            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Contracts</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-red-500">{money(unified.maxLoss)}</div>
+            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Max Loss</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-gray-700">{active.length}</div>
+            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Accounts</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Warnings */}
+      {warnings.length > 0 && (
+        <div className="border-t border-gray-100 px-5 py-2.5 bg-gray-50 space-y-1">
+          {warnings.map((w, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs leading-relaxed">
+              <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${w.level === "critical" ? "bg-red-500" : w.level === "warning" ? "bg-amber-500" : "bg-blue-400"}`} />
+              <span className={w.level === "critical" ? "text-red-700" : w.level === "warning" ? "text-amber-700" : "text-gray-500"}>{w.msg}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Expand/collapse details */}
+      <div className="border-t border-gray-100">
+        <button onClick={() => setExpanded(!expanded)} className="w-full px-5 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1 transition-colors">
+          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          {expanded ? "Hide details" : "Show per-account breakdown"}
+        </button>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-gray-100">
+          {/* Firm summary chips */}
+          <div className="px-5 py-2.5 flex flex-wrap gap-2">
+            {Object.entries(firmGroups).map(([name, g]) => (
+              <span key={name} className="text-[10px] px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">
+                {name}: {g.active} accts — {money(Math.min(...g.targets))}
+                {Math.min(...g.targets) !== Math.max(...g.targets) ? `–${money(Math.max(...g.targets))}` : ""}/day
+              </span>
+            ))}
+          </div>
+          {/* Per-account table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500">
+                  <th className="text-left px-4 py-1.5 font-medium">Account</th>
+                  <th className="text-right px-4 py-1.5 font-medium">Own Target</th>
+                  <th className="text-right px-4 py-1.5 font-medium">Cap</th>
+                  <th className="text-right px-4 py-1.5 font-medium">Contracts</th>
+                  <th className="text-center px-4 py-1.5 font-medium">Days (own)</th>
+                  <th className="text-center px-4 py-1.5 font-medium">Days (unified)</th>
+                  <th className="text-left px-4 py-1.5 font-medium">Impact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {active.map(({ acc, firmData, m, daysIndividual, daysUnified, impact }) => (
+                  <tr key={acc.id} className="border-t border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-4 py-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
+                      {acc.label || acc.id}
+                      <span className="text-gray-400 ml-1">{firmData ? firmData.name : ""}</span>
+                    </td>
+                    <td className="text-right px-4 py-1.5 tabular-nums">{money(m.todayPlan.idealDailyTarget)}</td>
+                    <td className="text-right px-4 py-1.5 tabular-nums">{m.todayPlan.maxDailyProfit != null ? money(m.todayPlan.maxDailyProfit) : "—"}</td>
+                    <td className="text-right px-4 py-1.5 tabular-nums">{m.todayPlan.contractsAllowed}</td>
+                    <td className="text-center px-4 py-1.5 tabular-nums">{daysIndividual}</td>
+                    <td className="text-center px-4 py-1.5 tabular-nums">{daysUnified}</td>
+                    <td className="px-4 py-1.5">
+                      {impact ? (
+                        <span className={impact.startsWith("+") ? "text-red-600 font-medium" : "text-emerald-600 font-medium"}>
+                          {impact}
+                        </span>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                  </tr>
+                ))}
+                {excluded.map(({ acc, m }) => (
+                  <tr key={acc.id} className="border-t border-gray-50 opacity-40">
+                    <td className="px-4 py-1.5">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5" />
+                      {acc.label || acc.id}
+                    </td>
+                    <td className="text-right px-4 py-1.5 text-gray-400" colSpan={6}>
+                      {m.todayPlan?.isBreached ? "Breached" : m.todayPlan?.isTargetHit ? "Target hit" : "Excluded"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccountTracker({ accounts, onUpdate, firms }) {
   const [adding, setAdding] = useState(false);
   const [collapsedIds, setCollapsedIds] = useState(new Set());
@@ -3215,6 +3429,11 @@ function AccountTracker({ accounts, onUpdate, firms }) {
           )}
         </div>);
       })()}
+
+      {/* ── Unified Trade Copier Objective ── */}
+      {withMetrics.length >= 2 && (
+        <UnifiedObjectiveCard withMetrics={withMetrics} />
+      )}
 
       {activeAccounts.length === 0 && !adding && (
         <div className="text-center py-16 text-gray-400">
