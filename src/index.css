@@ -3,184 +3,118 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════
-   DARK MODE OVERRIDES
-   When .dark is on <html>, remap all light-mode colors
+   BASE
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Backgrounds ── */
-.dark .bg-white        { background-color: #1e1e2e !important; }
-.dark .bg-gray-50      { background-color: #181825 !important; }
-.dark .bg-gray-100     { background-color: #1e1e2e !important; }
-.dark .bg-gray-200     { background-color: #313244 !important; }
-.dark .bg-gray-300     { background-color: #45475a !important; }
-.dark .bg-slate-50     { background-color: #1e1e2e !important; }
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
 
-/* Status-colored backgrounds — keep distinct but darker */
-.dark .bg-emerald-50   { background-color: #0c2a1f !important; }
-.dark .bg-emerald-100  { background-color: #0f3d2b !important; }
-.dark .bg-red-50       { background-color: #2a0c0c !important; }
-.dark .bg-red-100      { background-color: #3d1414 !important; }
-.dark .bg-amber-50     { background-color: #2a2000 !important; }
-.dark .bg-amber-100    { background-color: #3d3000 !important; }
-.dark .bg-amber-200    { background-color: #4d3d00 !important; }
-.dark .bg-blue-50      { background-color: #0c1a2e !important; }
-.dark .bg-blue-100     { background-color: #0f2440 !important; }
-.dark .bg-indigo-50    { background-color: #12102e !important; }
-.dark .bg-indigo-100   { background-color: #1a1540 !important; }
-.dark .bg-orange-50    { background-color: #2e1a08 !important; }
-.dark .bg-orange-100   { background-color: #402410 !important; }
-.dark .bg-orange-200   { background-color: #4d2e14 !important; }
-.dark .bg-yellow-50    { background-color: #2a2400 !important; }
-.dark .bg-yellow-100   { background-color: #3d3500 !important; }
+  body {
+    font-family: theme("fontFamily.sans");
+    background-color: theme("colors.slate.50");
+    color: theme("colors.slate.900");
+  }
 
-/* ── Text: neutral grays → light equivalents ── */
-.dark .text-gray-300   { color: #6c7086 !important; }
-.dark .text-gray-400   { color: #7f849c !important; }
-.dark .text-gray-500   { color: #9399b2 !important; }
-.dark .text-gray-600   { color: #a6adc8 !important; }
-.dark .text-gray-700   { color: #bac2de !important; }
-.dark .text-gray-800   { color: #cdd6f4 !important; }
-.dark .text-slate-300   { color: #6c7086 !important; }
-.dark .text-slate-400   { color: #7f849c !important; }
-.dark .text-slate-500   { color: #9399b2 !important; }
-.dark .text-slate-600   { color: #a6adc8 !important; }
-.dark .text-slate-700   { color: #bac2de !important; }
-.dark .text-slate-800   { color: #cdd6f4 !important; }
+  .dark body {
+    background-color: theme("colors.slate.950");
+    color: theme("colors.slate.100");
+  }
 
-/* Status text — brighten slightly for dark bg */
-.dark .text-emerald-600 { color: #34d399 !important; }
-.dark .text-emerald-700 { color: #6ee7b7 !important; }
-.dark .text-emerald-800 { color: #a7f3d0 !important; }
-.dark .text-red-500     { color: #f87171 !important; }
-.dark .text-red-600     { color: #f87171 !important; }
-.dark .text-red-700     { color: #fca5a5 !important; }
-.dark .text-red-800     { color: #fecaca !important; }
-.dark .text-amber-500   { color: #fbbf24 !important; }
-.dark .text-amber-600   { color: #fbbf24 !important; }
-.dark .text-amber-700   { color: #fcd34d !important; }
-.dark .text-amber-800   { color: #fde68a !important; }
-.dark .text-amber-900   { color: #fef3c7 !important; }
-.dark .text-blue-400    { color: #60a5fa !important; }
-.dark .text-blue-500    { color: #60a5fa !important; }
-.dark .text-blue-600    { color: #93bbfd !important; }
-.dark .text-blue-700    { color: #93c5fd !important; }
-.dark .text-blue-800    { color: #bfdbfe !important; }
-.dark .text-indigo-600  { color: #a5b4fc !important; }
-.dark .text-indigo-700  { color: #c7d2fe !important; }
-.dark .text-indigo-800  { color: #e0e7ff !important; }
-.dark .text-orange-500  { color: #fb923c !important; }
-.dark .text-orange-600  { color: #fb923c !important; }
-.dark .text-orange-700  { color: #fdba74 !important; }
-.dark .text-orange-800  { color: #fed7aa !important; }
-.dark .text-yellow-700  { color: #fcd34d !important; }
-.dark .text-yellow-900  { color: #fef3c7 !important; }
+  /* Tabular numerals everywhere by default (helps data columns) */
+  .tabular-nums,
+  code,
+  kbd,
+  pre,
+  samp {
+    font-feature-settings: "tnum", "cv11";
+  }
 
-/* ── Borders ── */
-.dark .border-gray-50   { border-color: #313244 !important; }
-.dark .border-gray-100  { border-color: #313244 !important; }
-.dark .border-gray-200  { border-color: #45475a !important; }
-.dark .border-gray-300  { border-color: #585b70 !important; }
-.dark .border-slate-200 { border-color: #45475a !important; }
-.dark .border-slate-300 { border-color: #585b70 !important; }
-.dark .border-emerald-200 { border-color: #065f46 !important; }
-.dark .border-emerald-300 { border-color: #047857 !important; }
-.dark .border-red-200   { border-color: #7f1d1d !important; }
-.dark .border-red-300   { border-color: #991b1b !important; }
-.dark .border-red-400   { border-color: #b91c1c !important; }
-.dark .border-amber-200 { border-color: #78350f !important; }
-.dark .border-amber-300 { border-color: #92400e !important; }
-.dark .border-blue-200  { border-color: #1e3a5f !important; }
-.dark .border-blue-300  { border-color: #1e40af !important; }
-.dark .border-blue-400  { border-color: #2563eb !important; }
-.dark .border-blue-500  { border-color: #3b82f6 !important; }
-.dark .border-indigo-200 { border-color: #312e81 !important; }
-.dark .border-orange-200 { border-color: #7c2d12 !important; }
-.dark .border-orange-300 { border-color: #9a3412 !important; }
-.dark .border-yellow-200 { border-color: #713f12 !important; }
+  /* Smooth theme transition — respect prefers-reduced-motion */
+  html {
+    transition: background-color 150ms ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      transition: none !important;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 
-/* ── Form inputs ── */
-.dark input,
-.dark select,
-.dark textarea {
-  background-color: #181825 !important;
-  color: #cdd6f4 !important;
-  border-color: #45475a !important;
-}
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #585b70 !important;
-}
-.dark input:focus,
-.dark select:focus,
-.dark textarea:focus {
-  border-color: #89b4fa !important;
-  box-shadow: 0 0 0 1px #89b4fa33;
+  /* Custom scrollbar — subtle, theme-aware */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: theme("colors.slate.300");
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: theme("colors.slate.400");
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: theme("colors.slate.700");
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: theme("colors.slate.600");
+  }
 }
 
-/* ── Hover states ── */
-.dark .hover\:bg-gray-50:hover  { background-color: #313244 !important; }
-.dark .hover\:bg-gray-100:hover { background-color: #313244 !important; }
-.dark .hover\:bg-blue-50:hover  { background-color: #0f2440 !important; }
-.dark .hover\:bg-emerald-50:hover { background-color: #0c2a1f !important; }
-.dark .hover\:bg-red-50:hover   { background-color: #2a0c0c !important; }
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTS
+   ═══════════════════════════════════════════════════════════ */
 
-/* Transparent / semi-transparent backgrounds */
-.dark .bg-gray-50\/50 { background-color: rgba(49, 50, 68, 0.5) !important; }
-.dark .hover\:bg-gray-50\/50:hover { background-color: rgba(49, 50, 68, 0.5) !important; }
-.dark .bg-red-50\/40 { background-color: rgba(42, 12, 12, 0.4) !important; }
+@layer components {
+  /* Inline code chips used in HowItWorks and elsewhere */
+  .hiw-code {
+    display: inline-block;
+    padding: 0 0.375rem;
+    border-radius: 0.25rem;
+    background-color: theme("colors.slate.100");
+    color: theme("colors.slate.800");
+    font-family: theme("fontFamily.mono");
+    font-size: 0.78em;
+    line-height: 1.5;
+    white-space: nowrap;
+  }
+  .dark .hiw-code {
+    background-color: theme("colors.slate.800");
+    color: theme("colors.slate.200");
+  }
 
-/* ── Ring & Focus ring ── */
-.dark .ring-blue-200   { --tw-ring-color: #1e3a5f !important; }
+  /* Rich notes rendered from markdown: ensure dark-mode contrast for `<mark>` highlight */
+  .rich-notes mark {
+    background-color: theme("colors.amber.200");
+    color: theme("colors.slate.900");
+    padding: 0 3px;
+    border-radius: 2px;
+  }
+  .dark .rich-notes mark {
+    background-color: theme("colors.amber.900");
+    color: theme("colors.amber.100");
+  }
 
-/* ── Scrollbar (Webkit) ── */
-.dark ::-webkit-scrollbar { width: 8px; height: 8px; }
-.dark ::-webkit-scrollbar-track { background: #181825; }
-.dark ::-webkit-scrollbar-thumb { background: #45475a; border-radius: 4px; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #585b70; }
-
-/* ── Table striping ── */
-.dark table tbody tr:nth-child(even) {
-  background-color: rgba(49, 50, 68, 0.3);
-}
-.dark table thead {
-  background-color: #181825;
-}
-
-/* ── Modals / overlays ── */
-.dark .bg-black\/50 { background-color: rgba(0, 0, 0, 0.7) !important; }
-
-/* ── Progress bars — keep colored ── */
-.dark .bg-emerald-500,
-.dark .bg-emerald-600 { /* keep as-is for progress bars */ }
-.dark .bg-blue-500,
-.dark .bg-blue-600 { /* keep as-is */ }
-.dark .bg-red-500,
-.dark .bg-red-600 { /* keep as-is */ }
-.dark .bg-amber-500,
-.dark .bg-amber-600 { /* keep as-is */ }
-
-/* ── Accent checkbox ── */
-.dark .accent-blue-600 { accent-color: #89b4fa !important; }
-
-/* ── Smooth transition ── */
-html.dark { background-color: #181825; }
-html { transition: background-color 0.2s ease; }
-.dark * {
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-/* ── Pill badges with white text — ensure contrast ── */
-.dark .bg-emerald-700,
-.dark .bg-red-600,
-.dark .bg-amber-700,
-.dark .bg-blue-700,
-.dark .bg-slate-600,
-.dark .bg-slate-700,
-.dark .bg-slate-800 {
-  /* These already have white/light text — keep them as-is */
-}
-
-/* ── Divide colors ── */
-.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #45475a !important;
+  /* Native form elements fallback — only applies when a component hasn't
+     provided its own dark: classes. All redesigned inputs override this. */
+  .dark input[type="date"]::-webkit-calendar-picker-indicator,
+  .dark input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
 }

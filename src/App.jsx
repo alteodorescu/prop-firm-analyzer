@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff } from "lucide-react";
+import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState } from "./ui";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
 import { supabase } from "./supabaseClient.js";
@@ -197,16 +198,30 @@ const money = v => {
   return neg ? `-$${s}` : `$${s}`;
 };
 const easeClr = v => {
-  if (v == null) return "bg-gray-100 text-gray-400";
-  if (v >= .45) return "bg-emerald-100 text-emerald-700";
-  if (v >= .25) return "bg-amber-100 text-amber-700";
-  return "bg-red-100 text-red-700";
+  if (v == null) return "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500";
+  if (v >= .45) return "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
+  if (v >= .25) return "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
+  return "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400";
 };
 const easeBorder = v => {
-  if (v == null) return "border-gray-200";
-  if (v >= .45) return "border-emerald-300";
-  if (v >= .25) return "border-amber-300";
-  return "border-red-300";
+  if (v == null) return "border-slate-200 dark:border-slate-800";
+  if (v >= .45) return "border-emerald-300 dark:border-emerald-700/60";
+  if (v >= .25) return "border-amber-300 dark:border-amber-700/60";
+  return "border-red-300 dark:border-red-700/60";
+};
+// Accent strip (used on FirmCard left edge)
+const easeAccent = v => {
+  if (v == null) return "bg-slate-200 dark:bg-slate-700";
+  if (v >= .45) return "bg-emerald-400 dark:bg-emerald-500";
+  if (v >= .25) return "bg-amber-400 dark:bg-amber-500";
+  return "bg-red-400 dark:bg-red-500";
+};
+// Tier label for accessibility
+const easeTier = v => {
+  if (v == null) return "unknown";
+  if (v >= .45) return "easy";
+  if (v >= .25) return "moderate";
+  return "hard";
 };
 
 const getSortOpts = () => [
@@ -245,11 +260,28 @@ function Tip({ text }) {
 
   return (
     <span className="inline-block ml-1">
-      <Info ref={iconRef} size={13} className="text-blue-400 cursor-help inline-block align-middle" onClick={() => { setShow(!show); updatePos(); }} onMouseEnter={() => { setShow(true); updatePos(); }} onMouseLeave={() => setShow(false)} />
+      <Info
+        ref={iconRef}
+        size={12}
+        strokeWidth={2.25}
+        className="inline-block cursor-help align-middle text-slate-400 transition-colors hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400"
+        aria-hidden="true"
+        onClick={() => { setShow(!show); updatePos(); }}
+        onMouseEnter={() => { setShow(true); updatePos(); }}
+        onMouseLeave={() => setShow(false)}
+      />
       {show && createPortal(
-        <div className="fixed z-[9999] w-72 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl leading-relaxed whitespace-pre-line pointer-events-none" style={{ top: pos.top, left: pos.left, transform: "translate(-50%, -100%)" }}>
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed z-[9999] w-72 whitespace-pre-line rounded-lg bg-slate-900 px-3 py-2.5 text-[12px] leading-relaxed text-slate-100 shadow-soft-lg ring-1 ring-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-300"
+          style={{ top: pos.top, left: pos.left, transform: "translate(-50%, -100%)" }}
+        >
           {text}
-          <span className="absolute top-full left-1/2 border-4 border-transparent border-t-gray-900" style={{transform:"translateX(-50%)"}} />
+          <span
+            aria-hidden="true"
+            className="absolute left-1/2 top-full border-4 border-transparent border-t-slate-900 dark:border-t-slate-100"
+            style={{ transform: "translateX(-50%)" }}
+          />
         </div>,
         document.body
       )}
@@ -282,34 +314,92 @@ function RichTextEditor({ value, onChange }) {
     setTimeout(() => { el.focus(); el.setSelectionRange(start + before.length, end + before.length); }, 0);
   };
 
+  const toolBtn = "inline-flex h-6 w-7 items-center justify-center rounded border border-slate-300 text-[11.5px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800";
   return (
     <div className="col-span-2">
-      <label className="block text-xs font-medium text-gray-500 mb-1">{t("notes")}</label>
-      <div className="flex gap-1 mb-1">
-        <button type="button" onClick={() => wrap("**","**")} className="px-2 py-0.5 text-xs font-bold border border-gray-300 rounded hover:bg-gray-100" title="Bold (**text**)">B</button>
-        <button type="button" onClick={() => wrap("*","*")} className="px-2 py-0.5 text-xs italic border border-gray-300 rounded hover:bg-gray-100" title="Italic (*text*)">I</button>
-        <button type="button" onClick={() => wrap("==","==")} className="px-2 py-0.5 text-xs border border-gray-300 rounded hover:bg-yellow-100" title="Highlight (==text==)" style={{background:"#fef9c3"}}>H</button>
-        <button type="button" onClick={() => wrap("~~","~~")} className="px-2 py-0.5 text-xs line-through border border-gray-300 rounded hover:bg-gray-100" title="Strikethrough (~~text~~)">S</button>
-        <span className="text-[10px] text-gray-400 self-center ml-2">{t("richTextHelp")}</span>
+      <label className={FIELD_LABEL_CLS}>{t("notes")}</label>
+      <div className="mb-1.5 flex items-center gap-1">
+        <button type="button" onClick={() => wrap("**","**")} className={toolBtn + " font-bold"} title="Bold (**text**)" aria-label="Bold">B</button>
+        <button type="button" onClick={() => wrap("*","*")} className={toolBtn + " italic"} title="Italic (*text*)" aria-label="Italic">I</button>
+        <button type="button" onClick={() => wrap("==","==")} className={toolBtn + " !bg-amber-100 !text-amber-900 hover:!bg-amber-200 dark:!bg-amber-900/60 dark:!text-amber-200"} title="Highlight (==text==)" aria-label="Highlight">H</button>
+        <button type="button" onClick={() => wrap("~~","~~")} className={toolBtn + " line-through"} title="Strikethrough (~~text~~)" aria-label="Strikethrough">S</button>
+        <span className="ml-2 text-[10.5px] text-slate-400 dark:text-slate-500">{t("richTextHelp")}</span>
       </div>
-      <textarea ref={ref} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none font-mono" rows={4} value={value || ""} onChange={e => onChange(e.target.value || null)} placeholder={t("specialRulesPlaceholder")} />
+      <textarea
+        ref={ref}
+        className={FIELD_INPUT_CLS + " resize-none !font-mono"}
+        rows={4}
+        value={value || ""}
+        onChange={e => onChange(e.target.value || null)}
+        placeholder={t("specialRulesPlaceholder")}
+      />
       {value && (
-        <div className="mt-1 p-2 bg-gray-50 rounded border border-gray-200 text-sm text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderRichNotes(value) }} />
+        <div
+          className="mt-1.5 rounded-md border border-slate-200 bg-slate-50 p-2 text-[13px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300"
+          dangerouslySetInnerHTML={{ __html: renderRichNotes(value) }}
+        />
       )}
     </div>
   );
 }
 
-function Section({ title, open, onToggle, children, accent }) {
-  const colors = { amber:"border-amber-200 bg-amber-50", orange:"border-orange-200 bg-orange-50", blue:"border-blue-200 bg-blue-50", emerald:"border-emerald-200 bg-emerald-50", gray:"border-gray-200 bg-gray-50" };
-  const c = colors[accent] || colors.gray;
+// Accent colors map to semantic meaning per section type
+const SECTION_ACCENTS = {
+  amber:   { chip: "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400",     stripe: "bg-amber-400 dark:bg-amber-500" },
+  orange:  { chip: "bg-orange-50 text-orange-600 dark:bg-orange-950/60 dark:text-orange-400", stripe: "bg-orange-400 dark:bg-orange-500" },
+  blue:    { chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",         stripe: "bg-blue-400 dark:bg-blue-500" },
+  emerald: { chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400", stripe: "bg-emerald-400 dark:bg-emerald-500" },
+  slate:   { chip: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",       stripe: "bg-slate-300 dark:bg-slate-600" },
+};
+
+function Section({ title, open, onToggle, children, accent, icon: Icon }) {
+  const a = SECTION_ACCENTS[accent] || SECTION_ACCENTS.slate;
   return (
-    <div className={`mt-3 rounded-lg border ${open ? c : "border-gray-200 bg-white"}`}>
-      <button onClick={onToggle} className="w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-        <span>{title}</span>
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+    <div
+      className={
+        "mt-2.5 overflow-hidden rounded-lg border border-slate-200 bg-white transition-colors duration-150 " +
+        "dark:border-slate-800 dark:bg-slate-900/60"
+      }
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={
+          "group flex w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition-colors duration-150 " +
+          "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 " +
+          "dark:hover:bg-slate-800/40"
+        }
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className={"flex h-5 w-5 shrink-0 items-center justify-center rounded " + a.chip}
+          >
+            {Icon ? <Icon size={11} strokeWidth={2.5} /> : <span className={"h-2 w-2 rounded-full " + a.stripe} />}
+          </span>
+          <span className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">{title}</span>
+        </span>
+        <ChevronDown
+          size={14}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className={
+            "shrink-0 text-slate-400 transition-transform duration-200 ease-out dark:text-slate-500 " +
+            (open ? "rotate-180" : "rotate-0")
+          }
+        />
       </button>
-      {open && <div className="px-3 pb-3">{children}</div>}
+      <div
+        className={
+          "grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none " +
+          (open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")
+        }
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-slate-100 px-3 py-3 dark:border-slate-800">{children}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -317,9 +407,14 @@ function Section({ title, open, onToggle, children, accent }) {
 function Stat({ label, value, tip, sub }) {
   return (
     <div className="py-1">
-      <div className="text-xs text-gray-400 flex items-center">{label}{tip && <Tip text={tip} />}</div>
-      <div className="text-sm font-semibold text-gray-800">{value}</div>
-      {sub && <div className="text-xs text-gray-400">{sub}</div>}
+      <div className="flex items-center text-[11px] font-medium text-slate-500 dark:text-slate-400">
+        {label}
+        {tip && <Tip text={tip} />}
+      </div>
+      <div className="text-[13px] font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+        {value}
+      </div>
+      {sub && <div className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400">{sub}</div>}
     </div>
   );
 }
@@ -327,30 +422,59 @@ function Stat({ label, value, tip, sub }) {
 // ═══════════════════════════════════════════════════════════
 // FIELD COMPONENT FOR FORMS
 // ═══════════════════════════════════════════════════════════
+// Base input classes — used by Field, inline forms, and form dialogs
+const FIELD_INPUT_CLS =
+  "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 placeholder-slate-400 shadow-sm " +
+  "transition-colors duration-150 " +
+  "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+  "disabled:opacity-50 disabled:cursor-not-allowed " +
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500";
+const FIELD_LABEL_CLS =
+  "mb-1 flex items-center text-[11.5px] font-medium text-slate-600 dark:text-slate-400";
+
 function Field({ label, tip, value, onChange, prefix, suffix, placeholder, type, wide }) {
   if (type === "text") {
     return (
       <div className={wide ? "col-span-2" : ""}>
-        <label className="block text-xs font-medium text-gray-500 mb-1">{label}{tip && <Tip text={tip} />}</label>
-        <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" value={value || ""} onChange={e => onChange(e.target.value || null)} placeholder={placeholder} />
+        <label className={FIELD_LABEL_CLS}>{label}{tip && <Tip text={tip} />}</label>
+        <input
+          type="text"
+          className={FIELD_INPUT_CLS}
+          value={value || ""}
+          onChange={e => onChange(e.target.value || null)}
+          placeholder={placeholder}
+        />
       </div>
     );
   }
   if (type === "textarea") {
     return (
       <div className="col-span-2">
-        <label className="block text-xs font-medium text-gray-500 mb-1">{label}{tip && <Tip text={tip} />}</label>
-        <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none" rows={3} value={value || ""} onChange={e => onChange(e.target.value || null)} placeholder={placeholder} />
+        <label className={FIELD_LABEL_CLS}>{label}{tip && <Tip text={tip} />}</label>
+        <textarea
+          className={FIELD_INPUT_CLS + " resize-none"}
+          rows={3}
+          value={value || ""}
+          onChange={e => onChange(e.target.value || null)}
+          placeholder={placeholder}
+        />
       </div>
     );
   }
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}{tip && <Tip text={tip} />}</label>
-      <div className="flex items-center gap-1">
-        {prefix && <span className="text-gray-400 text-sm">{prefix}</span>}
-        <input type="number" step="any" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" value={value == null ? "" : value} onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))} placeholder={placeholder || "—"} />
-        {suffix && <span className="text-gray-400 text-sm">{suffix}</span>}
+      <label className={FIELD_LABEL_CLS}>{label}{tip && <Tip text={tip} />}</label>
+      <div className="flex items-center gap-1.5">
+        {prefix && <span className="shrink-0 text-[13px] text-slate-400 dark:text-slate-500">{prefix}</span>}
+        <input
+          type="number"
+          step="any"
+          className={FIELD_INPUT_CLS}
+          value={value == null ? "" : value}
+          onChange={e => onChange(e.target.value === "" ? null : Number(e.target.value))}
+          placeholder={placeholder || "—"}
+        />
+        {suffix && <span className="shrink-0 text-[13px] text-slate-400 dark:text-slate-500">{suffix}</span>}
       </div>
     </div>
   );
@@ -359,148 +483,225 @@ function Field({ label, tip, value, onChange, prefix, suffix, placeholder, type,
 // ═══════════════════════════════════════════════════════════
 // FIRM CARD
 // ═══════════════════════════════════════════════════════════
+// Helper: render an ease tile within the FirmCard KPI row
+function EaseTile({ value, label, tip, isPrimary }) {
+  return (
+    <div
+      className={
+        "flex flex-col items-center justify-center rounded-lg px-2 py-2 " +
+        easeClr(value)
+      }
+      title={label}
+    >
+      <div className={"tabular-nums font-bold leading-none " + (isPrimary ? "text-[18px]" : "text-[15px]")}>
+        {pct(value)}
+      </div>
+      <div className="mt-1 flex items-center gap-0.5 text-[10.5px] font-medium opacity-80">
+        <span>{label}</span>
+        {tip && <Tip text={tip} />}
+      </div>
+    </div>
+  );
+}
+
 function FirmCard({ firm, rank, onEdit, onDelete }) {
   const [sections, setSections] = useState({});
   const toggle = k => setSections(s => ({ ...s, [k]: !s[k] }));
   const f = firm;
-  const rankColors = rank === 1 ? "bg-yellow-400 text-yellow-900" : rank === 2 ? "bg-gray-300 text-gray-700" : rank === 3 ? "bg-amber-300 text-amber-900" : "bg-gray-100 text-gray-500";
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border-2 ${easeBorder(f.overallEase)} overflow-hidden transition-all`}>
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${rankColors}`}>
-            {rank}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-800 truncate">{f.name}</h3>
-              <span className="text-sm font-semibold text-gray-500 ml-2 flex-shrink-0">{money(f.totalCost)} total</span>
-            </div>
-            <p className="text-xs text-gray-400">
-              {f.model}
-              {f.isInstant && <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-700">INSTANT FUNDED</span>}
-            </p>
-          </div>
-        </div>
+    <div
+      className={
+        "group relative overflow-hidden rounded-xl border bg-white shadow-soft transition-shadow duration-150 " +
+        "hover:shadow-soft-md dark:bg-slate-900 " +
+        easeBorder(f.overallEase)
+      }
+      aria-label={`${f.name} — ease tier: ${easeTier(f.overallEase)}`}
+    >
+      {/* Tier accent strip down the left */}
+      <span
+        aria-hidden="true"
+        className={"absolute left-0 top-0 h-full w-[3px] " + easeAccent(f.overallEase)}
+      />
 
-        <div className={`grid ${f.isInstant ? "grid-cols-3" : "grid-cols-4"} gap-2 mt-3`}>
-          <div className={`rounded-lg px-2 py-1.5 text-center ${easeClr(f.overallEase)}`}>
-            <div className="text-lg font-bold leading-tight">{pct(f.overallEase)}</div>
-            <div className="text-xs opacity-75 flex items-center justify-center gap-0.5">{f.isInstant ? "Ease" : "Overall"}<Tip text={TIPS.overallEase} /></div>
-          </div>
-          {!f.isInstant && <div className={`rounded-lg px-2 py-1.5 text-center ${easeClr(f.easeToPass)}`}>
-            <div className="text-lg font-bold leading-tight">{pct(f.easeToPass)}</div>
-            <div className="text-xs opacity-75 flex items-center justify-center gap-0.5">Pass<Tip text={TIPS.easeToPass} /></div>
-          </div>}
-          <div className={`rounded-lg px-2 py-1.5 text-center ${easeClr(f.easeToGetPaid)}`}>
-            <div className="text-lg font-bold leading-tight">{pct(f.easeToGetPaid)}</div>
-            <div className="text-xs opacity-75 flex items-center justify-center gap-0.5">Paid<Tip text={TIPS.easeToGetPaid} /></div>
-          </div>
-          <div className="rounded-lg px-2 py-1.5 text-center bg-indigo-50 text-indigo-700">
-            <div className="text-lg font-bold leading-tight">{pct(f.maxRoi)}</div>
-            <div className="text-xs opacity-75 flex items-center justify-center gap-0.5">ROI<Tip text={TIPS.roi} /></div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-          <span>Cost: {f.isInstant ? money(f.cost) : `${money(f.cost)} eval + ${money(f.activation)} activation`}</span>
-          <span>{money(f.dailyProfitRate)}/day</span>
-          <span>Net: {money(f.maxNetProfit)}</span>
-          <span>{f.noResets ? "No resets" : f.resetsToBreakeven != null ? `${f.resetsToBreakeven}× resets` : ""}</span>
-          <span>{f.isInstant ? `${f.daysToPayout} days` : `${f.totalDays} days total`}</span>
-        </div>
-
-        {!f.isInstant && <Section title={t("challengeRules")} open={sections.chal} onToggle={() => toggle("chal")} accent="amber">
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-            <Stat label={t("profitTarget")} value={money(f.pt)} tip={TIPS.pt} />
-            <Stat label={t("dailyLossLimit")} value={f.dll ? money(f.dll) : t("none")} tip={TIPS.dll} />
-            <Stat label={t("maxLossLimit")} value={money(f.mll)} tip={TIPS.mll} sub={f.mllType && f.mllType !== "static" ? (f.mllType === "eod" ? t("trailingEod") : t("trailingIntraday")) : null} />
-            <Stat label={t("consistency")} value={f.consistency ? pct(f.consistency) : t("none")} tip={TIPS.consistency} />
-            <Stat label={t("minProfitDays")} value={f.minDays || t("none")} tip={TIPS.minDays} />
-            <Stat label={t("daysToPass")} value={`${f.daysToPass} ${t("days")}`} tip={TIPS.daysCalc} sub={t("calculated")} />
-          </div>
-          <div className="mt-3 p-3 bg-amber-50 rounded-xl border-2 border-amber-300">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-xs font-semibold text-amber-600 uppercase tracking-wide flex items-center gap-1">{t("bestPlan")} <Tip text={TIPS.dailyTarget} /></div>
-              <div className="text-xs text-gray-400">{f.daysToPass} {t("days")}</div>
+      <div className="p-4 pl-5">
+        {/* ── Header row ── */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="shrink-0 pt-0.5">
+              <RankBadge rank={rank} />
             </div>
-            <div className="text-xl font-bold text-amber-700">{money(f.chalTarget)} <span className="text-sm font-medium text-amber-500">{t("perDay")}</span></div>
-            <div className="text-xs text-gray-500 mb-2">{money(f.chalTarget)} × {f.daysToPass} {t("days")} = {money(f.pt)} {t("profitTarget").toLowerCase()}</div>
-            <div className="flex gap-1 flex-wrap">
-              {Array.from({ length: f.daysToPass }, (_, i) => (
-                <div key={i} className="rounded-md text-center py-1 px-2 bg-amber-200 border border-amber-300" style={{minWidth:"3.5rem"}}>
-                  <div className="text-[10px] text-gray-400">D{i + 1}</div>
-                  <div className="text-xs font-bold text-amber-800">{money(f.chalTarget)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {f.chalScalingFactor < 1 && (() => {
-            const tiers = migrateScalingTiers(f, "sc");
-            return (
-              <div className="mt-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="text-xs text-gray-500 flex items-center gap-1">{t("scalingFactor")} <Tip text={TIPS.scalingFactor} /></div>
-                <div className="text-sm font-semibold text-yellow-700">{pct(f.chalScalingFactor)} <span className="text-xs font-normal text-gray-400">— {t("contractsLimited")}</span></div>
-                <div className="text-xs text-gray-400 mt-0.5">
-                  {tiers.map((t, i) => {
-                    const prev = i > 0 ? tiers[i - 1].upTo : 0;
-                    const isLast = i === tiers.length - 1;
-                    return <span key={i}>{i > 0 ? " → " : ""}${prev.toLocaleString()}–{isLast ? `$${(t.upTo || 0).toLocaleString()}+` : `$${(t.upTo || 0).toLocaleString()}`}: {t.contracts}</span>;
-                  })}
-                  {tiers.length > 0 && ` → above: ${f.maxNQ} max`}
-                </div>
+            <div className="min-w-0">
+              <h3 className="truncate text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
+                {f.name}
+              </h3>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-400">
+                <span className="truncate">{f.model}</span>
+                {f.isInstant && (
+                  <Badge variant="info" size="sm" icon={Zap}>
+                    INSTANT FUNDED
+                  </Badge>
+                )}
               </div>
-            );
-          })()}
-        </Section>}
+            </div>
+          </div>
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="hidden text-right sm:block">
+              <div className="text-[10.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                {t("totalCost")}
+              </div>
+              <div className="text-[13px] font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+                {money(f.totalCost)}
+              </div>
+            </div>
+            {(onEdit || onDelete) && (
+              <div className="flex items-center gap-1">
+                {onEdit && (
+                  <IconButton
+                    icon={Pencil}
+                    label={t("edit")}
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => onEdit(f)}
+                  />
+                )}
+                {onDelete && (
+                  <IconButton
+                    icon={Trash2}
+                    label={t("delete")}
+                    size="icon-sm"
+                    variant="ghost-danger"
+                    onClick={() => onDelete(f.id)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Section title={t("fundedRules")} open={sections.fund} onToggle={() => toggle("fund")} accent="orange">
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+        {/* ── KPI tiles row (ease metrics) ── */}
+        <div className={"mt-3 grid gap-2 " + (f.isInstant ? "grid-cols-3" : "grid-cols-4")}>
+          <EaseTile
+            value={f.overallEase}
+            label={f.isInstant ? "Ease" : "Overall"}
+            tip={TIPS.overallEase}
+            isPrimary
+          />
+          {!f.isInstant && (
+            <EaseTile value={f.easeToPass} label="Pass" tip={TIPS.easeToPass} />
+          )}
+          <EaseTile value={f.easeToGetPaid} label="Paid" tip={TIPS.easeToGetPaid} />
+          <div className="flex flex-col items-center justify-center rounded-lg bg-indigo-50 px-2 py-2 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+            <div className="text-[15px] font-bold leading-none tabular-nums">{pct(f.maxRoi)}</div>
+            <div className="mt-1 flex items-center gap-0.5 text-[10.5px] font-medium opacity-80">
+              <span>ROI</span>
+              <Tip text={TIPS.roi} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Metadata strip ── */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-y border-slate-100 py-2 text-[11.5px] text-slate-600 dark:border-slate-800 dark:text-slate-400">
+          <MetaStat
+            label="Cost"
+            value={f.isInstant ? money(f.cost) : `${money(f.cost)} eval + ${money(f.activation)} act`}
+          />
+          <MetaStat label="Daily" value={`${money(f.dailyProfitRate)}/d`} />
+          <MetaStat
+            label="Net"
+            value={money(f.maxNetProfit)}
+            valueClass={f.maxNetProfit < 0 ? "text-red-600 dark:text-red-400" : ""}
+          />
+          {!f.noResets && f.resetsToBreakeven != null && (
+            <MetaStat label="Resets" value={`${f.resetsToBreakeven}×`} />
+          )}
+          {f.noResets && <MetaStat label="Resets" value={t("na")} />}
+          <MetaStat label="Days" value={f.isInstant ? `${f.daysToPayout}d` : `${f.totalDays}d`} />
+        </div>
+
+        {/* ── Collapsible sections ── */}
+        {!f.isInstant && (
+          <Section
+            title={t("challengeRules")}
+            open={sections.chal}
+            onToggle={() => toggle("chal")}
+            accent="amber"
+            icon={Target}
+          >
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+              <Stat label={t("profitTarget")} value={money(f.pt)} tip={TIPS.pt} />
+              <Stat label={t("dailyLossLimit")} value={f.dll ? money(f.dll) : t("none")} tip={TIPS.dll} />
+              <Stat
+                label={t("maxLossLimit")}
+                value={money(f.mll)}
+                tip={TIPS.mll}
+                sub={f.mllType && f.mllType !== "static" ? (f.mllType === "eod" ? t("trailingEod") : t("trailingIntraday")) : null}
+              />
+              <Stat label={t("consistency")} value={f.consistency ? pct(f.consistency) : t("none")} tip={TIPS.consistency} />
+              <Stat label={t("minProfitDays")} value={f.minDays || t("none")} tip={TIPS.minDays} />
+              <Stat label={t("daysToPass")} value={`${f.daysToPass} ${t("days")}`} tip={TIPS.daysCalc} sub={t("calculated")} />
+            </div>
+            <BestPlan
+              tone="amber"
+              target={f.chalTarget}
+              days={f.daysToPass}
+              endValue={f.pt}
+              endLabel={t("profitTarget").toLowerCase()}
+            />
+            {f.chalScalingFactor < 1 && (
+              <ScalingDetail
+                factor={f.chalScalingFactor}
+                tiers={migrateScalingTiers(f, "sc")}
+                maxNQ={f.maxNQ}
+              />
+            )}
+          </Section>
+        )}
+
+        <Section
+          title={t("fundedRules")}
+          open={sections.fund}
+          onToggle={() => toggle("fund")}
+          accent="orange"
+          icon={Briefcase}
+        >
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             <Stat label={t("activationFee")} value={money(f.activation)} tip={TIPS.activation} />
             <Stat label={t("dailyLossLimit")} value={f.fDll ? money(f.fDll) : t("none")} tip={TIPS.dll} />
-            <Stat label={t("maxLossLimit")} value={money(f.fMll)} tip={TIPS.mll} sub={f.fMllType && f.fMllType !== "static" ? (f.fMllType === "eod" ? t("trailingEod") : t("trailingIntraday")) : null} />
+            <Stat
+              label={t("maxLossLimit")}
+              value={money(f.fMll)}
+              tip={TIPS.mll}
+              sub={f.fMllType && f.fMllType !== "static" ? (f.fMllType === "eod" ? t("trailingEod") : t("trailingIntraday")) : null}
+            />
             <Stat label={t("consistency")} value={f.fConsistency ? pct(f.fConsistency) : t("none")} tip={TIPS.consistency} />
             <Stat label={t("minProfitDays")} value={f.fMinDays || t("none")} tip={TIPS.minDays} />
             <Stat label={t("daysToPayout")} value={`${f.daysToPayout} ${t("days")}`} tip={TIPS.daysCalc} sub={t("calculated")} />
           </div>
-          <div className="mt-3 p-3 bg-orange-50 rounded-xl border-2 border-orange-300">
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-xs font-semibold text-orange-600 uppercase tracking-wide flex items-center gap-1">{t("bestPlan")} <Tip text={TIPS.dailyTarget} /></div>
-              <div className="text-xs text-gray-400">{f.daysToPayout} {t("days")}</div>
-            </div>
-            <div className="text-xl font-bold text-orange-700">{money(f.fundTarget)} <span className="text-sm font-medium text-orange-500">{t("perDay")}</span></div>
-            <div className="text-xs text-gray-500 mb-2">{money(f.fundTarget)} × {f.daysToPayout} {t("days")} = {money(f.reqBalMax)} {t("fundedTarget")}</div>
-            <div className="flex gap-1 flex-wrap">
-              {Array.from({ length: f.daysToPayout }, (_, i) => (
-                <div key={i} className="rounded-md text-center py-1 px-2 bg-orange-200 border border-orange-300" style={{minWidth:"3.5rem"}}>
-                  <div className="text-[10px] text-gray-400">D{i + 1}</div>
-                  <div className="text-xs font-bold text-orange-800">{money(f.fundTarget)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {f.fundScalingFactor < 1 && (() => {
-            const tiers = migrateScalingTiers(f, "sf");
-            return (
-              <div className="mt-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="text-xs text-gray-500 flex items-center gap-1">{t("scalingFactor")} <Tip text={TIPS.scalingFactor} /></div>
-                <div className="text-sm font-semibold text-yellow-700">{pct(f.fundScalingFactor)} <span className="text-xs font-normal text-gray-400">— {t("contractsLimited")}</span></div>
-                <div className="text-xs text-gray-400 mt-0.5">
-                  {tiers.map((t, i) => {
-                    const prev = i > 0 ? tiers[i - 1].upTo : 0;
-                    const isLast = i === tiers.length - 1;
-                    return <span key={i}>{i > 0 ? " → " : ""}${prev.toLocaleString()}–{isLast ? `$${(t.upTo || 0).toLocaleString()}+` : `$${(t.upTo || 0).toLocaleString()}`}: {t.contracts}</span>;
-                  })}
-                  {tiers.length > 0 && ` → above: ${f.maxNQ} max`}
-                </div>
-              </div>
-            );
-          })()}
+          <BestPlan
+            tone="orange"
+            target={f.fundTarget}
+            days={f.daysToPayout}
+            endValue={f.reqBalMax}
+            endLabel={t("fundedTarget")}
+          />
+          {f.fundScalingFactor < 1 && (
+            <ScalingDetail
+              factor={f.fundScalingFactor}
+              tiers={migrateScalingTiers(f, "sf")}
+              maxNQ={f.maxNQ}
+            />
+          )}
         </Section>
 
-        <Section title={t("payoutRules")} open={sections.pay} onToggle={() => toggle("pay")} accent="blue">
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+        <Section
+          title={t("payoutRules")}
+          open={sections.pay}
+          onToggle={() => toggle("pay")}
+          accent="blue"
+          icon={Layers}
+        >
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             <Stat label={t("buffer")} value={f.buffer ? money(f.buffer) : t("none")} tip={TIPS.buffer} />
             <Stat label={t("profitSplit")} value={pct(f.split)} tip={TIPS.split} />
             <Stat label={t("withdrawalPct")} value={pct(f.withdrawalPct != null ? f.withdrawalPct : 1)} tip={TIPS.withdrawalPct} />
@@ -510,52 +711,179 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
             <Stat label={t("reqBalMax")} value={money(f.reqBalMax)} tip={TIPS.reqBalance} />
           </div>
           {f.payoutTiers && f.payoutTiers.length > 0 && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-xs font-semibold text-blue-700 mb-1">{t("payoutTiers")}</div>
-              <div className="space-y-0.5">
-                {f.payoutTiers.map((t, i) => (
-                  <div key={i} className="text-xs text-gray-600">
-                    <span className="font-medium text-blue-600">#{i + 1}</span>
-                    {" "}min {money(t.min || 0)} — max {t.max != null ? money(t.max) : <span className="text-emerald-600 font-medium">unlimited</span>}
-                    {t.max != null && f.split && <span className="text-gray-400 ml-1">(net: {money((t.max || 0) * f.split)})</span>}
+            <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
+                <Layers size={11} strokeWidth={2.5} aria-hidden="true" />
+                {t("payoutTiers")}
+              </div>
+              <div className="space-y-1">
+                {f.payoutTiers.map((pt, i) => (
+                  <div key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12px] text-slate-600 dark:text-slate-400">
+                    <span className="inline-flex h-4 min-w-[20px] items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
+                      #{i + 1}
+                    </span>
+                    <span className="tabular-nums">
+                      min <span className="font-semibold text-slate-800 dark:text-slate-200">{money(pt.min || 0)}</span>
+                    </span>
+                    <span className="tabular-nums">
+                      max{" "}
+                      {pt.max != null ? (
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">{money(pt.max)}</span>
+                      ) : (
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">unlimited</span>
+                      )}
+                    </span>
+                    {pt.max != null && f.split && (
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+                        (net: {money((pt.max || 0) * f.split)})
+                      </span>
+                    )}
                   </div>
                 ))}
                 {f.payoutTiers.length > 1 && (
-                  <div className="text-[10px] text-gray-400 mt-0.5">#{f.payoutTiers.length + 1}+ uses #{f.payoutTiers.length} limits</div>
+                  <div className="pt-1 text-[10.5px] text-slate-400 dark:text-slate-500">
+                    #{f.payoutTiers.length + 1}+ uses #{f.payoutTiers.length} limits
+                  </div>
                 )}
               </div>
             </div>
           )}
         </Section>
 
-        <Section title={t("financialsRoi")} open={sections.fin} onToggle={() => toggle("fin")} accent="emerald">
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+        <Section
+          title={t("financialsRoi")}
+          open={sections.fin}
+          onToggle={() => toggle("fin")}
+          accent="emerald"
+          icon={TrendingUp}
+        >
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
             <Stat label={t("totalCost")} value={money(f.totalCost)} tip={TIPS.totalCost} />
             <Stat label={t("totalDays")} value={`${f.totalDays} ${t("days")}`} tip={TIPS.totalDays} />
             <Stat label="Max NQ" value={f.maxNQ || "—"} tip={TIPS.maxNQ} />
-            <Stat label={t("minNetProfit")} value={<span className={f.minNetProfit < 0 ? "text-red-600" : ""}>{money(f.minNetProfit)}</span>} tip={TIPS.netProfit} sub={f.minNetProfit < 0 ? t("lossOnMinPayout") : f.minNetProfit === 0 ? t("breakeven") : null} />
-            <Stat label={t("maxNetProfit")} value={<span className={f.maxNetProfit < 0 ? "text-red-600" : ""}>{money(f.maxNetProfit)}</span>} tip={TIPS.netProfit} sub={f.maxNetProfit < 0 ? t("lossEvenAtMax") : null} />
+            <Stat
+              label={t("minNetProfit")}
+              value={
+                <span className={f.minNetProfit < 0 ? "text-red-600 dark:text-red-400" : ""}>
+                  {money(f.minNetProfit)}
+                </span>
+              }
+              tip={TIPS.netProfit}
+              sub={f.minNetProfit < 0 ? t("lossOnMinPayout") : f.minNetProfit === 0 ? t("breakeven") : null}
+            />
+            <Stat
+              label={t("maxNetProfit")}
+              value={
+                <span className={f.maxNetProfit < 0 ? "text-red-600 dark:text-red-400" : ""}>
+                  {money(f.maxNetProfit)}
+                </span>
+              }
+              tip={TIPS.netProfit}
+              sub={f.maxNetProfit < 0 ? t("lossEvenAtMax") : null}
+            />
             <Stat label={t("maxRoi")} value={pct(f.maxRoi)} tip={TIPS.roi} />
           </div>
         </Section>
 
         {f.notes && (
-          <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{t("notes")}</div>
-            <div className="text-sm text-gray-700 leading-relaxed rich-notes" dangerouslySetInnerHTML={{ __html: renderRichNotes(f.notes) }} />
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <Info size={11} strokeWidth={2.5} aria-hidden="true" />
+              {t("notes")}
+            </div>
+            <div
+              className="rich-notes text-[12.5px] leading-relaxed text-slate-700 dark:text-slate-300"
+              dangerouslySetInnerHTML={{ __html: renderRichNotes(f.notes) }}
+            />
           </div>
         )}
+      </div>
+    </div>
+  );
+}
 
-        {(onEdit || onDelete) && (
-          <div className="flex justify-end gap-2 mt-3">
-            {onEdit && <button onClick={() => onEdit(f)} className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors">
-              <Pencil size={12} /> {t("edit")}
-            </button>}
-            {onDelete && <button onClick={() => onDelete(f.id)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors">
-              <Trash2 size={12} /> {t("delete")}
-            </button>}
+// ── Tiny helper: meta strip pill ──
+function MetaStat({ label, value, valueClass = "" }) {
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className="text-slate-400 dark:text-slate-500">{label}:</span>
+      <span className={"font-semibold tabular-nums text-slate-800 dark:text-slate-200 " + valueClass}>{value}</span>
+    </span>
+  );
+}
+
+// ── "Best plan" callout used in challenge + funded sections ──
+const BEST_PLAN_TONES = {
+  amber:  "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-300",
+  orange: "border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-700/60 dark:bg-orange-950/30 dark:text-orange-300",
+};
+const BEST_PLAN_DAY_TONES = {
+  amber:  "bg-amber-100 text-amber-800 ring-1 ring-amber-300 dark:bg-amber-900/50 dark:text-amber-300 dark:ring-amber-800",
+  orange: "bg-orange-100 text-orange-800 ring-1 ring-orange-300 dark:bg-orange-900/50 dark:text-orange-300 dark:ring-orange-800",
+};
+function BestPlan({ tone, target, days, endValue, endLabel }) {
+  return (
+    <div className={"mt-3 rounded-xl border p-3 " + BEST_PLAN_TONES[tone]}>
+      <div className="mb-1 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide">
+          <Target size={11} strokeWidth={2.5} aria-hidden="true" />
+          {t("bestPlan")}
+          <Tip text={TIPS.dailyTarget} />
+        </div>
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+          {days} {t("days")}
+        </div>
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className="text-[20px] font-bold tabular-nums">{money(target)}</span>
+        <span className="text-[12px] font-medium opacity-70">{t("perDay")}</span>
+      </div>
+      <div className="mb-2 text-[11.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+        {money(target)} × {days} {t("days")} = {money(endValue)} {endLabel}
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {Array.from({ length: days }, (_, i) => (
+          <div
+            key={i}
+            className={"rounded-md px-2 py-1 text-center " + BEST_PLAN_DAY_TONES[tone]}
+            style={{ minWidth: "3.5rem" }}
+          >
+            <div className="text-[9.5px] opacity-70">D{i + 1}</div>
+            <div className="text-[11.5px] font-bold tabular-nums">{money(target)}</div>
           </div>
-        )}
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Scaling detail sub-card ──
+function ScalingDetail({ factor, tiers, maxNQ }) {
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-950/40">
+      <div className="flex items-center gap-1.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
+        <Layers size={11} strokeWidth={2.5} aria-hidden="true" />
+        {t("scalingFactor")}
+        <Tip text={TIPS.scalingFactor} />
+      </div>
+      <div className="mt-0.5 flex items-baseline gap-1.5">
+        <span className="text-[13px] font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+          {pct(factor)}
+        </span>
+        <span className="text-[11px] text-slate-500 dark:text-slate-400">— {t("contractsLimited")}</span>
+      </div>
+      <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+        {tiers.map((ti, i) => {
+          const prev = i > 0 ? tiers[i - 1].upTo : 0;
+          const isLast = i === tiers.length - 1;
+          return (
+            <span key={i}>
+              {i > 0 ? " → " : ""}${prev.toLocaleString()}–
+              {isLast ? `$${(ti.upTo || 0).toLocaleString()}+` : `$${(ti.upTo || 0).toLocaleString()}`}: {ti.contracts}
+            </span>
+          );
+        })}
+        {tiers.length > 0 && ` → above: ${maxNQ} max`}
       </div>
     </div>
   );
@@ -564,6 +892,12 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
 // ═══════════════════════════════════════════════════════════
 // PAYOUT TIER EDITOR
 // ═══════════════════════════════════════════════════════════
+// Compact inline tier-editor input
+const TIER_INPUT_CLS =
+  "rounded-md border border-slate-300 bg-white px-2 py-1 text-[12.5px] tabular-nums text-slate-900 shadow-sm " +
+  "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+  "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+
 function PayoutTierEditor({ tiers, onChange }) {
   const rows = tiers && tiers.length > 0 ? tiers : [];
 
@@ -587,40 +921,63 @@ function PayoutTierEditor({ tiers, onChange }) {
       {rows.map((tier, i) => {
         const isLast = i === rows.length - 1;
         return (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500 w-16 shrink-0">{t("payoutN")} #{i + 1}</span>
+          <div
+            key={i}
+            className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
+          >
+            <Badge variant="info" size="sm" className="shrink-0">#{i + 1}</Badge>
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-gray-400">{t("min")}</span>
-              <span className="text-gray-400 text-sm">$</span>
+              <span className="text-[10.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{t("min")}</span>
+              <span className="text-[12px] text-slate-400 dark:text-slate-500">$</span>
               <input
                 type="number" step="any"
-                className="w-20 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className={TIER_INPUT_CLS + " w-20"}
                 value={tier.min == null ? "" : tier.min}
                 onChange={e => updateTier(i, "min", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder="0"
+                aria-label={`Tier ${i + 1} minimum`}
               />
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[10px] text-gray-400">{t("max")}</span>
-              <span className="text-gray-400 text-sm">$</span>
+              <span className="text-[10.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{t("max")}</span>
+              <span className="text-[12px] text-slate-400 dark:text-slate-500">$</span>
               <input
                 type="number" step="any"
-                className="w-20 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className={TIER_INPUT_CLS + " w-20"}
                 value={tier.max == null ? "" : tier.max}
                 onChange={e => updateTier(i, "max", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder={isLast ? "no limit" : t("max")}
+                aria-label={`Tier ${i + 1} maximum`}
               />
-              {isLast && tier.max == null && <span className="text-[10px] text-emerald-600 shrink-0">∞ {t("unlimited")}</span>}
+              {isLast && tier.max == null && (
+                <span className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                  <span aria-hidden="true">∞</span> {t("unlimited")}
+                </span>
+              )}
             </div>
-            <button onClick={() => removeTier(i)} className="p-0.5 text-gray-300 hover:text-red-500 shrink-0"><Trash2 size={12} /></button>
+            <div className="ml-auto">
+              <IconButton
+                icon={Trash2}
+                label={`Remove tier ${i + 1}`}
+                size="icon-sm"
+                variant="ghost-danger"
+                onClick={() => removeTier(i)}
+              />
+            </div>
           </div>
         );
       })}
-      <button onClick={addTier} className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200">
-        <Plus size={12} /> {t("addPayoutTier")}
-      </button>
+      <Button
+        size="xs"
+        variant="secondary"
+        leftIcon={<Plus size={11} strokeWidth={2.5} />}
+        className="!border-blue-200 !text-blue-700 hover:!border-blue-300 hover:!bg-blue-50 dark:!border-blue-900 dark:!text-blue-400 dark:hover:!bg-blue-950/40"
+        onClick={addTier}
+      >
+        {t("addPayoutTier")}
+      </Button>
       {rows.length > 1 && (
-        <div className="text-[10px] text-gray-400">
+        <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
           Payout #{rows.length + 1}+ will use Payout #{rows.length} limits{rows[rows.length - 1]?.max == null ? " (unlimited max)" : ""}
         </div>
       )}
@@ -654,40 +1011,59 @@ function ScalingTierEditor({ tiers, onChange, maxContracts }) {
         const prevUpTo = i > 0 ? rows[i - 1].upTo : 0;
         const isLast = i === rows.length - 1;
         return (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 w-5 text-right shrink-0">{i + 1}.</span>
-            <div className="flex items-center gap-1 text-xs text-gray-500 min-w-0">
-              <span className="text-gray-400 shrink-0">${prevUpTo.toLocaleString()}</span>
-              <span className="text-gray-300 shrink-0">–</span>
-              <span className="text-gray-400 shrink-0">$</span>
+          <div
+            key={i}
+            className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
+          >
+            <Badge variant="neutral" size="sm" className="shrink-0">{i + 1}</Badge>
+            <div className="flex items-center gap-1 text-[12px]">
+              <span className="tabular-nums text-slate-500 dark:text-slate-400">${prevUpTo.toLocaleString()}</span>
+              <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">–</span>
+              <span className="text-slate-400 dark:text-slate-500">$</span>
               <input
                 type="number" step="any"
-                className="w-20 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className={TIER_INPUT_CLS + " w-24"}
                 value={tier.upTo == null ? "" : tier.upTo}
                 onChange={e => updateTier(i, "upTo", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder={isLast ? "& above" : "up to"}
+                aria-label={`Tier ${i + 1} up-to threshold`}
               />
             </div>
-            <span className="text-xs text-gray-400 shrink-0">→</span>
+            <span className="text-slate-400 dark:text-slate-500" aria-hidden="true">→</span>
             <div className="flex items-center gap-1">
               <input
                 type="number" step="1" min="1"
-                className="w-14 border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                className={TIER_INPUT_CLS + " w-14"}
                 value={tier.contracts == null ? "" : tier.contracts}
                 onChange={e => updateTier(i, "contracts", e.target.value === "" ? null : Number(e.target.value))}
                 placeholder="#"
+                aria-label={`Tier ${i + 1} contract count`}
               />
-              <span className="text-xs text-gray-400 shrink-0">contracts</span>
+              <span className="text-[11.5px] text-slate-500 dark:text-slate-400">contracts</span>
             </div>
-            <button onClick={() => removeTier(i)} className="p-0.5 text-gray-300 hover:text-red-500 shrink-0"><Trash2 size={12} /></button>
+            <div className="ml-auto">
+              <IconButton
+                icon={Trash2}
+                label={`Remove tier ${i + 1}`}
+                size="icon-sm"
+                variant="ghost-danger"
+                onClick={() => removeTier(i)}
+              />
+            </div>
           </div>
         );
       })}
-      <button onClick={addTier} className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200">
-        <Plus size={12} /> {t("addTier")}
-      </button>
+      <Button
+        size="xs"
+        variant="secondary"
+        leftIcon={<Plus size={11} strokeWidth={2.5} />}
+        className="!border-blue-200 !text-blue-700 hover:!border-blue-300 hover:!bg-blue-50 dark:!border-blue-900 dark:!text-blue-400 dark:hover:!bg-blue-950/40"
+        onClick={addTier}
+      >
+        {t("addTier")}
+      </Button>
       {rows.length > 0 && (
-        <div className="text-[10px] text-gray-400">
+        <div className="text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">
           Above ${(rows[rows.length - 1]?.upTo || 0).toLocaleString()}: {maxContracts || "?"} contracts (max NQ from Basic Info)
         </div>
       )}
@@ -743,29 +1119,67 @@ function FirmForm({ initial, onSave, onCancel }) {
     onSave(out);
   };
 
-  return (
-    <div className="fixed inset-0 z-40 flex justify-end">
-      <div className="absolute inset-0 bg-black bg-opacity-40" onClick={onCancel} />
-      <div className="relative w-full max-w-lg bg-white shadow-2xl overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-5 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-gray-800">{initial ? t("editFirm") : t("addNewFirm")}</h2>
-          <button onClick={onCancel} className="p-1 hover:bg-gray-100 rounded-full"><X size={20} /></button>
-        </div>
+  // Escape to close + body scroll lock (matches Modal primitive behavior)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); onCancel?.(); } };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [onCancel]);
 
-        <div className="p-5 space-y-1">
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-700">{t("basicInfo")}</h3>
+  const selectCls =
+    "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-labelledby="firm-form-title" className="fixed inset-0 z-50 flex justify-end animate-fade-in">
+      {/* Backdrop */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
+        onClick={onCancel}
+      />
+      {/* Panel — right-side drawer */}
+      <div className="relative flex h-full w-full max-w-lg flex-col overflow-hidden border-l border-slate-200 bg-white shadow-soft-lg dark:border-slate-800 dark:bg-slate-900">
+        {/* Header */}
+        <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+            >
+              <Building2 size={15} strokeWidth={2.25} />
+            </span>
+            <h2 id="firm-form-title" className="truncate text-[16px] font-semibold text-slate-900 dark:text-slate-100">
+              {initial ? t("editFirm") : t("addNewFirm")}
+            </h2>
+          </div>
+          <IconButton icon={X} label="Close" size="icon-sm" variant="ghost" onClick={onCancel} />
+        </header>
+
+        {/* Body (scrollable) */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          {/* Basic Info */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span aria-hidden="true" className="flex h-4 w-4 items-center justify-center rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                <Info size={10} strokeWidth={2.5} />
+              </span>
+              {t("basicInfo")}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label={t("firmName")} value={form.name} onChange={v => set("name", v)} type="text" placeholder="e.g. Apex Trader Funding" />
               <Field label={t("modelPlan")} value={form.model} onChange={v => set("model", v)} type="text" placeholder="e.g. $50K EOD" />
               <Field label={t("evalCost")} value={form.cost} onChange={v => set("cost", v)} prefix="$" tip={TIPS.cost} placeholder="0" />
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t("resetCost")}<Tip text={TIPS.resetCost} /></label>
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-400 text-sm">$</span>
+                <label className={FIELD_LABEL_CLS}>{t("resetCost")}<Tip text={TIPS.resetCost} /></label>
+                <div className="flex items-center gap-1.5">
+                  <span className="shrink-0 text-[13px] text-slate-400 dark:text-slate-500">$</span>
                   <input
                     type="number" step="any"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className={FIELD_INPUT_CLS}
                     value={form.resetCost === "na" ? "" : (form.resetCost == null ? "" : form.resetCost)}
                     onChange={e => set("resetCost", e.target.value === "" ? null : Number(e.target.value))}
                     placeholder="same as eval"
@@ -774,46 +1188,56 @@ function FirmForm({ initial, onSave, onCancel }) {
                   <button
                     type="button"
                     onClick={() => set("resetCost", form.resetCost === "na" ? null : "na")}
-                    className={`shrink-0 px-2 py-2 text-xs font-semibold rounded-lg border transition-colors ${form.resetCost === "na" ? "bg-red-100 text-red-700 border-red-300" : "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"}`}
+                    aria-pressed={form.resetCost === "na"}
                     title={form.resetCost === "na" ? "Resets not available — click to enable" : "Mark as no resets available"}
-                  >N/A</button>
+                    className={
+                      "shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+                      (form.resetCost === "na"
+                        ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400"
+                        : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800")
+                    }
+                  >
+                    N/A
+                  </button>
                 </div>
               </div>
               <Field label={t("maxNqContracts")} value={form.maxNQ} onChange={v => set("maxNQ", v)} tip={TIPS.maxNQ} placeholder="—" />
             </div>
-            <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-              <input type="checkbox" className="accent-blue-600 w-4 h-4" checked={!!form.instant} onChange={e => set("instant", e.target.checked)} />
-              <span className="text-sm font-medium text-gray-700">{t("instantFunded")}</span>
-              <span className="text-xs text-gray-400">{t("noChallenge")}</span>
+            <label className="mt-1 flex cursor-pointer select-none items-center gap-2">
+              <input type="checkbox" className="h-4 w-4 accent-blue-600" checked={!!form.instant} onChange={e => set("instant", e.target.checked)} />
+              <span className="text-[13px] font-medium text-slate-700 dark:text-slate-300">{t("instantFunded")}</span>
+              <span className="text-[11.5px] text-slate-500 dark:text-slate-400">{t("noChallenge")}</span>
             </label>
-          </div>
+          </section>
 
-          {!form.instant && <Section title={t("challengeRules")} open={sections.chal} onToggle={() => toggle("chal")} accent="amber">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t("profitTargetReq")} value={form.pt} onChange={v => set("pt", v)} prefix="$" tip={TIPS.pt} />
-              <Field label={t("maxLossLimitReq")} value={form.mll} onChange={v => set("mll", v)} prefix="$" tip={TIPS.mll} />
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t("mllDrawdownType")} <Tip text={TIPS.mllType} /></label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" value={form.mllType || "static"} onChange={e => set("mllType", e.target.value)}>
-                  <option value="static">{t("ddStatic")}</option>
-                  <option value="eod">{t("ddTrailingEod")}</option>
-                  <option value="intraday">{t("ddTrailingIntraday")}</option>
-                </select>
+          {!form.instant && (
+            <Section title={t("challengeRules")} open={sections.chal} onToggle={() => toggle("chal")} accent="amber" icon={Target}>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t("profitTargetReq")} value={form.pt} onChange={v => set("pt", v)} prefix="$" tip={TIPS.pt} />
+                <Field label={t("maxLossLimitReq")} value={form.mll} onChange={v => set("mll", v)} prefix="$" tip={TIPS.mll} />
+                <div>
+                  <label className={FIELD_LABEL_CLS}>{t("mllDrawdownType")} <Tip text={TIPS.mllType} /></label>
+                  <select className={selectCls} value={form.mllType || "static"} onChange={e => set("mllType", e.target.value)}>
+                    <option value="static">{t("ddStatic")}</option>
+                    <option value="eod">{t("ddTrailingEod")}</option>
+                    <option value="intraday">{t("ddTrailingIntraday")}</option>
+                  </select>
+                </div>
+                <Field label={t("dailyLossLimit")} value={form.dll} onChange={v => set("dll", v)} prefix="$" tip={TIPS.dll} placeholder={t("emptyNone")} />
+                <Field label={t("consistency")} value={form.consistency} onChange={v => set("consistency", v)} suffix="%" tip={TIPS.consistency} placeholder={t("emptyNone")} />
+                <Field label={t("minProfitDays")} value={form.minDays} onChange={v => set("minDays", v)} tip={TIPS.minDays} placeholder={t("emptyNone")} />
+                <Field label={t("minDailyProfit")} value={form.minProfit} onChange={v => set("minProfit", v)} prefix="$" tip={TIPS.minProfit} placeholder={t("emptyNone")} />
               </div>
-              <Field label={t("dailyLossLimit")} value={form.dll} onChange={v => set("dll", v)} prefix="$" tip={TIPS.dll} placeholder={t("emptyNone")} />
-              <Field label={t("consistency")} value={form.consistency} onChange={v => set("consistency", v)} suffix="%" tip={TIPS.consistency} placeholder={t("emptyNone")} />
-              <Field label={t("minProfitDays")} value={form.minDays} onChange={v => set("minDays", v)} tip={TIPS.minDays} placeholder={t("emptyNone")} />
-              <Field label={t("minDailyProfit")} value={form.minProfit} onChange={v => set("minProfit", v)} prefix="$" tip={TIPS.minProfit} placeholder={t("emptyNone")} />
-            </div>
-          </Section>}
+            </Section>
+          )}
 
-          <Section title={t("fundedRules")} open={sections.fund} onToggle={() => toggle("fund")} accent="orange">
+          <Section title={t("fundedRules")} open={sections.fund} onToggle={() => toggle("fund")} accent="orange" icon={Briefcase}>
             <div className="grid grid-cols-2 gap-3">
               <Field label={t("activationFee")} value={form.activation} onChange={v => set("activation", v)} prefix="$" tip={TIPS.activation} placeholder="0" />
               <Field label={t("maxLossLimit")} value={form.fMll} onChange={v => set("fMll", v)} prefix="$" tip={TIPS.mll} />
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">{t("mllDrawdownType")} <Tip text={TIPS.mllType} /></label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white" value={form.fMllType || "static"} onChange={e => set("fMllType", e.target.value)}>
+                <label className={FIELD_LABEL_CLS}>{t("mllDrawdownType")} <Tip text={TIPS.mllType} /></label>
+                <select className={selectCls} value={form.fMllType || "static"} onChange={e => set("fMllType", e.target.value)}>
                   <option value="static">{t("ddStatic")}</option>
                   <option value="eod">{t("ddTrailingEod")}</option>
                   <option value="intraday">{t("ddTrailingIntraday")}</option>
@@ -826,39 +1250,49 @@ function FirmForm({ initial, onSave, onCancel }) {
             </div>
           </Section>
 
-          {!form.instant && <Section title={t("challengeScaling")} open={sections.scChal} onToggle={() => toggle("scChal")} accent="amber">
-            <p className="text-xs text-gray-400 mb-2">{t("scalingDesc")} <Tip text={TIPS.scalingPlan} /></p>
-            <ScalingTierEditor tiers={form.scalingChal || []} onChange={v => set("scalingChal", v)} maxContracts={form.maxNQ} />
-          </Section>}
+          {!form.instant && (
+            <Section title={t("challengeScaling")} open={sections.scChal} onToggle={() => toggle("scChal")} accent="amber" icon={Layers}>
+              <p className="mb-2.5 text-[11.5px] text-slate-500 dark:text-slate-400">
+                {t("scalingDesc")} <Tip text={TIPS.scalingPlan} />
+              </p>
+              <ScalingTierEditor tiers={form.scalingChal || []} onChange={v => set("scalingChal", v)} maxContracts={form.maxNQ} />
+            </Section>
+          )}
 
-          <Section title={t("fundedScaling")} open={sections.scFund} onToggle={() => toggle("scFund")} accent="orange">
-            <p className="text-xs text-gray-400 mb-2">{t("scalingFundDesc")} <Tip text={TIPS.scalingPlan} /></p>
+          <Section title={t("fundedScaling")} open={sections.scFund} onToggle={() => toggle("scFund")} accent="orange" icon={Layers}>
+            <p className="mb-2.5 text-[11.5px] text-slate-500 dark:text-slate-400">
+              {t("scalingFundDesc")} <Tip text={TIPS.scalingPlan} />
+            </p>
             <ScalingTierEditor tiers={form.scalingFund || []} onChange={v => set("scalingFund", v)} maxContracts={form.maxNQ} />
           </Section>
 
-          <Section title={t("payoutRules")} open={sections.pay} onToggle={() => toggle("pay")} accent="blue">
+          <Section title={t("payoutRules")} open={sections.pay} onToggle={() => toggle("pay")} accent="blue" icon={Award}>
             <div className="grid grid-cols-2 gap-3">
               <Field label={t("buffer")} value={form.buffer} onChange={v => set("buffer", v)} prefix="$" tip={TIPS.buffer} placeholder="0" />
               <Field label={t("profitSplit")} value={form.split} onChange={v => set("split", v)} suffix="%" tip={TIPS.split} placeholder="e.g. 90" />
               <Field label={t("withdrawalPct")} value={form.withdrawalPct} onChange={v => set("withdrawalPct", v)} suffix="%" tip={TIPS.withdrawalPct} placeholder="100 (default)" />
             </div>
             <div className="mt-3">
-              <label className="block text-xs font-medium text-gray-500 mb-1.5">{t("payoutTiers")} <Tip text={TIPS.payoutTiers} /></label>
+              <label className={FIELD_LABEL_CLS}>{t("payoutTiers")} <Tip text={TIPS.payoutTiers} /></label>
               <PayoutTierEditor tiers={form.payoutTiers || []} onChange={v => set("payoutTiers", v)} />
             </div>
           </Section>
 
-          <Section title={t("notes")} open={sections.notes} onToggle={() => toggle("notes")} accent="gray">
+          <Section title={t("notes")} open={sections.notes} onToggle={() => toggle("notes")} accent="slate" icon={BookOpen}>
             <RichTextEditor value={form.notes} onChange={v => set("notes", v)} />
           </Section>
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-5 py-4 flex justify-end gap-3">
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">{t("cancel")}</button>
-          <button onClick={handleSave} className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm">{initial ? t("updateFirm") : t("addFirm")}</button>
-        </div>
+        {/* Footer */}
+        <footer className="flex shrink-0 justify-end gap-2 border-t border-slate-200 bg-slate-50/60 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <Button variant="ghost" size="md" onClick={onCancel}>{t("cancel")}</Button>
+          <Button variant="primary" size="md" onClick={handleSave}>
+            {initial ? t("updateFirm") : t("addFirm")}
+          </Button>
+        </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -867,103 +1301,139 @@ function FirmForm({ initial, onSave, onCancel }) {
 // ═══════════════════════════════════════════════════════════
 function MetricBlock({ titleKey, formulaKey, inputsKey, descKey, exampleKey }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-      <h3 className="text-base font-bold text-indigo-800">{t(titleKey)}</h3>
+    <article className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-soft transition-shadow duration-150 hover:shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
+      <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
+        {t(titleKey)}
+      </h3>
 
       {formulaKey && (
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">{t("mgFormula")}</span>
-          <pre className="mt-1 bg-gray-100 border border-gray-200 rounded-lg p-3 text-xs font-mono text-gray-800 whitespace-pre-wrap leading-relaxed overflow-x-auto">{t(formulaKey)}</pre>
-        </div>
+        <MetricSection label={t("mgFormula")} tone="indigo" icon={Calculator}>
+          <pre className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200">
+            {t(formulaKey)}
+          </pre>
+        </MetricSection>
       )}
 
       {inputsKey && (
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-600">{t("mgInputs")}</span>
-          <p className="mt-1 text-sm text-gray-700 whitespace-pre-line leading-relaxed">{t(inputsKey)}</p>
-        </div>
+        <MetricSection label={t("mgInputs")} tone="blue" icon={Info}>
+          <p className="whitespace-pre-line text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
+            {t(inputsKey)}
+          </p>
+        </MetricSection>
       )}
 
-      <div>
-        <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">{t("mgDescription")}</span>
-        <p className="mt-1 text-sm text-gray-700 leading-relaxed">{t(descKey)}</p>
-      </div>
+      <MetricSection label={t("mgDescription")} tone="emerald" icon={BookOpen}>
+        <p className="text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
+          {t(descKey)}
+        </p>
+      </MetricSection>
 
       {exampleKey && (
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-600">{t("mgExample")}</span>
-          <pre className="mt-1 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs font-mono text-gray-800 whitespace-pre-wrap leading-relaxed overflow-x-auto">{t(exampleKey)}</pre>
-        </div>
+        <MetricSection label={t("mgExample")} tone="amber" icon={Target}>
+          <pre className="whitespace-pre-wrap rounded-md border border-amber-200 bg-amber-50/60 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-slate-200">
+            {t(exampleKey)}
+          </pre>
+        </MetricSection>
       )}
+    </article>
+  );
+}
+
+// ── Sub-section inside MetricBlock (formula / inputs / description / example) ──
+const METRIC_SECTION_TONES = {
+  indigo:  "text-indigo-600 dark:text-indigo-400",
+  blue:    "text-blue-600 dark:text-blue-400",
+  emerald: "text-emerald-600 dark:text-emerald-400",
+  amber:   "text-amber-600 dark:text-amber-400",
+};
+function MetricSection({ label, tone, icon: Icon, children }) {
+  const cls = METRIC_SECTION_TONES[tone] || METRIC_SECTION_TONES.emerald;
+  return (
+    <div>
+      <span className={"inline-flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-wider " + cls}>
+        {Icon && <Icon size={11} strokeWidth={2.5} aria-hidden="true" />}
+        {label}
+      </span>
+      <div className="mt-1">{children}</div>
     </div>
+  );
+}
+
+// ── Guide section header ──
+const GUIDE_SECTION_ICONS = {
+  comparison: { Icon: BarChart3,  chip: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400",    border: "border-indigo-200 dark:border-indigo-900" },
+  financial:  { Icon: TrendingUp, chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400", border: "border-emerald-200 dark:border-emerald-900" },
+  live:       { Icon: Activity,   chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",             border: "border-blue-200 dark:border-blue-900" },
+  trading:    { Icon: Target,     chip: "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400",         border: "border-amber-200 dark:border-amber-900" },
+};
+function GuideSection({ variant, title, children }) {
+  const { Icon, chip, border } = GUIDE_SECTION_ICONS[variant] || GUIDE_SECTION_ICONS.comparison;
+  return (
+    <section>
+      <div className={"mb-4 flex items-center gap-2.5 border-b-2 pb-2 " + border}>
+        <span
+          aria-hidden="true"
+          className={"flex h-7 w-7 items-center justify-center rounded-md " + chip}
+        >
+          <Icon size={14} strokeWidth={2.25} />
+        </span>
+        <h2 className="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          {title}
+        </h2>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
   );
 }
 
 function MetricsGuide() {
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8">
       {/* Title & intro */}
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">{t("mgTitle")}</h1>
-        <p className="text-sm text-gray-500 max-w-2xl mx-auto">{t("mgIntro")}</p>
-      </div>
-
-      {/* ── Section 1: Comparison & Ranking ── */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-700 border-b-2 border-indigo-300 pb-1 mb-4 flex items-center gap-2">
-          <span className="text-indigo-500">📊</span> {t("mgSectionComparison")}
-        </h2>
-        <div className="space-y-4">
-          <MetricBlock titleKey="mgEffMllTitle" formulaKey="mgEffMllFormula" inputsKey="mgEffMllInputs" descKey="mgEffMllDesc" exampleKey="mgEffMllExample" />
-          <MetricBlock titleKey="mgRoomScoreTitle" formulaKey="mgRoomScoreFormula" inputsKey="mgRoomScoreInputs" descKey="mgRoomScoreDesc" exampleKey="mgRoomScoreExample" />
-          <MetricBlock titleKey="mgDaysFactorTitle" formulaKey="mgDaysFactorFormula" inputsKey="mgDaysFactorInputs" descKey="mgDaysFactorDesc" exampleKey="mgDaysFactorExample" />
-          <MetricBlock titleKey="mgScalingFactorTitle" formulaKey="mgScalingFactorFormula" inputsKey="mgScalingFactorInputs" descKey="mgScalingFactorDesc" exampleKey="mgScalingFactorExample" />
-          <MetricBlock titleKey="mgEaseToPassTitle" formulaKey="mgEaseToPassFormula" inputsKey="mgEaseToPassInputs" descKey="mgEaseToPassDesc" exampleKey="mgEaseToPassExample" />
-          <MetricBlock titleKey="mgEaseToGetPaidTitle" formulaKey="mgEaseToGetPaidFormula" inputsKey="mgEaseToGetPaidInputs" descKey="mgEaseToGetPaidDesc" exampleKey="mgEaseToGetPaidExample" />
-          <MetricBlock titleKey="mgOverallEaseTitle" formulaKey="mgOverallEaseFormula" inputsKey="mgOverallEaseInputs" descKey="mgOverallEaseDesc" exampleKey="mgOverallEaseExample" />
-          <MetricBlock titleKey="mgDaysTitle" formulaKey="mgDaysFormula" inputsKey="mgDaysInputs" descKey="mgDaysDesc" exampleKey="mgDaysExample" />
+      <header className="text-center">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-soft">
+          <BookOpen size={18} strokeWidth={2.25} className="text-white" aria-hidden="true" />
         </div>
-      </div>
+        <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+          {t("mgTitle")}
+        </h1>
+        <p className="mx-auto mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+          {t("mgIntro")}
+        </p>
+      </header>
 
-      {/* ── Section 2: Financial Metrics ── */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-700 border-b-2 border-emerald-300 pb-1 mb-4 flex items-center gap-2">
-          <span className="text-emerald-500">💰</span> {t("mgSectionFinancial")}
-        </h2>
-        <div className="space-y-4">
-          <MetricBlock titleKey="mgTotalCostTitle" formulaKey="mgTotalCostFormula" descKey="mgTotalCostDesc" />
-          <MetricBlock titleKey="mgNetProfitTitle" formulaKey="mgNetProfitFormula" descKey="mgNetProfitDesc" exampleKey="mgNetProfitExample" />
-          <MetricBlock titleKey="mgRoiTitle" formulaKey="mgRoiFormula" descKey="mgRoiDesc" exampleKey="mgRoiExample" />
-          <MetricBlock titleKey="mgDailyRateTitle" formulaKey="mgDailyRateFormula" descKey="mgDailyRateDesc" exampleKey="mgDailyRateExample" />
-          <MetricBlock titleKey="mgResetsTitle" formulaKey="mgResetsFormula" inputsKey="mgResetsInputs" descKey="mgResetsDesc" exampleKey="mgResetsExample" />
-          <MetricBlock titleKey="mgReqBalTitle" formulaKey="mgReqBalFormula" descKey="mgReqBalDesc" />
-        </div>
-      </div>
+      <GuideSection variant="comparison" title={t("mgSectionComparison")}>
+        <MetricBlock titleKey="mgEffMllTitle" formulaKey="mgEffMllFormula" inputsKey="mgEffMllInputs" descKey="mgEffMllDesc" exampleKey="mgEffMllExample" />
+        <MetricBlock titleKey="mgRoomScoreTitle" formulaKey="mgRoomScoreFormula" inputsKey="mgRoomScoreInputs" descKey="mgRoomScoreDesc" exampleKey="mgRoomScoreExample" />
+        <MetricBlock titleKey="mgDaysFactorTitle" formulaKey="mgDaysFactorFormula" inputsKey="mgDaysFactorInputs" descKey="mgDaysFactorDesc" exampleKey="mgDaysFactorExample" />
+        <MetricBlock titleKey="mgScalingFactorTitle" formulaKey="mgScalingFactorFormula" inputsKey="mgScalingFactorInputs" descKey="mgScalingFactorDesc" exampleKey="mgScalingFactorExample" />
+        <MetricBlock titleKey="mgEaseToPassTitle" formulaKey="mgEaseToPassFormula" inputsKey="mgEaseToPassInputs" descKey="mgEaseToPassDesc" exampleKey="mgEaseToPassExample" />
+        <MetricBlock titleKey="mgEaseToGetPaidTitle" formulaKey="mgEaseToGetPaidFormula" inputsKey="mgEaseToGetPaidInputs" descKey="mgEaseToGetPaidDesc" exampleKey="mgEaseToGetPaidExample" />
+        <MetricBlock titleKey="mgOverallEaseTitle" formulaKey="mgOverallEaseFormula" inputsKey="mgOverallEaseInputs" descKey="mgOverallEaseDesc" exampleKey="mgOverallEaseExample" />
+        <MetricBlock titleKey="mgDaysTitle" formulaKey="mgDaysFormula" inputsKey="mgDaysInputs" descKey="mgDaysDesc" exampleKey="mgDaysExample" />
+      </GuideSection>
 
-      {/* ── Section 3: Live Account Metrics ── */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-700 border-b-2 border-blue-300 pb-1 mb-4 flex items-center gap-2">
-          <span className="text-blue-500">📈</span> {t("mgSectionLive")}
-        </h2>
-        <div className="space-y-4">
-          <MetricBlock titleKey="mgConsistencyTitle" formulaKey="mgConsistencyFormula" inputsKey="mgConsistencyInputs" descKey="mgConsistencyDesc" exampleKey="mgConsistencyExample" />
-          <MetricBlock titleKey="mgMaxSafeTitle" formulaKey="mgMaxSafeFormula" inputsKey="mgMaxSafeInputs" descKey="mgMaxSafeDesc" exampleKey="mgMaxSafeExample" />
-          <MetricBlock titleKey="mgDrawdownTitle" formulaKey="mgDrawdownFormula" descKey="mgDrawdownDesc" exampleKey="mgDrawdownExample" />
-          <MetricBlock titleKey="mgAllRulesTitle" formulaKey="mgAllRulesFormula" descKey="mgAllRulesDesc" />
-          <MetricBlock titleKey="mgLiveEaseTitle" formulaKey="mgLiveEaseFormula" descKey="mgLiveEaseDesc" />
-          <MetricBlock titleKey="mgLiveScalingTitle" formulaKey="mgLiveScalingFormula" descKey="mgLiveScalingDesc" />
-        </div>
-      </div>
+      <GuideSection variant="financial" title={t("mgSectionFinancial")}>
+        <MetricBlock titleKey="mgTotalCostTitle" formulaKey="mgTotalCostFormula" descKey="mgTotalCostDesc" />
+        <MetricBlock titleKey="mgNetProfitTitle" formulaKey="mgNetProfitFormula" descKey="mgNetProfitDesc" exampleKey="mgNetProfitExample" />
+        <MetricBlock titleKey="mgRoiTitle" formulaKey="mgRoiFormula" descKey="mgRoiDesc" exampleKey="mgRoiExample" />
+        <MetricBlock titleKey="mgDailyRateTitle" formulaKey="mgDailyRateFormula" descKey="mgDailyRateDesc" exampleKey="mgDailyRateExample" />
+        <MetricBlock titleKey="mgResetsTitle" formulaKey="mgResetsFormula" inputsKey="mgResetsInputs" descKey="mgResetsDesc" exampleKey="mgResetsExample" />
+        <MetricBlock titleKey="mgReqBalTitle" formulaKey="mgReqBalFormula" descKey="mgReqBalDesc" />
+      </GuideSection>
 
-      {/* ── Section 4: Today's Trading Plan ── */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-700 border-b-2 border-amber-300 pb-1 mb-4 flex items-center gap-2">
-          <span className="text-amber-500">🎯</span> {t("mgSectionTrading")}
-        </h2>
-        <div className="space-y-4">
-          <MetricBlock titleKey="mgIdealTargetTitle" formulaKey="mgIdealTargetFormula" inputsKey="mgIdealTargetInputs" descKey="mgIdealTargetDesc" exampleKey="mgIdealTargetExample" />
-        </div>
-      </div>
+      <GuideSection variant="live" title={t("mgSectionLive")}>
+        <MetricBlock titleKey="mgConsistencyTitle" formulaKey="mgConsistencyFormula" inputsKey="mgConsistencyInputs" descKey="mgConsistencyDesc" exampleKey="mgConsistencyExample" />
+        <MetricBlock titleKey="mgMaxSafeTitle" formulaKey="mgMaxSafeFormula" inputsKey="mgMaxSafeInputs" descKey="mgMaxSafeDesc" exampleKey="mgMaxSafeExample" />
+        <MetricBlock titleKey="mgDrawdownTitle" formulaKey="mgDrawdownFormula" descKey="mgDrawdownDesc" exampleKey="mgDrawdownExample" />
+        <MetricBlock titleKey="mgAllRulesTitle" formulaKey="mgAllRulesFormula" descKey="mgAllRulesDesc" />
+        <MetricBlock titleKey="mgLiveEaseTitle" formulaKey="mgLiveEaseFormula" descKey="mgLiveEaseDesc" />
+        <MetricBlock titleKey="mgLiveScalingTitle" formulaKey="mgLiveScalingFormula" descKey="mgLiveScalingDesc" />
+      </GuideSection>
+
+      <GuideSection variant="trading" title={t("mgSectionTrading")}>
+        <MetricBlock titleKey="mgIdealTargetTitle" formulaKey="mgIdealTargetFormula" inputsKey="mgIdealTargetInputs" descKey="mgIdealTargetDesc" exampleKey="mgIdealTargetExample" />
+      </GuideSection>
     </div>
   );
 }
@@ -972,45 +1442,145 @@ function MetricsGuide() {
 // HOW IT WORKS PANEL
 // ═══════════════════════════════════════════════════════════
 function HowItWorks({ open, onToggle }) {
-  if (!open) return (
-    <button onClick={onToggle} className="w-full text-left p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-sm text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center gap-2">
-      <Info size={16} /> <span className="font-medium">{t("howCalculated")}</span> <ChevronRight size={14} className="ml-auto" />
-    </button>
-  );
-
   return (
-    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-      <button onClick={onToggle} className="w-full text-left flex items-center justify-between mb-3">
-        <span className="font-semibold text-indigo-800 flex items-center gap-2"><Info size={16} /> {t("howCalculated")}</span>
-        <ChevronDown size={16} className="text-indigo-600" />
+    <div
+      className={
+        "overflow-hidden rounded-xl border bg-white shadow-soft transition-colors duration-150 " +
+        "border-slate-200 dark:border-slate-800 dark:bg-slate-900"
+      }
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="how-it-works-panel"
+        className={
+          "group flex w-full items-center justify-between gap-3 px-4 py-3 text-left " +
+          "transition-colors duration-150 hover:bg-slate-50 focus:outline-none " +
+          "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 " +
+          "dark:hover:bg-slate-800/40"
+        }
+      >
+        <span className="flex items-center gap-2.5 min-w-0">
+          <span
+            aria-hidden="true"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+          >
+            <Calculator size={13} strokeWidth={2.25} />
+          </span>
+          <span className="truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+            {t("howCalculated")}
+          </span>
+        </span>
+        <ChevronDown
+          size={16}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className={
+            "shrink-0 text-slate-400 transition-transform duration-200 ease-out " +
+            "dark:text-slate-500 " + (open ? "rotate-180" : "rotate-0")
+          }
+        />
       </button>
-      <div className="space-y-4 text-sm text-gray-700">
-        <div>
-          <h4 className="font-semibold text-indigo-700 mb-1">{t("easeToPassTitle")}</h4>
-          <p className="text-xs leading-relaxed mb-1"><strong>Room Score</strong>: If DLL exists: (DLL/PT) × (1 + log₂(MLL/DLL) × 0.25). If no DLL: MLL/PT. Higher DLL or no DLL = more room per session.</p>
-          <p className="text-xs leading-relaxed"><strong>Days Factor</strong>: (1/eff_days)^0.3. Where eff_days = MAX(Min days, ⌈1/Consistency⌉). Fewer days = less penalty.</p>
-          <p className="text-xs leading-relaxed"><strong>Scaling Factor</strong>: weighted avg contracts ÷ max contracts. 100% if no scaling plan. Final: Room × Days Factor × Scaling Factor.</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-indigo-700 mb-1">{t("easeToGetPaidTitle")}</h4>
-          <p className="text-xs leading-relaxed">Same formula, but uses funded DLL/MLL/Consistency/Days. Target = MAX(Buffer + Max Payout, Max Payout ÷ Withdrawal %). Handles two payout models:</p>
-          <p className="text-xs leading-relaxed mt-1"><strong>Buffer model</strong> (Withdrawal %=100%): target = Buffer + Max Payout. <strong>Profit-split model</strong> (e.g. 50%): target = MaxPay ÷ 0.5 = 2× MaxPay. The MAX picks whichever is stricter.</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-indigo-700 mb-1">{t("overallEaseTitle")}</h4>
-          <p className="text-xs leading-relaxed">Geometric mean: √(Pass × Paid). Unlike a regular average, this penalizes imbalance. A firm easy to pass but hard to get paid (or vice versa) scores lower than a balanced one.</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-indigo-700 mb-1">{t("daysFormula")}</h4>
-          <p className="text-xs leading-relaxed">MAX(Min profitable days, ⌈1/Consistency⌉). Takes the stricter of explicit minimum days or consistency-implied minimum. E.g. 40% consistency → need ⌈1/0.4⌉ = 3 days minimum.</p>
-        </div>
-        <div>
-          <h4 className="font-semibold text-indigo-700 mb-1">{t("tunableParams")}</h4>
-          <p className="text-xs leading-relaxed"><strong>0.25</strong> — MLL runway bonus weight. Higher = MLL matters more when DLL exists.</p>
-          <p className="text-xs leading-relaxed"><strong>0.3</strong> — Days exponent. Higher = more days penalty. At 0.3, 10 days halves the score vs 1 day.</p>
+
+      <div
+        id="how-it-works-panel"
+        className={
+          "grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none " +
+          (open ? "grid-rows-[1fr]" : "grid-rows-[0fr]")
+        }
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-slate-100 px-4 py-4 dark:border-slate-800">
+            <div className="grid gap-4 md:grid-cols-2">
+              <HiwSection title={t("easeToPassTitle")} tone="emerald">
+                <HiwRow label="Room Score">
+                  If DLL exists: <code className="hiw-code">(DLL/PT) × (1 + log₂(MLL/DLL) × 0.25)</code>.
+                  If no DLL: <code className="hiw-code">MLL/PT</code>. Higher DLL or no DLL = more room per session.
+                </HiwRow>
+                <HiwRow label="Days Factor">
+                  <code className="hiw-code">(1/eff_days)^0.3</code>, where
+                  <code className="hiw-code ml-1">eff_days = MAX(Min days, ⌈1/Consistency⌉)</code>. Fewer days = less penalty.
+                </HiwRow>
+                <HiwRow label="Scaling Factor">
+                  Weighted avg contracts ÷ max contracts. 100% if no scaling plan.
+                  Final: <code className="hiw-code">Room × Days × Scaling</code>.
+                </HiwRow>
+              </HiwSection>
+
+              <HiwSection title={t("easeToGetPaidTitle")} tone="blue">
+                <HiwRow>
+                  Same formula, but uses funded DLL/MLL/Consistency/Days.
+                  Target = <code className="hiw-code">MAX(Buffer + Max Payout, Max Payout ÷ Withdrawal %)</code>.
+                </HiwRow>
+                <HiwRow label="Buffer model (100% withdrawal)">
+                  target = <code className="hiw-code">Buffer + Max Payout</code>.
+                </HiwRow>
+                <HiwRow label="Profit-split (e.g. 50%)">
+                  target = <code className="hiw-code">MaxPay ÷ 0.5 = 2× MaxPay</code>. The MAX picks whichever is stricter.
+                </HiwRow>
+              </HiwSection>
+
+              <HiwSection title={t("overallEaseTitle")} tone="amber">
+                <HiwRow>
+                  Geometric mean: <code className="hiw-code">√(Pass × Paid)</code>. Unlike a regular average,
+                  this penalizes imbalance — a firm easy to pass but hard to get paid (or vice versa) scores
+                  lower than a balanced one.
+                </HiwRow>
+              </HiwSection>
+
+              <HiwSection title={t("daysFormula")} tone="slate">
+                <HiwRow>
+                  <code className="hiw-code">MAX(Min profitable days, ⌈1/Consistency⌉)</code>. Stricter of explicit
+                  minimum days or consistency-implied minimum. E.g. 40% consistency → need
+                  <code className="hiw-code ml-1">⌈1/0.4⌉ = 3</code> days minimum.
+                </HiwRow>
+              </HiwSection>
+            </div>
+
+            <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                {t("tunableParams")}
+              </div>
+              <div className="grid gap-2 text-[12.5px] leading-snug text-slate-600 dark:text-slate-400 sm:grid-cols-2">
+                <div>
+                  <code className="hiw-code">0.25</code> — MLL runway bonus weight. Higher = MLL matters more when DLL exists.
+                </div>
+                <div>
+                  <code className="hiw-code">0.3</code> — Days exponent. Higher = more days penalty. At 0.3, 10 days halves the score vs 1 day.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Reusable section styles for HowItWorks
+const HIW_TONES = {
+  emerald: "border-l-2 border-emerald-400 bg-emerald-50/40 dark:border-emerald-500/80 dark:bg-emerald-950/20",
+  blue:    "border-l-2 border-blue-400 bg-blue-50/40 dark:border-blue-500/80 dark:bg-blue-950/20",
+  amber:   "border-l-2 border-amber-400 bg-amber-50/40 dark:border-amber-500/80 dark:bg-amber-950/20",
+  slate:   "border-l-2 border-slate-300 bg-slate-50/60 dark:border-slate-600 dark:bg-slate-800/40",
+};
+
+function HiwSection({ title, tone = "slate", children }) {
+  return (
+    <div className={"rounded-r-md px-3 py-2.5 " + (HIW_TONES[tone] || HIW_TONES.slate)}>
+      <h4 className="mb-1.5 text-[12px] font-semibold text-slate-900 dark:text-slate-100">{title}</h4>
+      <div className="space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function HiwRow({ label, children }) {
+  return (
+    <p className="text-[12.5px] leading-relaxed text-slate-600 dark:text-slate-400">
+      {label && <strong className="font-semibold text-slate-800 dark:text-slate-200">{label}: </strong>}
+      {children}
+    </p>
   );
 }
 
@@ -1029,87 +1599,210 @@ const getTableCols = () => [
   { key: "totalDays", label: t("daysToPayoutCol"), fmt: (v, f) => f && f.isInstant ? `${f.daysToPayout}d` : v != null ? `${v}d` : "—", sort: true, desc: false },
 ];
 
-const medalIcon = rank => {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return rank;
+// ── Rank badge (replaces emoji medals with a polished pill) ──
+const RANK_STYLES = {
+  1: "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow-sm ring-1 ring-amber-400/50",
+  2: "bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 shadow-sm ring-1 ring-slate-400/50 dark:from-slate-300 dark:to-slate-500 dark:text-slate-900",
+  3: "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-950 shadow-sm ring-1 ring-orange-400/50",
+};
+function RankBadge({ rank }) {
+  const top = rank <= 3;
+  const cls = top
+    ? RANK_STYLES[rank]
+    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400";
+  return (
+    <span
+      aria-label={`Rank ${rank}`}
+      className={
+        "inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1 " +
+        "text-[11px] font-bold tabular-nums " + cls
+      }
+    >
+      {rank}
+    </span>
+  );
+}
+
+// ── Row tone — subtle tier coloring (bg + left accent) ──
+const ROW_TONES = {
+  top: {
+    row: "bg-emerald-50/60 dark:bg-emerald-950/20",
+    accent: "bg-emerald-400 dark:bg-emerald-500",
+  },
+  green: {
+    row: "bg-emerald-50/40 dark:bg-emerald-950/10",
+    accent: "bg-emerald-300 dark:bg-emerald-600/60",
+  },
+  amber: {
+    row: "bg-amber-50/40 dark:bg-amber-950/10",
+    accent: "bg-amber-300 dark:bg-amber-600/60",
+  },
+  red: {
+    row: "bg-red-50/40 dark:bg-red-950/10",
+    accent: "bg-red-300 dark:bg-red-600/60",
+  },
+  neutral: {
+    row: "bg-white dark:bg-slate-900",
+    accent: "bg-slate-200 dark:bg-slate-800",
+  },
+};
+const rowTone = (rank, ease) => {
+  if (ease == null) return "neutral";
+  if (rank <= 3 && ease >= 0.45) return "top";
+  if (ease >= 0.45) return "green";
+  if (ease >= 0.25) return "amber";
+  return "red";
 };
 
-const rowBg = (rank, ease) => {
-  if (ease == null) return "bg-gray-50";
-  if (rank <= 3 && ease >= .45) return "bg-emerald-50";
-  if (ease >= .45) return "bg-emerald-50/50";
-  if (ease >= .25) return "bg-amber-50/50";
-  return "bg-red-50/50";
+// ── Ease cell color (text-only) ──
+const easeTextClass = (val) => {
+  if (val == null) return "text-slate-400 dark:text-slate-500";
+  if (val >= 0.45) return "text-emerald-700 dark:text-emerald-400 font-semibold";
+  if (val >= 0.25) return "text-amber-700 dark:text-amber-400 font-semibold";
+  return "text-red-700 dark:text-red-400 font-semibold";
 };
 
 function ComparisonTable({ firms, sortKey, onSort, onFirmClick }) {
   const cols = getTableCols();
+
+  if (firms.length === 0) {
+    return (
+      <EmptyState
+        icon={Building2}
+        title={t("noFirmsYet")}
+        description={t("clickAddFirm")}
+      />
+    );
+  }
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm bg-white">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-700 text-white">
-            <th className="px-2 py-2.5 text-center w-10 text-xs font-bold">#</th>
-            <th className="px-3 py-2.5 text-left text-xs font-bold min-w-[140px]">Firm</th>
-            {cols.map(col => (
-              <th
-                key={col.key}
-                className={`px-2 py-2.5 text-center text-xs font-bold whitespace-pre-line leading-tight ${col.sort ? "cursor-pointer hover:bg-slate-600 transition-colors select-none" : ""} ${sortKey === col.key ? "bg-slate-500" : ""}`}
-                onClick={() => col.sort && onSort(col.key)}
-              >
-                {col.label}{col.sort && (sortKey === col.key ? " ▼" : "")}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {firms.map((f, i) => {
-            const rank = i + 1;
-            return (
-              <tr key={f.id} className={`${rowBg(rank, f.overallEase)} border-b border-gray-100 hover:bg-blue-50/50 transition-colors ${rank <= 3 ? "font-medium" : ""}`}>
-                <td className="px-2 py-2 text-center text-base">{medalIcon(rank)}</td>
-                <td className="px-3 py-2">
-                  <button onClick={() => onFirmClick(f.id)} className="text-left hover:underline text-blue-700 font-semibold text-sm leading-tight">
-                    {f.name}
-                  </button>
-                  <div className="text-xs text-gray-400 leading-tight">
-                    {f.model}
-                    {f.isInstant && <span className="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded bg-blue-100 text-blue-700">INSTANT</span>}
-                  </div>
-                </td>
-                {cols.map(col => {
-                  const val = f[col.key];
-                  const isEase = col.key.includes("ase") || col.key.includes("Ease");
-                  let cellClr = "text-gray-700";
-                  if (isEase && val != null) {
-                    cellClr = val >= .45 ? "text-emerald-700 font-bold" : val >= .25 ? "text-amber-600 font-semibold" : "text-red-600 font-semibold";
+    <Card className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[13px]">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+              <th scope="col" className="w-10 px-2 py-2.5 text-center">#</th>
+              <th scope="col" className="min-w-[160px] px-3 py-2.5 text-left">Firm</th>
+              {cols.map(col => {
+                const active = sortKey === col.key;
+                const SortIcon = col.desc ? ArrowDown : ArrowUp;
+                return (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    aria-sort={active ? (col.desc ? "descending" : "ascending") : "none"}
+                    className={
+                      "whitespace-pre-line px-2 py-2.5 text-center leading-tight " +
+                      (col.sort
+                        ? "cursor-pointer select-none transition-colors duration-100 hover:bg-slate-100 dark:hover:bg-slate-800/60 "
+                        : "") +
+                      (active ? "text-blue-700 dark:text-blue-400" : "")
+                    }
+                    onClick={() => col.sort && onSort(col.key)}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1">
+                      <span>{col.label}</span>
+                      {col.sort && (
+                        <SortIcon
+                          size={11}
+                          strokeWidth={2.5}
+                          aria-hidden="true"
+                          className={active ? "opacity-100" : "opacity-0 group-hover:opacity-40"}
+                        />
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {firms.map((f, i) => {
+              const rank = i + 1;
+              const tone = ROW_TONES[rowTone(rank, f.overallEase)];
+              return (
+                <tr
+                  key={f.id}
+                  className={
+                    "group relative transition-colors duration-100 " +
+                    tone.row +
+                    " hover:bg-blue-50/60 dark:hover:bg-blue-950/30"
                   }
-                  if (col.key === "maxRoi" && val != null) {
-                    cellClr = val >= 5 ? "text-emerald-700 font-bold" : val >= 2 ? "text-amber-600 font-semibold" : "text-gray-700";
-                  }
-                  if (col.key === "maxNetProfit" && val != null) {
-                    cellClr = val < 0 ? "text-red-600" : "text-gray-700";
-                  }
-                  return (
-                    <td key={col.key} className={`px-2 py-2 text-center text-sm ${cellClr} ${col.primary ? "text-base" : ""}`}>
-                      {col.fmt(val, f)}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {firms.length === 0 && (
-        <div className="text-center py-12 text-gray-400">
-          <p className="text-lg">No firms yet</p>
-          <p className="text-sm mt-1">Click "Add Firm" to get started</p>
-        </div>
-      )}
-    </div>
+                >
+                  <td className="relative px-2 py-2.5 text-center align-middle">
+                    {/* Left accent stripe */}
+                    <span
+                      aria-hidden="true"
+                      className={"absolute left-0 top-0 h-full w-[3px] " + tone.accent}
+                    />
+                    <RankBadge rank={rank} />
+                  </td>
+                  <td className="px-3 py-2.5 align-middle">
+                    <button
+                      type="button"
+                      onClick={() => onFirmClick(f.id)}
+                      className="group/link inline-flex items-center gap-1 rounded text-left text-[13.5px] font-semibold leading-tight text-blue-700 transition-colors hover:text-blue-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      <span className="truncate">{f.name}</span>
+                      <ExternalLink
+                        size={11}
+                        strokeWidth={2.25}
+                        aria-hidden="true"
+                        className="opacity-0 transition-opacity group-hover/link:opacity-70"
+                      />
+                    </button>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11.5px] leading-tight text-slate-500 dark:text-slate-400">
+                      <span className="truncate">{f.model}</span>
+                      {f.isInstant && (
+                        <Badge variant="info" size="sm">
+                          INSTANT
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  {cols.map(col => {
+                    const val = f[col.key];
+                    const isEase = col.key.includes("ase") || col.key.includes("Ease");
+
+                    let cellCls = "text-slate-700 dark:text-slate-300";
+                    if (isEase && val != null) {
+                      cellCls = easeTextClass(val);
+                    }
+                    if (col.key === "maxRoi" && val != null) {
+                      cellCls =
+                        val >= 5
+                          ? "text-emerald-700 dark:text-emerald-400 font-semibold"
+                          : val >= 2
+                          ? "text-amber-700 dark:text-amber-400 font-semibold"
+                          : "text-slate-700 dark:text-slate-300";
+                    }
+                    if (col.key === "maxNetProfit" && val != null) {
+                      cellCls =
+                        val < 0
+                          ? "text-red-600 dark:text-red-400 font-semibold"
+                          : "text-slate-700 dark:text-slate-300";
+                    }
+
+                    return (
+                      <td
+                        key={col.key}
+                        className={
+                          "px-2 py-2.5 text-center tabular-nums align-middle " +
+                          cellCls +
+                          (col.primary ? " text-[14px] font-bold" : "")
+                        }
+                      >
+                        {col.fmt(val, f)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
 
@@ -1576,71 +2269,97 @@ function parseCsvToJournal(csvText, startBalance) {
   };
 }
 
-// Journal Entry Form
+// Journal Entry Form — Phase 8 will do a full redesign; this adds dark-mode support.
 function JournalEntryForm({ onSave, onCancel, initial }) {
   const [form, setForm] = useState(initial || { date: new Date().toISOString().slice(0, 10), balance: "", pnl: "", trades: "", notes: "" });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="p-3 bg-white border border-gray-200 rounded-lg space-y-2">
-      <div className="grid grid-cols-4 gap-2">
+    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
-          <input type="date" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.date} onChange={e => set("date", e.target.value)} />
+          <label className={labelCls}>Date</label>
+          <input type="date" className={inputCls} value={form.date} onChange={e => set("date", e.target.value)} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">EOD Balance</label>
+          <label className={labelCls}>EOD Balance</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.balance} onChange={e => set("balance", e.target.value === "" ? "" : Number(e.target.value))} placeholder="50000" />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input type="number" step="any" className={inputCls} value={form.balance} onChange={e => set("balance", e.target.value === "" ? "" : Number(e.target.value))} placeholder="50000" />
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Day P&L</label>
+          <label className={labelCls}>Day P&L</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.pnl} onChange={e => set("pnl", e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input type="number" step="any" className={inputCls} value={form.pnl} onChange={e => set("pnl", e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1"># Trades</label>
-          <input type="number" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.trades} onChange={e => set("trades", e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
+          <label className={labelCls}># Trades</label>
+          <input type="number" className={inputCls} value={form.trades} onChange={e => set("trades", e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" />
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-        <input type="text" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.notes || ""} onChange={e => set("notes", e.target.value)} placeholder="What happened today..." />
+        <label className={labelCls}>Notes</label>
+        <input type="text" className={inputCls} value={form.notes || ""} onChange={e => set("notes", e.target.value)} placeholder="What happened today..." />
       </div>
-      <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
-        <button onClick={() => { if (!form.balance && form.balance !== 0) { alert("Balance is required"); return; } onSave({ ...form, id: initial?.id || Date.now() }); }} className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded">{initial ? "Update" : "Add Entry"}</button>
+      <div className="flex justify-end gap-2 pt-1">
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button variant="primary" size="sm" onClick={() => { if (!form.balance && form.balance !== 0) { alert("Balance is required"); return; } onSave({ ...form, id: initial?.id || Date.now() }); }}>
+          {initial ? "Update" : "Add Entry"}
+        </Button>
       </div>
     </div>
   );
 }
 
-// Metric badge
+// Metric badge — compact KPI tile used in AccountCard
+const METRIC_TONES = {
+  green:   "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-300",
+  red:     "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-900 dark:text-red-300",
+  amber:   "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/30 dark:border-amber-900 dark:text-amber-300",
+  blue:    "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/30 dark:border-blue-900 dark:text-blue-300",
+  gray:    "bg-slate-50 border-slate-200 text-slate-800 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200",
+};
 function MetricBadge({ label, value, sub, color }) {
-  const clr = color === "green" ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-    : color === "red" ? "bg-red-50 border-red-200 text-red-700"
-    : color === "amber" ? "bg-amber-50 border-amber-200 text-amber-700"
-    : "bg-gray-50 border-gray-200 text-gray-700";
+  const cls = METRIC_TONES[color] || METRIC_TONES.gray;
   return (
-    <div className={`rounded-lg border p-2 text-center ${clr}`}>
-      <div className="text-xs font-medium opacity-70">{label}</div>
-      <div className="text-lg font-bold leading-tight">{value}</div>
-      {sub && <div className="text-[10px] opacity-60">{sub}</div>}
+    <div className={"rounded-lg border px-2.5 py-2 text-center " + cls}>
+      <div className="text-[10px] font-medium uppercase tracking-wide opacity-70">{label}</div>
+      <div className="mt-0.5 text-[15px] font-bold leading-tight tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 text-[10px] leading-tight opacity-65 tabular-nums">{sub}</div>}
     </div>
   );
 }
 
 // Progress bar
+const PROGRESS_TONES = {
+  green: "bg-emerald-500 dark:bg-emerald-500",
+  red:   "bg-red-500 dark:bg-red-500",
+  amber: "bg-amber-500 dark:bg-amber-500",
+  blue:  "bg-blue-500 dark:bg-blue-500",
+};
 function ProgressBar({ pct, label, color }) {
-  const bg = color === "green" ? "bg-emerald-500" : color === "red" ? "bg-red-500" : color === "amber" ? "bg-amber-500" : "bg-blue-500";
+  const fill = PROGRESS_TONES[color] || PROGRESS_TONES.blue;
+  const clamped = Math.min(100, Math.max(0, pct * 100));
   return (
     <div>
-      {label && <div className="text-xs text-gray-500 mb-0.5">{label}</div>}
-      <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${bg}`} style={{ width: `${Math.min(100, Math.max(0, pct * 100))}%` }} />
+      {label && (
+        <div className="mb-1 text-[11.5px] font-medium text-slate-600 dark:text-slate-400">{label}</div>
+      )}
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(clamped)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
+      >
+        <div
+          className={"h-full rounded-full transition-all duration-300 ease-out " + fill}
+          style={{ width: `${clamped}%` }}
+        />
       </div>
     </div>
   );
@@ -1663,54 +2382,70 @@ function PayoutForm({ currentBalance, firmData, onSave, onCancel, payoutNumber }
   const belowMin = grossAmount > 0 && grossAmount < tierMin;
   const aboveMax = grossAmount > 0 && tierMax != null && grossAmount > tierMax;
 
+  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-2">
+    <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
       <div className="flex items-center justify-between">
-        <div className="text-xs font-bold text-emerald-800">Record Payout #{payoutNumber || 1}</div>
+        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-800 dark:text-emerald-300">
+          <Award size={13} strokeWidth={2.5} aria-hidden="true" />
+          Record Payout #{payoutNumber || 1}
+        </div>
         {payoutTiers.length > 0 && (
-          <div className="text-[10px] text-gray-500">
+          <div className="text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">
             Tier limits: min {money(tierMin)}{tierMax != null ? ` — max ${money(tierMax)}` : " — no max limit"}
           </div>
         )}
       </div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Date</label>
-          <input type="date" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" value={date} onChange={e => setDate(e.target.value)} />
+          <label className={labelCls}>Date</label>
+          <input type="date" className={inputCls} value={date} onChange={e => setDate(e.target.value)} />
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Payout Amount (gross)</label>
+          <label className={labelCls}>Payout Amount (gross)</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className={`w-full border rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 ${belowMin || aboveMax ? "border-red-400 bg-red-50" : "border-gray-300"}`} value={amount} onChange={e => setAmount(e.target.value)} placeholder={tierMax != null ? `${tierMin}–${tierMax}` : `min ${tierMin}`} />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input
+              type="number"
+              step="any"
+              className={inputCls + (belowMin || aboveMax ? " !border-red-400 !bg-red-50 dark:!bg-red-950/30" : "")}
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder={tierMax != null ? `${tierMin}–${tierMax}` : `min ${tierMin}`}
+            />
           </div>
           {grossAmount > 0 && split < 1 && (
-            <div className="text-[10px] text-emerald-600 mt-0.5">Net after {(split * 100).toFixed(0)}% split: {money(netAmount)}</div>
+            <div className="mt-0.5 text-[10.5px] text-emerald-700 dark:text-emerald-400 tabular-nums">Net after {(split * 100).toFixed(0)}% split: {money(netAmount)}</div>
           )}
-          {belowMin && <div className="text-[10px] text-red-600 mt-0.5">Below minimum payout ({money(tierMin)})</div>}
-          {aboveMax && <div className="text-[10px] text-red-600 mt-0.5">Exceeds maximum payout ({money(tierMax)})</div>}
+          {belowMin && <div className="mt-0.5 text-[10.5px] text-red-600 dark:text-red-400">Below minimum payout ({money(tierMin)})</div>}
+          {aboveMax && <div className="mt-0.5 text-[10.5px] text-red-600 dark:text-red-400">Exceeds maximum payout ({money(tierMax)})</div>}
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">New Starting Balance</label>
+          <label className={labelCls}>New Starting Balance</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input type="number" step="any" className={inputCls} value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} />
           </div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Balance after payout withdrawal</div>
+          <div className="mt-0.5 text-[10.5px] text-slate-400 dark:text-slate-500">Balance after payout withdrawal</div>
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Notes (optional)</label>
-          <input type="text" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Payout #1" />
+          <label className={labelCls}>Notes (optional)</label>
+          <input type="text" className={inputCls} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Payout #1" />
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
-        <button onClick={() => {
-          if (!grossAmount || grossAmount <= 0) { alert("Enter a payout amount"); return; }
-          onSave({ date, amount: grossAmount, netAmount, newBalance, notes });
-        }} className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm">
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button
+          size="sm"
+          className="!bg-emerald-600 !text-white hover:!bg-emerald-700 dark:!bg-emerald-500 dark:hover:!bg-emerald-600"
+          onClick={() => {
+            if (!grossAmount || grossAmount <= 0) { alert("Enter a payout amount"); return; }
+            onSave({ date, amount: grossAmount, netAmount, newBalance, notes });
+          }}
+        >
           Record Payout
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1723,42 +2458,53 @@ function ResetForm({ firmData, defaultCost, startBalance, onSave, onCancel }) {
   const [newBalance, setNewBalance] = useState(startBalance);
   const [notes, setNotes] = useState("");
 
+  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-      <div className="text-xs font-bold text-amber-800">Reset Account</div>
-      <div className="text-[10px] text-amber-600 -mt-1">This clears the journal and restarts metrics. The cost is recorded as an expense.</div>
-      <div className="grid grid-cols-4 gap-2">
+    <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-amber-800 dark:text-amber-300">
+        <RefreshCw size={13} strokeWidth={2.5} aria-hidden="true" />
+        Reset Account
+      </div>
+      <div className="text-[11px] text-amber-700/90 dark:text-amber-400/90">
+        This clears the journal and restarts metrics. The cost is recorded as an expense.
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Date</label>
-          <input type="date" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" value={date} onChange={e => setDate(e.target.value)} />
+          <label className={labelCls}>Date</label>
+          <input type="date" className={inputCls} value={date} onChange={e => setDate(e.target.value)} />
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Reset Cost</label>
+          <label className={labelCls}>Reset Cost</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" value={cost} onChange={e => setCost(Number(e.target.value))} />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input type="number" step="any" className={inputCls} value={cost} onChange={e => setCost(Number(e.target.value))} />
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">New Starting Balance</label>
+          <label className={labelCls}>New Starting Balance</label>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" step="any" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} />
+            <span className="text-slate-400 text-[13px] dark:text-slate-500">$</span>
+            <input type="number" step="any" className={inputCls} value={newBalance} onChange={e => setNewBalance(Number(e.target.value))} />
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-medium text-gray-500 mb-0.5">Notes (optional)</label>
-          <input type="text" className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Breached on NQ" />
+          <label className={labelCls}>Notes (optional)</label>
+          <input type="text" className={inputCls} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Breached on NQ" />
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 rounded">Cancel</button>
-        <button onClick={() => {
-          if (!confirm("Reset this account? Journal entries will be cleared and a new cycle begins.")) return;
-          onSave({ date, cost, newBalance, notes });
-        }} className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-sm">
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+        <Button
+          size="sm"
+          className="!bg-amber-600 !text-white hover:!bg-amber-700 dark:!bg-amber-500 dark:hover:!bg-amber-600"
+          onClick={() => {
+            if (!confirm("Reset this account? Journal entries will be cleared and a new cycle begins.")) return;
+            onSave({ date, cost, newBalance, notes });
+          }}
+        >
           Confirm Reset
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1871,80 +2617,204 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
     e.target.value = ""; // Reset so same file can be imported again
   };
 
+  // ── Status tone mapping (semantic) ──
   const statusColor = !f ? "gray" : m.allRulesMet ? "green" : m.ddPct <= 0 ? "red" : m.ddPct < 0.25 ? "red" : m.ddPct < 0.5 ? "amber" : "blue";
   const statusLabel = !f ? t("statusNoFirm") : m.allRulesMet ? (m.phase === "challenge" ? t("statusTargetHit") : t("statusPayoutReady")) : m.ddPct <= 0 ? t("statusBreached") : t("statusActive");
+  const statusBadgeVariant = statusColor === "green" ? "success" : statusColor === "red" ? "danger" : statusColor === "amber" ? "warn" : statusColor === "blue" ? "info" : "neutral";
+  const phaseBadgeVariant = firmData?.instant ? "info" : account.phase === "challenge" ? "warn" : statusColor === "red" ? "danger" : "accent";
+  const phaseLabel = firmData?.instant ? t("labelInstant") : account.phase === "challenge" ? t("labelChallenge") : t("labelFunded");
+  // Outer card tone
+  const cardBorder = selected
+    ? "border-blue-400 ring-2 ring-blue-500/20 dark:border-blue-500"
+    : statusColor === "red"
+    ? "border-red-200 dark:border-red-900/60"
+    : statusColor === "green"
+    ? "border-emerald-200 dark:border-emerald-900/60"
+    : "border-slate-200 dark:border-slate-800";
+  // Left accent
+  const accentStripe = statusColor === "red"
+    ? "bg-red-400 dark:bg-red-500"
+    : statusColor === "green"
+    ? "bg-emerald-400 dark:bg-emerald-500"
+    : statusColor === "amber"
+    ? "bg-amber-400 dark:bg-amber-500"
+    : "bg-blue-400 dark:bg-blue-500";
 
   return (
-    <div className={`bg-white rounded-xl border ${selected ? "border-blue-400 ring-1 ring-blue-200" : statusColor === "red" ? "border-red-300" : statusColor === "green" ? "border-emerald-300" : "border-gray-200"} shadow-sm overflow-hidden`}>
-      {/* Header — always visible */}
-      <div className={`px-4 py-3 ${collapsed ? "" : "border-b border-gray-100"} flex items-center justify-between cursor-pointer select-none hover:bg-gray-50/50`} onClick={onToggleCollapse}>
-        <div className="flex items-center gap-2 min-w-0">
-          {onToggleSelect && <input type="checkbox" className="accent-blue-600 w-3.5 h-3.5 shrink-0 cursor-pointer" checked={!!selected} onChange={onToggleSelect} onClick={e => e.stopPropagation()} />}
-          <span className="text-gray-400 shrink-0">{collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</span>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${firmData?.instant ? "bg-blue-100 text-blue-700" : account.phase === "challenge" ? "bg-amber-100 text-amber-700" : "bg-orange-100 text-orange-700"}`}>
-            {firmData?.instant ? t("labelInstant") : account.phase === "challenge" ? t("labelChallenge") : t("labelFunded")}
-          </span>
-          <h3 className="font-bold text-gray-800 truncate">{account.label || `${firmData?.name || "?"} ${firmData?.model || ""}`}</h3>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${statusColor === "green" ? "bg-emerald-100 text-emerald-700" : statusColor === "red" ? "bg-red-100 text-red-700" : statusColor === "amber" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
-            {statusLabel}
-          </span>
-          {/* Compact stats when collapsed */}
+    <div
+      className={
+        "group relative overflow-hidden rounded-xl border bg-white shadow-soft transition-shadow duration-150 " +
+        "hover:shadow-soft-md dark:bg-slate-900 " + cardBorder
+      }
+    >
+      {/* Status accent strip */}
+      <span aria-hidden="true" className={"absolute left-0 top-0 h-full w-[3px] " + accentStripe} />
+
+      {/* ── Header — always visible ── */}
+      <div
+        className={
+          "group/hdr flex cursor-pointer select-none items-center justify-between gap-3 px-4 py-3 pl-5 " +
+          "transition-colors duration-150 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 " +
+          (collapsed ? "" : "border-b border-slate-100 dark:border-slate-800")
+        }
+        onClick={onToggleCollapse}
+        role="button"
+        aria-expanded={!collapsed}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-blue-600"
+              checked={!!selected}
+              onChange={onToggleSelect}
+              onClick={e => e.stopPropagation()}
+              aria-label="Select account"
+            />
+          )}
+          <ChevronDown
+            size={14}
+            strokeWidth={2.25}
+            aria-hidden="true"
+            className={
+              "shrink-0 text-slate-400 transition-transform duration-200 ease-out dark:text-slate-500 " +
+              (collapsed ? "-rotate-90" : "rotate-0")
+            }
+          />
+          <Badge variant={phaseBadgeVariant} size="sm" className="shrink-0">{phaseLabel}</Badge>
+          <h3 className="truncate text-[14px] font-semibold text-slate-900 dark:text-slate-100">
+            {account.label || `${firmData?.name || "?"} ${firmData?.model || ""}`}
+          </h3>
+          <Badge variant={statusBadgeVariant} size="sm" dot className="shrink-0">{statusLabel}</Badge>
+
+          {/* Collapsed compact stats */}
           {collapsed && f && (
-            <div className="flex items-center gap-3 text-xs text-gray-500 ml-2 shrink-0">
-              <span>P&L: <b className={m.totalPnl >= 0 ? "text-emerald-600" : "text-red-600"}>{money(m.totalPnl)}</b></span>
-              <span>DD: <b className={m.ddPct >= 0.5 ? "text-emerald-600" : m.ddPct >= 0.25 ? "text-amber-600" : "text-red-600"}>{(m.ddPct * 100).toFixed(0)}%</b></span>
-              <span>{(m.pctComplete * 100).toFixed(0)}% complete</span>
+            <div className="ml-auto flex min-w-0 shrink items-center gap-3 overflow-hidden text-[11.5px] text-slate-500 dark:text-slate-400">
+              <span className="shrink-0 tabular-nums">
+                P&L:{" "}
+                <b className={m.totalPnl >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
+                  {money(m.totalPnl)}
+                </b>
+              </span>
+              <span className="shrink-0 tabular-nums">
+                DD:{" "}
+                <b className={m.ddPct >= 0.5 ? "text-emerald-600 dark:text-emerald-400" : m.ddPct >= 0.25 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>
+                  {(m.ddPct * 100).toFixed(0)}%
+                </b>
+              </span>
+              <span className="shrink-0 tabular-nums">{(m.pctComplete * 100).toFixed(0)}% complete</span>
               {m.todayPlan && !m.todayPlan.isBreached && !m.todayPlan.isTargetHit && m.todayPlan.contractsAllowed && (
-                <span className="text-slate-600 border-l border-gray-300 pl-3">
-                  <b>{m.todayPlan.contractsAllowed}</b> NQ → aim <b className="text-emerald-600">{money(m.todayPlan.idealDailyTarget)}</b> / max loss <b className="text-red-600">{money(m.todayPlan.maxDailyLoss)}</b>
+                <span className="hidden shrink-0 border-l border-slate-200 pl-3 tabular-nums dark:border-slate-700 lg:inline">
+                  <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.contractsAllowed}</b> NQ → aim{" "}
+                  <b className="text-emerald-600 dark:text-emerald-400">{money(m.todayPlan.idealDailyTarget)}</b> / max loss{" "}
+                  <b className="text-red-600 dark:text-red-400">{money(m.todayPlan.maxDailyLoss)}</b>
                 </span>
               )}
-              {m.totalPayouts > 0 && <span>Paid: <b className="text-emerald-600">{money(m.totalPayouts)}</b></span>}
-              {account.autoEnabled && <span className="flex items-center gap-0.5 text-emerald-600 border-l border-gray-300 pl-3"><Zap size={10} className="fill-emerald-500" /> Auto</span>}
+              {m.totalPayouts > 0 && (
+                <span className="hidden shrink-0 tabular-nums sm:inline">
+                  Paid: <b className="text-emerald-600 dark:text-emerald-400">{money(m.totalPayouts)}</b>
+                </span>
+              )}
+              {account.autoEnabled && (
+                <span className="flex shrink-0 items-center gap-1 border-l border-slate-200 pl-3 text-emerald-600 dark:border-slate-700 dark:text-emerald-400">
+                  <Zap size={10} className="fill-current" aria-hidden="true" /> Auto
+                </span>
+              )}
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+
+        <div className="flex shrink-0 items-center gap-1" onClick={e => e.stopPropagation()}>
           <button
+            type="button"
             onClick={() => {
               const newVal = !account.autoEnabled;
               onUpdate({ ...account, autoEnabled: newVal });
               if (newVal && !collapsed) setShowAutoSettings(true);
             }}
-            className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${account.autoEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`}
             title={account.autoEnabled ? t("autoEnabled") : t("autoDisabled")}
+            aria-pressed={!!account.autoEnabled}
+            className={
+              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11.5px] font-semibold transition-colors duration-150 " +
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+              (account.autoEnabled
+                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/60"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200")
+            }
           >
-            <Zap size={12} className={account.autoEnabled ? "fill-emerald-500" : ""} />
+            <Zap size={11} strokeWidth={2.5} className={account.autoEnabled ? "fill-emerald-500" : ""} aria-hidden="true" />
             {t("autoToggle")}
           </button>
-          {!firmData?.instant && <button onClick={togglePhase} className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded" title="Switch phase">↔ Phase</button>}
-          <button onClick={() => onDelete(account.id)} className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
+          {!firmData?.instant && (
+            <IconButton
+              icon={RefreshCw}
+              label="Switch phase"
+              size="icon-sm"
+              variant="ghost"
+              onClick={togglePhase}
+            />
+          )}
+          <IconButton
+            icon={Trash2}
+            label={t("delete")}
+            size="icon-sm"
+            variant="ghost-danger"
+            onClick={() => onDelete(account.id)}
+          />
         </div>
       </div>
-      <div className="text-xs text-gray-400 px-4 pb-2 -mt-1">
-        {t("started")} {account.startDate || "—"} • {entries.length} {t("journalEntries")}
-        {payouts.length > 0 && <> • <span className="text-emerald-600 font-medium">{payouts.length} {t("payoutN")}{payouts.length !== 1 ? "s" : ""} ({money(m.totalPayouts)})</span></>}
-        {resets.length > 0 && <> • <span className="text-amber-600 font-medium">{resets.length} {t("resetN")}{resets.length !== 1 ? "s" : ""} ({money(m.totalResetCost)})</span></>}
+
+      {/* Meta row */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 pb-2 pl-5 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+        <span className="inline-flex items-center gap-1">
+          <Clock size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />
+          {t("started")} <span className="tabular-nums">{account.startDate || "—"}</span>
+        </span>
+        <span className="text-slate-300 dark:text-slate-700">·</span>
+        <span>{entries.length} {t("journalEntries")}</span>
+        {payouts.length > 0 && (
+          <>
+            <span className="text-slate-300 dark:text-slate-700">·</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+              {payouts.length} {t("payoutN")}{payouts.length !== 1 ? "s" : ""} ({money(m.totalPayouts)})
+            </span>
+          </>
+        )}
+        {resets.length > 0 && (
+          <>
+            <span className="text-slate-300 dark:text-slate-700">·</span>
+            <span className="font-medium text-amber-600 dark:text-amber-400">
+              {resets.length} {t("resetN")}{resets.length !== 1 ? "s" : ""} ({money(m.totalResetCost)})
+            </span>
+          </>
+        )}
       </div>
 
       {/* Automation Settings Panel */}
       {!collapsed && account.autoEnabled && (
-        <div className="border-t border-gray-100">
-          <div className="px-4 py-3 bg-emerald-50/50">
-            <div className="flex items-center justify-between mb-2">
+        <div className="border-t border-slate-100 bg-emerald-50/40 dark:border-slate-800 dark:bg-emerald-950/20">
+          <div className="px-4 py-3 pl-5">
+            <div className="mb-2.5 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Zap size={14} className="text-emerald-600 fill-emerald-500" />
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">{t("autoSettings")}</span>
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 w-5 items-center justify-center rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300"
+                >
+                  <Zap size={11} strokeWidth={2.5} className="fill-current" />
+                </span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                  {t("autoSettings")}
+                </span>
               </div>
-              <span className="text-xs text-emerald-600 font-medium">{t("autoStatusActive")}</span>
+              <Badge variant="success" size="sm" dot>{t("autoStatusActive")}</Badge>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoSession")}</label>
+                <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">{t("autoSession")}</label>
                 <select
                   value={account.autoSessions || "both"}
                   onChange={(e) => onUpdate({ ...account, autoSessions: e.target.value })}
-                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="london">{t("autoSessionLondon")}</option>
                   <option value="ny">{t("autoSessionNy")}</option>
@@ -1952,49 +2822,46 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovateId")}</label>
+                <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">{t("autoTradovateId")}</label>
                 <input
                   type="text"
                   value={account.tradovateAccountId || ""}
                   onChange={(e) => onUpdate({ ...account, tradovateAccountId: e.target.value })}
                   placeholder={t("autoTradovateIdPlaceholder")}
-                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovateUsername")}</label>
+                <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">{t("autoTradovateUsername")}</label>
                 <input
                   type="text"
                   value={account.tradovateUsername || ""}
                   onChange={(e) => onUpdate({ ...account, tradovateUsername: e.target.value })}
                   placeholder={t("autoTradovateUsernamePlaceholder")}
-                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">{t("autoTradovatePassword")}</label>
+                <label className="mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400">{t("autoTradovatePassword")}</label>
                 <input
                   type="password"
                   value={account.tradovatePassword || ""}
                   onChange={(e) => onUpdate({ ...account, tradovatePassword: e.target.value })}
                   placeholder={t("autoTradovatePasswordPlaceholder")}
-                  className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-emerald-300 focus:border-emerald-300"
+                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-1">{t("autoTradovateCredNote")}</p>
+            <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">{t("autoTradovateCredNote")}</p>
           </div>
         </div>
       )}
 
-      {/* Metrics Dashboard — collapsible */}
-      {!collapsed && <div className="border-t border-gray-100" />}
+      {/* ── Metrics Dashboard (when expanded) ── */}
       {!collapsed && f && (
-        <div className="px-4 py-3 space-y-3">
+        <div className="space-y-3 px-4 py-3 pl-5">
           {/* Top row — key numbers */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <MetricBadge label={t("balance")} value={money(m.currentBal)} sub={m.payoutCount > 0 ? `${t("cycleStart")} ${money(m.effectiveStartBal)}` : `${t("start")} ${money(account.startBalance || 50000)}`} />
             <MetricBadge label={t("totalPnl")} value={money(m.totalPnl)} color={m.totalPnl > 0 ? "green" : m.totalPnl < 0 ? "red" : "gray"} sub={`${t("target")}: ${money(m.target)}`} />
             <MetricBadge label={t("remaining")} value={money(m.remainingProfit)} color={m.remainingProfit <= 0 ? "green" : "amber"} sub={`${(m.pctComplete * 100).toFixed(0)}% ${t("complete").toLowerCase()}`} />
@@ -2003,46 +2870,62 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
           </div>
 
           {/* Progress bars */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <ProgressBar pct={m.pctComplete} label={`${t("profitOfTarget", (m.pctComplete * 100).toFixed(0))} ${m.target > m.baseTarget ? "adjusted " : ""}${t("target")}`} color={m.pctComplete >= 1 ? "green" : "blue"} />
             <ProgressBar pct={m.ddPct} label={`${t("safetyDDRoom", (m.ddPct * 100).toFixed(0))}`} color={m.ddPct >= 0.5 ? "green" : m.ddPct >= 0.25 ? "amber" : "red"} />
           </div>
 
           {/* ── Today's Trading Plan ── */}
           {m.todayPlan && !m.todayPlan.isBreached && (
-            <div className={`rounded-lg border-2 p-3 space-y-2 ${m.todayPlan.isTargetHit ? "bg-emerald-50 border-emerald-300" : "bg-slate-50 border-slate-300"}`}>
+            <div
+              className={
+                "space-y-2 rounded-lg border p-3 " +
+                (m.todayPlan.isTargetHit
+                  ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30"
+                  : "border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-950/40")
+              }
+            >
               <div className="flex items-center justify-between">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  {m.todayPlan.isTargetHit
-                    ? (m.phase === "funded" ? `🎯 ${t("payoutReady")}` : `🎯 ${t("targetReached")}`)
-                    : `📋 ${t("todaysTradingPlan")}`}
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  {m.todayPlan.isTargetHit ? (
+                    <>
+                      <Target size={12} strokeWidth={2.5} aria-hidden="true" className="text-emerald-600 dark:text-emerald-400" />
+                      {m.phase === "funded" ? t("payoutReady") : t("targetReached")}
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardList size={12} strokeWidth={2.5} aria-hidden="true" className="text-slate-500 dark:text-slate-400" />
+                      {t("todaysTradingPlan")}
+                    </>
+                  )}
                 </div>
-                <div className={`text-xs font-semibold px-2 py-0.5 rounded-full ${m.totalPnl >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                <Badge variant={m.totalPnl >= 0 ? "success" : "danger"} size="sm">
                   {m.totalPnl >= 0 ? "+" : ""}{money(m.totalPnl)} P&L
-                </div>
+                </Badge>
               </div>
 
               {m.todayPlan.isTargetHit ? (
                 /* Target hit / payout ready state */
                 <div className="space-y-1.5">
                   {m.phase === "funded" ? (
-                    <div className="text-sm text-emerald-800">
+                    <div className="text-[13px] text-emerald-800 dark:text-emerald-300">
                       <b>{t("requestPayout", m.todayPlan.nextPayoutNum)}</b>
-                      {m.todayPlan.payoutMax != null
-                        ? <> — {t("min")} {money(m.todayPlan.payoutMin)}, {t("max")} {money(m.todayPlan.payoutMax)}</>
-                        : <> — {t("min")} {money(m.todayPlan.payoutMin)}, <span className="font-semibold">{t("unlimited")}</span></>
-                      }
+                      {m.todayPlan.payoutMax != null ? (
+                        <> — {t("min")} <span className="tabular-nums">{money(m.todayPlan.payoutMin)}</span>, {t("max")} <span className="tabular-nums">{money(m.todayPlan.payoutMax)}</span></>
+                      ) : (
+                        <> — {t("min")} <span className="tabular-nums">{money(m.todayPlan.payoutMin)}</span>, <span className="font-semibold">{t("unlimited")}</span></>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-sm text-emerald-800">
-                      <b>{t("advanceToFunded")}</b> {t("profitTarget").toLowerCase()} {t("of")} {money(m.target)} {t("met").toLowerCase()}.
+                    <div className="text-[13px] text-emerald-800 dark:text-emerald-300">
+                      <b>{t("advanceToFunded")}</b> {t("profitTarget").toLowerCase()} {t("of")} <span className="tabular-nums">{money(m.target)}</span> {t("met").toLowerCase()}.
                     </div>
                   )}
                   {m.todayPlan.contractsAllowed && (
-                    <div className="text-xs text-gray-500">
-                      {t("allowed")}: <b className="text-slate-700">{m.todayPlan.contractsAllowed}</b> / {m.todayPlan.maxContracts || "?"} {t("contracts").toLowerCase()}
-                      {m.todayPlan.maxDailyProfit != null && <> • Max safe day profit: <b className="text-amber-700">{money(m.todayPlan.maxDailyProfit)}</b></>}
-                      {m.todayPlan.maxDailyLoss > 0 && <> • Max loss: <b className="text-red-600">{money(m.todayPlan.maxDailyLoss)}</b></>}
+                    <div className="text-[11.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+                      {t("allowed")}: <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.contractsAllowed}</b> / {m.todayPlan.maxContracts || "?"} {t("contracts").toLowerCase()}
+                      {m.todayPlan.maxDailyProfit != null && <> • Max safe day profit: <b className="text-amber-700 dark:text-amber-400">{money(m.todayPlan.maxDailyProfit)}</b></>}
+                      {m.todayPlan.maxDailyLoss > 0 && <> • Max loss: <b className="text-red-600 dark:text-red-400">{money(m.todayPlan.maxDailyLoss)}</b></>}
                     </div>
                   )}
                 </div>
@@ -2050,133 +2933,162 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 /* Active trading state */
                 <div className="space-y-2">
                   {/* Main instruction row */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     {/* Contracts */}
-                    <div className="bg-white rounded-lg border border-slate-200 p-2 text-center">
-                      <div className="text-[10px] text-gray-400 uppercase">{t("contracts")}</div>
-                      <div className="text-lg font-bold text-slate-800">{m.todayPlan.contractsAllowed || "?"}</div>
-                      <div className="text-[10px] text-gray-400">{t("ofMax", m.todayPlan.maxContracts || "?")}</div>
-                      {m.todayPlan.nextScalingThreshold != null && m.todayPlan.contractsAllowed < (m.todayPlan.maxContracts || Infinity) && (
-                        <div className="text-[10px] text-blue-500 mt-0.5">
-                          +1 at {money(m.todayPlan.nextScalingThreshold)} profit
-                        </div>
-                      )}
-                    </div>
+                    <PlanStat
+                      tone="slate"
+                      icon={Layers}
+                      label={t("contracts")}
+                      value={m.todayPlan.contractsAllowed || "?"}
+                      sub={t("ofMax", m.todayPlan.maxContracts || "?")}
+                      extra={
+                        m.todayPlan.nextScalingThreshold != null && m.todayPlan.contractsAllowed < (m.todayPlan.maxContracts || Infinity) ? (
+                          <span className="text-blue-500 dark:text-blue-400">+1 at {money(m.todayPlan.nextScalingThreshold)} profit</span>
+                        ) : null
+                      }
+                    />
                     {/* Target */}
-                    <div className="bg-white rounded-lg border border-emerald-200 p-2 text-center">
-                      <div className="text-[10px] text-gray-400 uppercase">{t("aimFor")}</div>
-                      <div className="text-lg font-bold text-emerald-700">{money(m.todayPlan.idealDailyTarget)}</div>
-                      <div className="text-[10px] text-gray-400">{t("leftOver", money(m.remainingProfit), m.todayPlan.minDaysToComplete)}</div>
-                      {m.todayPlan.minProfitPerDay > 0 && (
-                        <div className="text-[10px] text-amber-600 mt-0.5">{t("minToCount", money(m.todayPlan.minProfitPerDay))}</div>
-                      )}
-                    </div>
+                    <PlanStat
+                      tone="emerald"
+                      icon={Target}
+                      label={t("aimFor")}
+                      value={money(m.todayPlan.idealDailyTarget)}
+                      sub={t("leftOver", money(m.remainingProfit), m.todayPlan.minDaysToComplete)}
+                      extra={
+                        m.todayPlan.minProfitPerDay > 0 ? (
+                          <span className="text-amber-600 dark:text-amber-400">{t("minToCount", money(m.todayPlan.minProfitPerDay))}</span>
+                        ) : null
+                      }
+                    />
                     {/* Risk */}
-                    <div className="bg-white rounded-lg border border-red-200 p-2 text-center">
-                      <div className="text-[10px] text-gray-400 uppercase">{t("maxLoss")}</div>
-                      <div className="text-lg font-bold text-red-600">{money(m.todayPlan.maxDailyLoss)}</div>
-                      <div className="text-[10px] text-gray-400">{m.dll ? `${t("dll")}: ${money(m.dll)}` : t("noDll")}</div>
-                    </div>
+                    <PlanStat
+                      tone="red"
+                      icon={Shield}
+                      label={t("maxLoss")}
+                      value={money(m.todayPlan.maxDailyLoss)}
+                      sub={m.dll ? `${t("dll")}: ${money(m.dll)}` : t("noDll")}
+                    />
                   </div>
 
                   {/* Guardrails row */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500">
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11.5px] text-slate-500 dark:text-slate-400">
                     {m.todayPlan.maxDailyProfit != null && (
-                      <span>
-                        {m.todayPlan.maxDailyProfitReason === "consistency"
-                          ? <>{t("doNotProfit")} <b className="text-amber-700">{money(m.todayPlan.maxDailyProfit)}</b> ({t("consistency").toLowerCase()})</>
-                          : <>Remaining to {t("target")}: <b className="text-slate-700">{money(m.todayPlan.maxDailyProfit)}</b></>
-                        }
+                      <span className="tabular-nums">
+                        {m.todayPlan.maxDailyProfitReason === "consistency" ? (
+                          <>{t("doNotProfit")} <b className="text-amber-700 dark:text-amber-400">{money(m.todayPlan.maxDailyProfit)}</b> ({t("consistency").toLowerCase()})</>
+                        ) : (
+                          <>Remaining to {t("target")}: <b className="text-slate-700 dark:text-slate-300">{money(m.todayPlan.maxDailyProfit)}</b></>
+                        )}
                       </span>
                     )}
-                    <span>{t("ddRoom")}: <b className={m.ddPct >= 0.5 ? "text-emerald-600" : m.ddPct >= 0.25 ? "text-amber-600" : "text-red-600"}>{money(m.roomToDD)}</b> ({(m.ddPct * 100).toFixed(0)}%)</span>
+                    <span className="tabular-nums">
+                      {t("ddRoom")}: <b className={m.ddPct >= 0.5 ? "text-emerald-600 dark:text-emerald-400" : m.ddPct >= 0.25 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>{money(m.roomToDD)}</b> ({(m.ddPct * 100).toFixed(0)}%)
+                    </span>
                     {m.todayPlan.daysNeeded > 0 && (
-                      <span>{t("profitDaysNeeded")}: <b className="text-slate-700">{m.todayPlan.daysNeeded}</b></span>
+                      <span className="tabular-nums">{t("profitDaysNeeded")}: <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.daysNeeded}</b></span>
                     )}
                     {m.phase === "funded" && m.todayPlan.payoutMax != null && (
-                      <span>{t("payoutMax", m.todayPlan.nextPayoutNum)}: <b className="text-blue-600">{money(m.todayPlan.payoutMax)}</b></span>
+                      <span className="tabular-nums">{t("payoutMax", m.todayPlan.nextPayoutNum)}: <b className="text-blue-600 dark:text-blue-400">{money(m.todayPlan.payoutMax)}</b></span>
                     )}
                   </div>
                 </div>
               )}
             </div>
           )}
+
           {/* Breached state */}
           {m.todayPlan && m.todayPlan.isBreached && (
-            <div className="rounded-lg border-2 border-red-300 bg-red-50 p-3">
-              <div className="text-xs font-bold uppercase tracking-wider text-red-700 mb-1">⛔ Account Breached</div>
-              <div className="text-sm text-red-800">
-                This account has breached its drawdown limit. <b>Do not trade.</b>
-                {!f?.noResets && <> Use the Reset button below to restart with a fresh journal.</>}
-              </div>
-            </div>
+            <Alert variant="danger" title="Account Breached">
+              This account has breached its drawdown limit. <b>Do not trade.</b>
+              {!f?.noResets && <> Use the Reset button below to restart with a fresh journal.</>}
+            </Alert>
           )}
 
           {/* Secondary stats */}
-          <div className="flex gap-4 text-xs text-gray-500 flex-wrap">
-            <span>Win rate: <b className="text-gray-700">{(m.winRate * 100).toFixed(0)}%</b> ({m.wins}W / {m.losses}L)</span>
-            <span>Peak: <b className="text-gray-700">{money(m.peakBal)}</b></span>
-            <span>MLL: {money(m.mll)} ({m.mllType})</span>
-            {m.resetCount > 0 && <span>Resets: <b className="text-amber-600">{m.resetCount}</b> (cost: {money(m.totalResetCost)})</span>}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-slate-500 dark:text-slate-400">
+            <span className="tabular-nums">
+              Win rate: <b className="text-slate-700 dark:text-slate-300">{(m.winRate * 100).toFixed(0)}%</b> ({m.wins}W / {m.losses}L)
+            </span>
+            <span className="tabular-nums">Peak: <b className="text-slate-700 dark:text-slate-300">{money(m.peakBal)}</b></span>
+            <span className="tabular-nums">MLL: {money(m.mll)} ({m.mllType})</span>
+            {m.resetCount > 0 && (
+              <span className="tabular-nums">Resets: <b className="text-amber-600 dark:text-amber-400">{m.resetCount}</b> (cost: {money(m.totalResetCost)})</span>
+            )}
             {m.resetCount > 0 && m.resetsToBreakeven != null && (
-              <span>Resets to breakeven: <b className={m.resetsToBreakeven > 0 ? "text-amber-600" : "text-red-600"}>{m.resetsToBreakeven > 0 ? m.resetsToBreakeven : "exceeded"}</b></span>
+              <span className="tabular-nums">
+                Resets to breakeven:{" "}
+                <b className={m.resetsToBreakeven > 0 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>
+                  {m.resetsToBreakeven > 0 ? m.resetsToBreakeven : "exceeded"}
+                </b>
+              </span>
             )}
           </div>
 
           {/* ── Rules Compliance Panel ── */}
           {m.rules && m.rules.length > 0 && (
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-2.5 space-y-1.5">
-              <div className="text-xs font-bold text-gray-600 uppercase tracking-wider">Rules Compliance</div>
-              {m.rules.map((r, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <span className={`shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold
-                    ${r.status === "ok" ? "bg-emerald-100 text-emerald-700" : r.status === "caution" ? "bg-amber-100 text-amber-700" : r.status === "warning" ? "bg-red-100 text-red-600" : "bg-red-600 text-white"}`}>
-                    {r.status === "ok" ? "✓" : r.status === "caution" ? "!" : "✗"}
-                  </span>
-                  <span className="text-gray-700">
-                    <b className="text-gray-800">{r.label}:</b> {r.detail}
-                  </span>
-                </div>
-              ))}
-              {/* Show adjusted target callout if consistency pushed it up */}
+            <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+              <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                <ShieldAlert size={12} strokeWidth={2.5} aria-hidden="true" />
+                Rules Compliance
+              </div>
+              {m.rules.map((r, i) => <RuleRow key={i} rule={r} />)}
+
+              {/* Consistency target adjustment callouts */}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "challenge" && (
-                <div className="mt-1 pt-1.5 border-t border-gray-200 text-xs text-red-700 bg-red-50 rounded px-2 py-1.5">
-                  <b>Target adjusted:</b> {money(m.baseTarget)} → {money(m.consistencyAdjTarget)} (+{money(m.consistencyAdjTarget - m.baseTarget)}).
-                  {m.consistencyGap > 0 && <> Need <b>{money(m.consistencyGap)}</b> more profit to become compliant, or spread profits across more days.</>}
-                </div>
+                <Alert variant="danger" className="mt-2" title="Target adjusted">
+                  <span className="tabular-nums">{money(m.baseTarget)} → {money(m.consistencyAdjTarget)} (+{money(m.consistencyAdjTarget - m.baseTarget)}).</span>
+                  {m.consistencyGap > 0 && <> Need <b className="tabular-nums">{money(m.consistencyGap)}</b> more profit to become compliant, or spread profits across more days.</>}
+                </Alert>
               )}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "funded" && m.consistencyGap > 0 && (
-                <div className="mt-1 pt-1.5 border-t border-gray-200 text-xs text-red-700 bg-red-50 rounded px-2 py-1.5">
-                  <b>Payout eligibility at risk:</b> Need <b>{money(m.consistencyGap)}</b> more profit spread across other days before requesting max payout.
-                </div>
+                <Alert variant="danger" className="mt-2" title="Payout eligibility at risk">
+                  Need <b className="tabular-nums">{money(m.consistencyGap)}</b> more profit spread across other days before requesting max payout.
+                </Alert>
               )}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "funded" && m.consistencyGap <= 0 && m.allRulesMet && (
-                <div className="mt-1 pt-1.5 border-t border-gray-200 text-xs text-emerald-700 bg-emerald-50 rounded px-2 py-1.5">
-                  <b>Congratulations!</b> It is recommended to request your reward! You might not get a second chance!
-                </div>
+                <Alert variant="success" className="mt-2" title="Congratulations!">
+                  It is recommended to request your reward! You might not get a second chance!
+                </Alert>
               )}
             </div>
           )}
         </div>
       )}
 
-      {/* Payouts — funded accounts only */}
+      {/* ── Payouts — funded accounts only ── */}
       {!collapsed && account.phase === "funded" && f && (
-        <div className="border-t border-gray-100">
-          <div className="px-4 py-2 flex items-center justify-between">
-            <button onClick={() => setShowPayouts(!showPayouts)} className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800">
-              {showPayouts ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              <span className="font-medium">Payouts ({payouts.length})</span>
-              {payouts.length > 0 && <span className="text-xs text-emerald-600 font-semibold ml-1">Total: {money(m.totalPayouts)}</span>}
+        <div className="border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2 px-4 py-2 pl-5">
+            <button
+              type="button"
+              onClick={() => setShowPayouts(!showPayouts)}
+              aria-expanded={showPayouts}
+              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-slate-100"
+            >
+              <ChevronDown
+                size={14}
+                strokeWidth={2.25}
+                aria-hidden="true"
+                className={"transition-transform duration-200 ease-out " + (showPayouts ? "rotate-0" : "-rotate-90")}
+              />
+              <span>Payouts ({payouts.length})</span>
+              {payouts.length > 0 && (
+                <Badge variant="success" size="sm" className="ml-0.5">Total {money(m.totalPayouts)}</Badge>
+              )}
             </button>
-            <button onClick={() => setAddingPayout(true)} className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded border border-emerald-200">
-              <Award size={12} /> Record Payout
-            </button>
+            <Button
+              size="xs"
+              variant="secondary"
+              leftIcon={<Award size={11} strokeWidth={2.5} />}
+              className="!border-emerald-200 !text-emerald-700 hover:!border-emerald-300 hover:!bg-emerald-50 dark:!border-emerald-900 dark:!text-emerald-400 dark:hover:!bg-emerald-950/40"
+              onClick={() => setAddingPayout(true)}
+            >
+              Record Payout
+            </Button>
           </div>
 
-          {/* Payout form */}
           {addingPayout && (
-            <div className="px-4 pb-3">
+            <div className="px-4 pb-3 pl-5">
               <PayoutForm
                 currentBalance={m.currentBal}
                 firmData={f}
@@ -2187,39 +3099,49 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
             </div>
           )}
 
-          {/* Payout history */}
           {showPayouts && payouts.length > 0 && (
-            <div className="px-4 pb-3">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto px-4 pb-3 pl-5">
+              <table className="w-full border-collapse text-[12.5px]">
                 <thead>
-                  <tr className="text-xs text-gray-400 border-b">
-                    <th className="text-left py-1 px-1 font-medium">Date</th>
-                    <th className="text-right py-1 px-1 font-medium">Payout</th>
-                    <th className="text-right py-1 px-1 font-medium">Net (after split)</th>
-                    <th className="text-right py-1 px-1 font-medium">New Balance</th>
-                    <th className="text-left py-1 px-1 font-medium">Notes</th>
-                    <th className="py-1 px-1 w-8"></th>
+                  <tr className="border-b border-slate-200 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                    <th className="px-2 py-1.5 text-left">Date</th>
+                    <th className="px-2 py-1.5 text-right">Payout</th>
+                    <th className="px-2 py-1.5 text-right">Net (after split)</th>
+                    <th className="px-2 py-1.5 text-right">New Balance</th>
+                    <th className="px-2 py-1.5 text-left">Notes</th>
+                    <th className="w-8 px-2 py-1.5"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {[...payouts].reverse().map(p => (
-                    <tr key={p.id} className="border-b border-gray-50 hover:bg-emerald-50/30">
-                      <td className="py-1.5 px-1 text-gray-600">{p.date}</td>
-                      <td className="py-1.5 px-1 text-right font-semibold text-emerald-600">{money(p.amount)}</td>
-                      <td className="py-1.5 px-1 text-right text-emerald-700">{money(p.netAmount || p.amount)}</td>
-                      <td className="py-1.5 px-1 text-right font-medium">{money(p.newBalance)}</td>
-                      <td className="py-1.5 px-1 text-gray-500 text-xs max-w-[150px] truncate">{p.notes || ""}</td>
-                      <td className="py-1.5 px-1 text-right">
-                        <button onClick={() => handleDeletePayout(p.id)} className="p-0.5 text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                    <tr key={p.id} className="transition-colors hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20">
+                      <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{p.date}</td>
+                      <td className="px-2 py-1.5 text-right font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{money(p.amount)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">{money(p.netAmount || p.amount)}</td>
+                      <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(p.newBalance)}</td>
+                      <td className="max-w-[150px] truncate px-2 py-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">{p.notes || ""}</td>
+                      <td className="px-2 py-1.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePayout(p.id)}
+                          aria-label="Delete payout"
+                          className="rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-gray-200 text-xs font-semibold text-gray-600">
-                    <td className="py-1.5 px-1">Total ({payouts.length})</td>
-                    <td className="py-1.5 px-1 text-right text-emerald-600">{money(payouts.reduce((s, p) => s + (p.amount || 0), 0))}</td>
-                    <td className="py-1.5 px-1 text-right text-emerald-700">{money(payouts.reduce((s, p) => s + (p.netAmount || p.amount || 0), 0))}</td>
+                  <tr className="border-t border-slate-200 text-[11.5px] font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">
+                    <td className="px-2 py-1.5">Total ({payouts.length})</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                      {money(payouts.reduce((s, p) => s + (p.amount || 0), 0))}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                      {money(payouts.reduce((s, p) => s + (p.netAmount || p.amount || 0), 0))}
+                    </td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
@@ -2229,26 +3151,45 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
         </div>
       )}
 
-      {/* Reset — both phases (hidden entirely if firm has no resets AND no resets recorded) */}
+      {/* ── Reset — both phases ── */}
       {!collapsed && f && (!f.noResets || resets.length > 0) && (
-        <div className="border-t border-gray-100">
-          <div className="px-4 py-2 flex items-center justify-between">
-            <button onClick={() => setShowResets(!showResets)} className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800">
-              {showResets ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              <span className="font-medium">Resets ({resets.length})</span>
-              {resets.length > 0 && <span className="text-xs text-amber-600 font-semibold ml-1">Cost: {money(resets.reduce((s, r) => s + (r.cost || 0), 0))}</span>}
-              {f.noResets && <span className="text-[10px] text-gray-400 ml-1">(firm has no reset option)</span>}
+        <div className="border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-2 px-4 py-2 pl-5">
+            <button
+              type="button"
+              onClick={() => setShowResets(!showResets)}
+              aria-expanded={showResets}
+              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-slate-100"
+            >
+              <ChevronDown
+                size={14}
+                strokeWidth={2.25}
+                aria-hidden="true"
+                className={"transition-transform duration-200 ease-out " + (showResets ? "rotate-0" : "-rotate-90")}
+              />
+              <span>Resets ({resets.length})</span>
+              {resets.length > 0 && (
+                <Badge variant="warn" size="sm" className="ml-0.5">
+                  Cost {money(resets.reduce((s, r) => s + (r.cost || 0), 0))}
+                </Badge>
+              )}
+              {f.noResets && <span className="ml-1 text-[10.5px] text-slate-400 dark:text-slate-500">(firm has no reset option)</span>}
             </button>
             {!f.noResets && (
-              <button onClick={() => setAddingReset(true)} className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 rounded border border-amber-200">
-                🔄 Reset Account
-              </button>
+              <Button
+                size="xs"
+                variant="secondary"
+                leftIcon={<RefreshCw size={11} strokeWidth={2.5} />}
+                className="!border-amber-200 !text-amber-700 hover:!border-amber-300 hover:!bg-amber-50 dark:!border-amber-900 dark:!text-amber-400 dark:hover:!bg-amber-950/40"
+                onClick={() => setAddingReset(true)}
+              >
+                Reset Account
+              </Button>
             )}
           </div>
 
-          {/* Reset form */}
           {addingReset && (
-            <div className="px-4 pb-3">
+            <div className="px-4 pb-3 pl-5">
               <ResetForm
                 firmData={f}
                 defaultCost={firmData?.resetPrice || 0}
@@ -2259,38 +3200,46 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
             </div>
           )}
 
-          {/* Resets history */}
           {showResets && resets.length > 0 && (
-            <div className="px-4 pb-3">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto px-4 pb-3 pl-5">
+              <table className="w-full border-collapse text-[12.5px]">
                 <thead>
-                  <tr className="text-xs text-gray-400 border-b">
-                    <th className="text-left py-1 px-1 font-medium">#</th>
-                    <th className="text-left py-1 px-1 font-medium">Date</th>
-                    <th className="text-right py-1 px-1 font-medium">Cost</th>
-                    <th className="text-right py-1 px-1 font-medium">New Balance</th>
-                    <th className="text-left py-1 px-1 font-medium">Notes</th>
-                    <th className="py-1 px-1 w-8"></th>
+                  <tr className="border-b border-slate-200 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                    <th className="px-2 py-1.5 text-left">#</th>
+                    <th className="px-2 py-1.5 text-left">Date</th>
+                    <th className="px-2 py-1.5 text-right">Cost</th>
+                    <th className="px-2 py-1.5 text-right">New Balance</th>
+                    <th className="px-2 py-1.5 text-left">Notes</th>
+                    <th className="w-8 px-2 py-1.5"></th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {[...resets].reverse().map((r, i) => (
-                    <tr key={r.id} className="border-b border-gray-50 hover:bg-amber-50/30">
-                      <td className="py-1.5 px-1 text-gray-400 text-xs">{resets.length - i}</td>
-                      <td className="py-1.5 px-1 text-gray-600">{r.date}</td>
-                      <td className="py-1.5 px-1 text-right font-semibold text-red-600">{money(r.cost)}</td>
-                      <td className="py-1.5 px-1 text-right font-medium">{money(r.newBalance)}</td>
-                      <td className="py-1.5 px-1 text-gray-500 text-xs max-w-[150px] truncate">{r.notes || ""}</td>
-                      <td className="py-1.5 px-1 text-right">
-                        <button onClick={() => handleDeleteReset(r.id)} className="p-0.5 text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                    <tr key={r.id} className="transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20">
+                      <td className="px-2 py-1.5 tabular-nums text-[11.5px] text-slate-400 dark:text-slate-500">{resets.length - i}</td>
+                      <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{r.date}</td>
+                      <td className="px-2 py-1.5 text-right font-semibold tabular-nums text-red-600 dark:text-red-400">{money(r.cost)}</td>
+                      <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(r.newBalance)}</td>
+                      <td className="max-w-[150px] truncate px-2 py-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">{r.notes || ""}</td>
+                      <td className="px-2 py-1.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReset(r.id)}
+                          aria-label="Delete reset"
+                          className="rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t border-gray-200 text-xs font-semibold text-gray-600">
-                    <td colSpan={2} className="py-1.5 px-1">Total ({resets.length} reset{resets.length !== 1 ? "s" : ""})</td>
-                    <td className="py-1.5 px-1 text-right text-red-600">{money(resets.reduce((s, r) => s + (r.cost || 0), 0))}</td>
+                  <tr className="border-t border-slate-200 text-[11.5px] font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">
+                    <td colSpan={2} className="px-2 py-1.5">Total ({resets.length} reset{resets.length !== 1 ? "s" : ""})</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums text-red-600 dark:text-red-400">
+                      {money(resets.reduce((s, r) => s + (r.cost || 0), 0))}
+                    </td>
                     <td colSpan={3}></td>
                   </tr>
                 </tfoot>
@@ -2298,103 +3247,238 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
             </div>
           )}
 
-          {/* Resets to breakeven metric */}
           {resets.length > 0 && m.resetsToBreakeven != null && (
-            <div className="px-4 pb-2">
-              <div className={`text-xs px-2 py-1.5 rounded ${m.resetsToBreakeven > 0 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
-                <b>Resets left to breakeven at current reset price ({money(firmData?.resetPrice || resets[resets.length - 1]?.cost || 0)}):</b> {m.resetsToBreakeven > 0 ? m.resetsToBreakeven : "⚠️ Already exceeded — net loss from resets"}
-              </div>
+            <div className="px-4 pb-2 pl-5">
+              <Alert variant={m.resetsToBreakeven > 0 ? "warn" : "danger"}>
+                <b>Resets left to breakeven at current reset price ({money(firmData?.resetPrice || resets[resets.length - 1]?.cost || 0)}):</b>{" "}
+                {m.resetsToBreakeven > 0 ? (
+                  <span className="tabular-nums">{m.resetsToBreakeven}</span>
+                ) : (
+                  <span>Already exceeded — net loss from resets</span>
+                )}
+              </Alert>
             </div>
           )}
         </div>
       )}
 
-      {/* Journal */}
-      {!collapsed && <div className="border-t border-gray-100">
-        <button onClick={() => setShowJournal(!showJournal)} className="w-full px-4 py-2 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50">
-          <span className="font-medium">Trading Journal ({m.cycleEntries} entries{m.payoutCount > 0 ? ` in current cycle • ${m.allEntriesCount} total` : ""})</span>
-          {showJournal ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
-        {showJournal && (
-          <div className="px-4 pb-3 space-y-2">
-            {/* Add / Import buttons */}
-            {!addingEntry && (
-              <div className="flex items-center gap-2">
-                <button onClick={() => setAddingEntry(true)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded border border-blue-200">
-                  <Plus size={12} /> Log Today
-                </button>
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 rounded border border-emerald-200">
-                  📄 Import CSV
-                </button>
-                <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" className="hidden" onChange={handleCsvImport} />
-              </div>
-            )}
-            {importMsg && <div className="text-xs px-2 py-1 rounded bg-gray-50 border border-gray-200">{importMsg}</div>}
-            {addingEntry && <JournalEntryForm onSave={handleAddEntry} onCancel={() => setAddingEntry(false)} />}
+      {/* ── Journal ── */}
+      {!collapsed && (
+        <div className="border-t border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setShowJournal(!showJournal)}
+            aria-expanded={showJournal}
+            className="flex w-full items-center justify-between gap-2 px-4 py-2 pl-5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800/40"
+          >
+            <span className="flex items-center gap-1.5">
+              <ChevronDown
+                size={14}
+                strokeWidth={2.25}
+                aria-hidden="true"
+                className={"transition-transform duration-200 ease-out " + (showJournal ? "rotate-0" : "-rotate-90")}
+              />
+              Trading Journal ({m.cycleEntries} entries{m.payoutCount > 0 ? ` in current cycle · ${m.allEntriesCount} total` : ""})
+            </span>
+          </button>
+          {showJournal && (
+            <div className="space-y-2 px-4 pb-3 pl-5">
+              {/* Add / Import buttons */}
+              {!addingEntry && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    leftIcon={<Plus size={11} strokeWidth={2.5} />}
+                    className="!border-blue-200 !text-blue-700 hover:!border-blue-300 hover:!bg-blue-50 dark:!border-blue-900 dark:!text-blue-400 dark:hover:!bg-blue-950/40"
+                    onClick={() => setAddingEntry(true)}
+                  >
+                    Log Today
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    leftIcon={<Upload size={11} strokeWidth={2.5} />}
+                    className="!border-emerald-200 !text-emerald-700 hover:!border-emerald-300 hover:!bg-emerald-50 dark:!border-emerald-900 dark:!text-emerald-400 dark:hover:!bg-emerald-950/40"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Import CSV
+                  </Button>
+                  <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" className="hidden" onChange={handleCsvImport} />
+                </div>
+              )}
+              {importMsg && (
+                <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                  {importMsg}
+                </div>
+              )}
+              {addingEntry && <JournalEntryForm onSave={handleAddEntry} onCancel={() => setAddingEntry(false)} />}
 
-            {/* Journal table */}
-            {entries.length > 0 && (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-gray-400 border-b">
-                    <th className="text-left py-1 px-1 font-medium">Date</th>
-                    <th className="text-right py-1 px-1 font-medium">Balance</th>
-                    <th className="text-right py-1 px-1 font-medium">P&L</th>
-                    <th className="text-right py-1 px-1 font-medium">Trades</th>
-                    <th className="text-center py-1 px-1 font-medium">Flags</th>
-                    <th className="text-left py-1 px-1 font-medium">Notes</th>
-                    <th className="py-1 px-1 w-16"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...entries].reverse().map(e => {
-                    const dd = m.dailyDetails?.find(d => d.date === e.date);
-                    const flags = [];
-                    if (dd?.dllBreach) flags.push({ icon: "DLL", color: "bg-red-100 text-red-700", tip: "Daily loss limit exceeded" });
-                    if (dd?.mllBreach) flags.push({ icon: "MLL", color: "bg-red-600 text-white", tip: "Max loss breached" });
-                    // Check if this day is the biggest day AND it causes consistency issues
-                    if (m.biggestDayDate === e.date && m.consistencyAdjTarget > m.baseTarget) {
-                      const tip = m.phase === "funded"
-                        ? `This day is ${(m.consistencyPct * 100).toFixed(0)}% of total profit — DO NOT exceed this amount. Need more spread profit for payout eligibility.`
-                        : `This day is ${(m.consistencyPct * 100).toFixed(0)}% of total profit — pushes target to ${money(m.consistencyAdjTarget)}`;
-                      flags.push({ icon: `${(m.consistencyPct * 100).toFixed(0)}%`, color: "bg-amber-100 text-amber-700", tip });
-                    }
-                    return editingEntry === e.id ? (
-                      <tr key={e.id}><td colSpan={7}><JournalEntryForm initial={e} onSave={handleUpdateEntry} onCancel={() => setEditingEntry(null)} /></td></tr>
-                    ) : (
-                      <tr key={e.id} className={`border-b border-gray-50 hover:bg-gray-50 ${dd?.dllBreach || dd?.mllBreach ? "bg-red-50/40" : ""}`}>
-                        <td className="py-1.5 px-1 text-gray-600">{e.date}</td>
-                        <td className="py-1.5 px-1 text-right font-medium">{money(e.balance)}</td>
-                        {(() => { const displayPnl = dd ? dd.pnl : (e.pnl || 0); return (
-                        <td className={`py-1.5 px-1 text-right font-semibold ${displayPnl > 0 ? "text-emerald-600" : displayPnl < 0 ? "text-red-600" : "text-gray-400"}`}>
-                          {displayPnl > 0 ? "+" : ""}{money(displayPnl)}
-                        </td>); })()}
-                        <td className="py-1.5 px-1 text-right text-gray-500">{e.trades || "—"}</td>
-                        <td className="py-1.5 px-1 text-center">
-                          {flags.length > 0 ? (
-                            <div className="flex items-center justify-center gap-0.5 flex-wrap">
-                              {flags.map((fl, i) => (
-                                <span key={i} className={`text-[9px] font-bold px-1 py-0.5 rounded ${fl.color}`} title={fl.tip}>{fl.icon}</span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-gray-300 text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="py-1.5 px-1 text-gray-500 text-xs max-w-[200px] truncate">{e.notes || ""}</td>
-                        <td className="py-1.5 px-1 text-right">
-                          <button onClick={() => setEditingEntry(e.id)} className="p-0.5 text-gray-300 hover:text-blue-500"><Pencil size={12} /></button>
-                          <button onClick={() => handleDeleteEntry(e.id)} className="p-0.5 text-gray-300 hover:text-red-500 ml-1"><Trash2 size={12} /></button>
-                        </td>
+              {/* Journal table */}
+              {entries.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-[12.5px]">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                        <th className="px-2 py-1.5 text-left">Date</th>
+                        <th className="px-2 py-1.5 text-right">Balance</th>
+                        <th className="px-2 py-1.5 text-right">P&L</th>
+                        <th className="px-2 py-1.5 text-right">Trades</th>
+                        <th className="px-2 py-1.5 text-center">Flags</th>
+                        <th className="px-2 py-1.5 text-left">Notes</th>
+                        <th className="w-16 px-2 py-1.5"></th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
-      </div>}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {[...entries].reverse().map(e => {
+                        const dd = m.dailyDetails?.find(d => d.date === e.date);
+                        const flags = [];
+                        if (dd?.dllBreach) flags.push({ icon: "DLL", variant: "danger", tip: "Daily loss limit exceeded" });
+                        if (dd?.mllBreach) flags.push({ icon: "MLL", variant: "danger-solid", tip: "Max loss breached" });
+                        if (m.biggestDayDate === e.date && m.consistencyAdjTarget > m.baseTarget) {
+                          const tip = m.phase === "funded"
+                            ? `This day is ${(m.consistencyPct * 100).toFixed(0)}% of total profit — DO NOT exceed this amount. Need more spread profit for payout eligibility.`
+                            : `This day is ${(m.consistencyPct * 100).toFixed(0)}% of total profit — pushes target to ${money(m.consistencyAdjTarget)}`;
+                          flags.push({ icon: `${(m.consistencyPct * 100).toFixed(0)}%`, variant: "warn", tip });
+                        }
+                        return editingEntry === e.id ? (
+                          <tr key={e.id}><td colSpan={7}><JournalEntryForm initial={e} onSave={handleUpdateEntry} onCancel={() => setEditingEntry(null)} /></td></tr>
+                        ) : (
+                          <tr
+                            key={e.id}
+                            className={
+                              "transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 " +
+                              (dd?.dllBreach || dd?.mllBreach ? "bg-red-50/50 dark:bg-red-950/20" : "")
+                            }
+                          >
+                            <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{e.date}</td>
+                            <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(e.balance)}</td>
+                            {(() => {
+                              const displayPnl = dd ? dd.pnl : (e.pnl || 0);
+                              return (
+                                <td
+                                  className={
+                                    "px-2 py-1.5 text-right font-semibold tabular-nums " +
+                                    (displayPnl > 0
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : displayPnl < 0
+                                      ? "text-red-600 dark:text-red-400"
+                                      : "text-slate-400 dark:text-slate-500")
+                                  }
+                                >
+                                  {displayPnl > 0 ? "+" : ""}{money(displayPnl)}
+                                </td>
+                              );
+                            })()}
+                            <td className="px-2 py-1.5 text-right tabular-nums text-slate-500 dark:text-slate-400">{e.trades || "—"}</td>
+                            <td className="px-2 py-1.5 text-center">
+                              {flags.length > 0 ? (
+                                <div className="flex flex-wrap items-center justify-center gap-0.5">
+                                  {flags.map((fl, i) => (
+                                    <span
+                                      key={i}
+                                      title={fl.tip}
+                                      className={
+                                        "inline-flex h-4 items-center rounded px-1 text-[9.5px] font-bold tabular-nums " +
+                                        (fl.variant === "danger-solid"
+                                          ? "bg-red-600 text-white"
+                                          : fl.variant === "danger"
+                                          ? "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300"
+                                          : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300")
+                                      }
+                                    >
+                                      {fl.icon}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-slate-300 dark:text-slate-700">—</span>
+                              )}
+                            </td>
+                            <td className="max-w-[200px] truncate px-2 py-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">{e.notes || ""}</td>
+                            <td className="px-2 py-1.5 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setEditingEntry(e.id)}
+                                aria-label="Edit entry"
+                                className="rounded p-1 text-slate-300 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:text-slate-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400"
+                              >
+                                <Pencil size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteEntry(e.id)}
+                                aria-label="Delete entry"
+                                className="ml-0.5 rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-slate-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Today's Plan stat tile ──
+const PLAN_STAT_TONES = {
+  slate:   "border-slate-200 dark:border-slate-700",
+  emerald: "border-emerald-200 dark:border-emerald-800",
+  red:     "border-red-200 dark:border-red-900",
+};
+const PLAN_STAT_CHIP_TONES = {
+  slate:   "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+  emerald: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
+  red:     "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",
+};
+const PLAN_STAT_VAL_TONES = {
+  slate:   "text-slate-900 dark:text-slate-100",
+  emerald: "text-emerald-700 dark:text-emerald-400",
+  red:     "text-red-600 dark:text-red-400",
+};
+function PlanStat({ tone = "slate", icon: Icon, label, value, sub, extra }) {
+  return (
+    <div className={"rounded-lg border bg-white p-2.5 text-center dark:bg-slate-900 " + PLAN_STAT_TONES[tone]}>
+      <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <span className={"inline-flex h-4 w-4 items-center justify-center rounded " + PLAN_STAT_CHIP_TONES[tone]} aria-hidden="true">
+          <Icon size={10} strokeWidth={2.5} />
+        </span>
+        <span>{label}</span>
+      </div>
+      <div className={"mt-0.5 text-[17px] font-bold leading-tight tabular-nums " + PLAN_STAT_VAL_TONES[tone]}>{value}</div>
+      {sub && <div className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">{sub}</div>}
+      {extra && <div className="mt-0.5 text-[10.5px] tabular-nums">{extra}</div>}
+    </div>
+  );
+}
+
+// ── Rule compliance row ──
+const RULE_STATUS = {
+  ok:      { Icon: CheckCircle2,  wrap: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" },
+  caution: { Icon: AlertTriangle, wrap: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400" },
+  warning: { Icon: AlertCircle,   wrap: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400" },
+  breach:  { Icon: XCircle,       wrap: "bg-red-600 text-white" },
+};
+function RuleRow({ rule }) {
+  const s = RULE_STATUS[rule.status] || RULE_STATUS.caution;
+  const IconEl = s.Icon;
+  return (
+    <div className="flex items-start gap-2 text-[12px]">
+      <span className={"mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full " + s.wrap}>
+        <IconEl size={10} strokeWidth={2.5} aria-hidden="true" />
+      </span>
+      <span className="text-slate-700 dark:text-slate-300">
+        <b className="font-semibold text-slate-900 dark:text-slate-100">{rule.label}:</b> {rule.detail}
+      </span>
     </div>
   );
 }
@@ -2548,144 +3632,269 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
     onSaveBulk(accounts);
   };
 
+  const selectCls =
+    "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const miniInputCls =
+    "w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-[12.5px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const miniLabelCls = "mb-0.5 block text-[10.5px] font-medium text-slate-500 dark:text-slate-400";
+
   // ── Bulk import mode ──
   if (bulkAccounts) {
     const validCount = bulkAccounts.filter(a => !a.error).length;
     return (
-      <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-gray-800">{t("bulkImport", bulkAccounts.length)}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{t("assignFirm")}</p>
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+        <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+                <Upload size={12} strokeWidth={2.5} />
+              </span>
+              <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">
+                {t("bulkImport", bulkAccounts.length)}
+              </h3>
+            </div>
+            <p className="ml-[30px] text-[12px] text-slate-500 dark:text-slate-400">{t("assignFirm")}</p>
           </div>
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded border border-blue-300">
-            📄 {t("addMoreCsvs")}
-          </button>
+          <Button
+            size="xs"
+            variant="secondary"
+            leftIcon={<Upload size={11} strokeWidth={2.5} />}
+            className="!border-blue-200 !text-blue-700 hover:!border-blue-300 hover:!bg-blue-50 dark:!border-blue-900 dark:!text-blue-400 dark:hover:!bg-blue-950/40"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {t("addMoreCsvs")}
+          </Button>
           <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" multiple className="hidden" onChange={handleCsvImport} />
-        </div>
+        </header>
 
-        <div className="space-y-2 max-h-[420px] overflow-y-auto">
+        <div className="max-h-[420px] space-y-2 overflow-y-auto p-4">
           {bulkAccounts.map((a) => (
-            <div key={a.key} className={`border rounded-lg p-3 ${a.error ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-200"}`}>
-              <div className="flex items-start gap-3">
-                {/* Label */}
-                <div className="flex-1 min-w-0">
-                  <label className="block text-[10px] font-medium text-gray-400 mb-0.5">{t("label")}</label>
-                  <input type="text" className="w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500" value={a.label} onChange={e => updateBulkAccount(a.key, "label", e.target.value)} placeholder="Account name" />
+            <div
+              key={a.key}
+              className={
+                "rounded-lg border p-3 transition-colors " +
+                (a.error
+                  ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30"
+                  : "border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-950/40")
+              }
+            >
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-[160px] flex-1">
+                  <label className={miniLabelCls}>{t("label")}</label>
+                  <input
+                    type="text"
+                    className={miniInputCls}
+                    value={a.label}
+                    onChange={e => updateBulkAccount(a.key, "label", e.target.value)}
+                    placeholder="Account name"
+                  />
                 </div>
-                {/* Firm */}
                 <div className="w-48">
-                  <label className="block text-[10px] font-medium text-gray-400 mb-0.5">{t("firm")}</label>
-                  <select className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:ring-1 focus:ring-blue-500" value={a.firmId} onChange={e => updateBulkAccount(a.key, "firmId", e.target.value)}>
+                  <label className={miniLabelCls}>{t("firm")}</label>
+                  <select
+                    className={miniInputCls}
+                    value={a.firmId}
+                    onChange={e => updateBulkAccount(a.key, "firmId", e.target.value)}
+                  >
                     <option value="">— Select —</option>
                     {firms.map(f => <option key={f.id} value={f.id}>{f.name} — {f.model}</option>)}
                   </select>
                 </div>
-                {/* Phase */}
                 <div className="w-28">
-                  <label className="block text-[10px] font-medium text-gray-400 mb-0.5">{t("phase")}</label>
-                  <select className="w-full border border-gray-300 rounded px-2 py-1 text-sm bg-white outline-none focus:ring-1 focus:ring-blue-500" value={a.phase} onChange={e => updateBulkAccount(a.key, "phase", e.target.value)}>
+                  <label className={miniLabelCls}>{t("phase")}</label>
+                  <select
+                    className={miniInputCls}
+                    value={a.phase}
+                    onChange={e => updateBulkAccount(a.key, "phase", e.target.value)}
+                  >
                     <option value="challenge">{t("challengeEval")}</option>
                     <option value="funded">{t("fundedPayout")}</option>
                   </select>
                 </div>
-                {/* Start Bal */}
                 <div className="w-28">
-                  <label className="block text-[10px] font-medium text-gray-400 mb-0.5">{t("startBal")}</label>
-                  <input type="number" className="w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500" value={a.startBalance} onChange={e => updateBulkAccount(a.key, "startBalance", Number(e.target.value))} />
+                  <label className={miniLabelCls}>{t("startBal")}</label>
+                  <input
+                    type="number"
+                    className={miniInputCls + " tabular-nums"}
+                    value={a.startBalance}
+                    onChange={e => updateBulkAccount(a.key, "startBalance", Number(e.target.value))}
+                  />
                 </div>
-                {/* Start Date */}
                 <div className="w-32">
-                  <label className="block text-[10px] font-medium text-gray-400 mb-0.5">{t("startDate")}</label>
-                  <input type="date" className="w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-blue-500" value={a.startDate} onChange={e => updateBulkAccount(a.key, "startDate", e.target.value)} />
+                  <label className={miniLabelCls}>{t("startDate")}</label>
+                  <input
+                    type="date"
+                    className={miniInputCls}
+                    value={a.startDate}
+                    onChange={e => updateBulkAccount(a.key, "startDate", e.target.value)}
+                  />
                 </div>
-                {/* Remove */}
-                <button onClick={() => removeBulkAccount(a.key)} className="mt-4 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
+                <div className="pt-4">
+                  <IconButton
+                    icon={Trash2}
+                    label={`Remove ${a.label || "account"}`}
+                    size="icon-sm"
+                    variant="ghost-danger"
+                    onClick={() => removeBulkAccount(a.key)}
+                  />
+                </div>
               </div>
-              <div className={`text-[10px] mt-1 ${a.error ? "text-red-600" : "text-gray-500"}`}>
-                {a.error ? a.summary : `${a.entryCount} journal entries • ${a.summary}`}
+              <div className={"mt-1.5 text-[10.5px] " + (a.error ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400")}>
+                {a.error ? a.summary : `${a.entryCount} journal entries · ${a.summary}`}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <button onClick={() => { setBulkAccounts(null); setImportMsg(null); }} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t("cancel")}</button>
-          <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t("cancel")}</button>
-          <button onClick={handleBulkSave} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
+        <footer className="flex justify-end gap-2 border-t border-slate-200 bg-slate-50/60 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <Button variant="ghost" size="sm" onClick={onCancel}>{t("cancel")}</Button>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Plus size={13} strokeWidth={2.5} />}
+            onClick={handleBulkSave}
+          >
             {t("importAccounts", validCount, validCount !== 1 ? "s" : "")}
-          </button>
-        </div>
+          </Button>
+        </footer>
       </div>
     );
   }
 
   // ── Single account mode ──
+  const importBorderCls = importedJournal ? "!border-blue-400 !bg-blue-50/40 dark:!bg-blue-950/20" : "";
   return (
-    <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-4 space-y-3">
-      <h3 className="font-bold text-gray-800">{t("trackNewAccount")}</h3>
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+          >
+            <Wallet size={14} strokeWidth={2.25} />
+          </span>
+          <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">
+            {t("trackNewAccount")}
+          </h3>
+        </div>
+      </header>
 
-      {/* CSV Import section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-semibold text-blue-800">{t("quickStartCsv")}</div>
-            <div className="text-[10px] text-blue-600">{t("csvImportDesc")}</div>
+      <div className="space-y-3 p-4">
+        {/* CSV Quick-start */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-[12px] font-semibold text-blue-800 dark:text-blue-300">
+                <Upload size={12} strokeWidth={2.5} aria-hidden="true" />
+                {t("quickStartCsv")}
+              </div>
+              <div className="mt-0.5 text-[11px] text-blue-700/80 dark:text-blue-400/80">
+                {t("csvImportDesc")}
+              </div>
+            </div>
+            <Button
+              size="xs"
+              variant="secondary"
+              leftIcon={<Upload size={11} strokeWidth={2.5} />}
+              className="!border-blue-300 !text-blue-700 hover:!border-blue-400 hover:!bg-white dark:!border-blue-800 dark:!text-blue-300 dark:hover:!bg-slate-900"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {t("importCsvs")}
+            </Button>
+            <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" multiple className="hidden" onChange={handleCsvImport} />
           </div>
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-700 bg-white hover:bg-blue-100 rounded border border-blue-300 shadow-sm">
-            📄 {t("importCsvs")}
-          </button>
-          <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" multiple className="hidden" onChange={handleCsvImport} />
-        </div>
-        {importMsg && <div className="text-xs px-2 py-1 rounded bg-white border border-blue-200">{importMsg}</div>}
-        {importedJournal && (
-          <div className="text-[10px] text-blue-700">{t("startTrackingEntries", importedJournal.length)}</div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t("linkToFirm")}</label>
-          <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500" value={firmId} onChange={e => setFirmId(e.target.value)}>
-            {firms.map(f => <option key={f.id} value={f.id}>{f.name} — {f.model}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t("phase")}</label>
-          {selectedFirm?.instant ? (
-            <div className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-500">{t("fundedInstant")}</div>
-          ) : (
-            <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500" value={phase} onChange={e => setPhase(e.target.value)}>
-              <option value="challenge">{t("challengeEval")}</option>
-              <option value="funded">{t("fundedPayout")}</option>
-            </select>
+          {importMsg && (
+            <div className="mt-2 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-blue-900 dark:bg-slate-900 dark:text-slate-300">
+              {importMsg}
+            </div>
+          )}
+          {importedJournal && (
+            <div className="mt-1 text-[10.5px] font-medium text-blue-700 dark:text-blue-400">
+              {t("startTrackingEntries", importedJournal.length)}
+            </div>
           )}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t("label")} {importedJournal && label ? "" : "(optional)"}</label>
-          <input type="text" className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 ${importedJournal && label ? "border-blue-400 bg-blue-50/50" : "border-gray-300"}`} value={label} onChange={e => setLabel(e.target.value)} placeholder={selectedFirm ? `${selectedFirm.name} ${selectedFirm.model}` : "My account"} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t("startBalance")}</label>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
-            <input type="number" className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 ${importedJournal ? "border-blue-400 bg-blue-50/50" : "border-gray-300"}`} value={startBalance} onChange={e => setStartBalance(Number(e.target.value))} />
+
+        {/* Form grid */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={FIELD_LABEL_CLS}>{t("linkToFirm")}</label>
+            <select
+              className={selectCls}
+              value={firmId}
+              onChange={e => setFirmId(e.target.value)}
+            >
+              {firms.map(f => <option key={f.id} value={f.id}>{f.name} — {f.model}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={FIELD_LABEL_CLS}>{t("phase")}</label>
+            {selectedFirm?.instant ? (
+              <div className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+                {t("fundedInstant")}
+              </div>
+            ) : (
+              <select className={selectCls} value={phase} onChange={e => setPhase(e.target.value)}>
+                <option value="challenge">{t("challengeEval")}</option>
+                <option value="funded">{t("fundedPayout")}</option>
+              </select>
+            )}
+          </div>
+          <div>
+            <label className={FIELD_LABEL_CLS}>
+              {t("label")} {importedJournal && label ? "" : <span className="ml-1 font-normal text-slate-400 dark:text-slate-500">(optional)</span>}
+            </label>
+            <input
+              type="text"
+              className={FIELD_INPUT_CLS + " " + importBorderCls}
+              value={label}
+              onChange={e => setLabel(e.target.value)}
+              placeholder={selectedFirm ? `${selectedFirm.name} ${selectedFirm.model}` : "My account"}
+            />
+          </div>
+          <div>
+            <label className={FIELD_LABEL_CLS}>{t("startBalance")}</label>
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 text-[13px] text-slate-400 dark:text-slate-500">$</span>
+              <input
+                type="number"
+                className={FIELD_INPUT_CLS + " " + importBorderCls + " tabular-nums"}
+                value={startBalance}
+                onChange={e => setStartBalance(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={FIELD_LABEL_CLS}>{t("startDate")}</label>
+            <input
+              type="date"
+              className={FIELD_INPUT_CLS + " " + importBorderCls}
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
           </div>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{t("startDate")}</label>
-          <input type="date" className={`w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 ${importedJournal ? "border-blue-400 bg-blue-50/50" : "border-gray-300"}`} value={startDate} onChange={e => setStartDate(e.target.value)} />
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" size="sm" onClick={onCancel}>{t("cancel")}</Button>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<Plus size={13} strokeWidth={2.5} />}
+            onClick={() => {
+              if (!firmId) { alert(t("alertSelectFirm")); return; }
+              const effectivePhase = selectedFirm?.instant ? "funded" : phase;
+              onSave({ id: nextAccountId++, firmId: Number(firmId), phase: effectivePhase, label, startBalance, startDate, journal: importedJournal || [], status: "active" });
+            }}
+          >
+            {importedJournal ? t("startTrackingEntries", importedJournal.length) : t("startTracking")}
+          </Button>
         </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg">{t("cancel")}</button>
-        <button onClick={() => {
-          if (!firmId) { alert(t("alertSelectFirm")); return; }
-          const effectivePhase = selectedFirm?.instant ? "funded" : phase;
-          onSave({ id: nextAccountId++, firmId: Number(firmId), phase: effectivePhase, label, startBalance, startDate, journal: importedJournal || [], status: "active" });
-        }} className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
-          {importedJournal ? t("startTrackingEntries", importedJournal.length) : t("startTracking")}
-        </button>
       </div>
     </div>
   );
@@ -2803,211 +4012,342 @@ function FinancialDashboard({ accounts, firms }) {
     };
   }, [accounts, firms]);
 
-  const pnlClr = v => v > 0 ? "text-emerald-600" : v < 0 ? "text-red-600" : "text-gray-500";
-  const roiClr = v => v > 0 ? "text-emerald-600" : v < 0 ? "text-red-600" : "text-gray-400";
+  const pnlClr = v => v > 0 ? "text-emerald-600 dark:text-emerald-400" : v < 0 ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-slate-400";
+  const roiClr = v => v > 0 ? "text-emerald-600 dark:text-emerald-400" : v < 0 ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-slate-500";
   const monthName = m => {
     try { const [y, mo] = m.split("-"); return new Date(y, mo - 1).toLocaleString("default", { month: "short", year: "numeric" }); } catch { return m; }
   };
 
   if (accounts.length === 0) {
     return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-lg">No accounts yet</p>
-        <p className="text-sm mt-1">Start tracking accounts to see your financial dashboard.</p>
-      </div>
+      <EmptyState
+        icon={LineChart}
+        title="No accounts yet"
+        description="Start tracking accounts to see your financial dashboard."
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Summary Cards ── */}
-      <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-3">Financial Dashboard</h2>
-        <div className="grid grid-cols-5 gap-3">
-          <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xs font-medium text-gray-400">Total Expenses</div>
-            <div className="text-xl font-bold text-red-600">{money(data.totalExpenses)}</div>
-            <div className="text-[10px] text-gray-400">eval fees + activations + resets</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xs font-medium text-gray-400">Total Income</div>
-            <div className="text-xl font-bold text-emerald-600">{money(data.totalIncome)}</div>
-            <div className="text-[10px] text-gray-400">{data.payoutCount} payout{data.payoutCount !== 1 ? "s" : ""} (net after split)</div>
-          </div>
-          <div className={`bg-white border ${data.actualPnl >= 0 ? "border-emerald-200" : "border-red-200"} rounded-xl p-3 text-center shadow-sm`}>
-            <div className="text-xs font-medium text-gray-400">Actual P&L</div>
-            <div className={`text-xl font-bold ${pnlClr(data.actualPnl)}`}>{data.actualPnl >= 0 ? "+" : ""}{money(data.actualPnl)}</div>
-            <div className="text-[10px] text-gray-400">income − expenses</div>
-          </div>
-          <div className={`bg-white border ${data.actualRoi >= 0 ? "border-emerald-200" : "border-red-200"} rounded-xl p-3 text-center shadow-sm`}>
-            <div className="text-xs font-medium text-gray-400">Actual ROI</div>
-            <div className={`text-xl font-bold ${roiClr(data.actualRoi)}`}>{data.actualRoi >= 0 ? "+" : ""}{(data.actualRoi * 100).toFixed(1)}%</div>
-            <div className="text-[10px] text-gray-400">P&L ÷ expenses</div>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl p-3 text-center shadow-sm">
-            <div className="text-xs font-medium text-gray-400">Avg Payout</div>
-            <div className="text-xl font-bold text-gray-700">{data.avgPayout > 0 ? money(data.avgPayout) : "—"}</div>
-            <div className="text-[10px] text-gray-400">{data.costPerPayout != null ? `cost/payout: ${money(data.costPerPayout)}` : "no payouts yet"}</div>
+    <div className="space-y-5">
+      {/* ── Header + Summary Cards ── */}
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+              Financial Dashboard
+            </h2>
+            <p className="mt-0.5 text-[12.5px] text-slate-500 dark:text-slate-400">
+              Real profits and losses across all accounts — eval fees, activations, resets, and payouts.
+            </p>
           </div>
         </div>
+
+        {/* KPI row */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <DashKpi
+            icon={TrendingDown}
+            tone="red"
+            label="Total Expenses"
+            value={money(data.totalExpenses)}
+            sub="eval fees + activations + resets"
+          />
+          <DashKpi
+            icon={TrendingUp}
+            tone="emerald"
+            label="Total Income"
+            value={money(data.totalIncome)}
+            sub={`${data.payoutCount} payout${data.payoutCount !== 1 ? "s" : ""} · net after split`}
+          />
+          <DashKpi
+            icon={Activity}
+            tone={data.actualPnl >= 0 ? "emerald" : "red"}
+            label="Actual P&L"
+            value={
+              <span className={pnlClr(data.actualPnl)}>
+                {data.actualPnl >= 0 ? "+" : ""}{money(data.actualPnl)}
+              </span>
+            }
+            sub="income − expenses"
+            highlight
+          />
+          <DashKpi
+            icon={BarChart3}
+            tone={data.actualRoi >= 0 ? "emerald" : "red"}
+            label="Actual ROI"
+            value={
+              <span className={roiClr(data.actualRoi)}>
+                {data.actualRoi >= 0 ? "+" : ""}{(data.actualRoi * 100).toFixed(1)}%
+              </span>
+            }
+            sub="P&L ÷ expenses"
+          />
+          <DashKpi
+            icon={Award}
+            tone="slate"
+            label="Avg Payout"
+            value={data.avgPayout > 0 ? money(data.avgPayout) : "—"}
+            sub={data.costPerPayout != null ? `cost/payout: ${money(data.costPerPayout)}` : "no payouts yet"}
+          />
+        </div>
+
         {/* Secondary stats row */}
-        <div className="flex gap-4 mt-2 text-xs text-gray-500 flex-wrap">
-          <span>Accounts: <b className="text-gray-700">{data.totalAccounts}</b></span>
-          <span>Funded: <b className="text-gray-700">{data.fundedAccounts}</b></span>
-          <span>Got payouts: <b className="text-emerald-600">{data.accountsWithPayouts}</b></span>
-          {data.totalResets > 0 && <span>Resets: <b className="text-amber-600">{data.totalResets}</b> ({money(data.totalResetCosts)})</span>}
-          <span>Success rate: <b className={data.accountsWithPayouts > 0 ? "text-emerald-600" : "text-gray-400"}>{data.totalAccounts > 0 ? ((data.accountsWithPayouts / data.totalAccounts) * 100).toFixed(0) : 0}%</b> of accounts</span>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <DashChip label="Accounts" value={data.totalAccounts} />
+          <DashChip label="Funded" value={data.fundedAccounts} />
+          <DashChip label="Got payouts" value={data.accountsWithPayouts} tone={data.accountsWithPayouts > 0 ? "success" : "neutral"} />
+          {data.totalResets > 0 && (
+            <DashChip
+              label="Resets"
+              value={`${data.totalResets} (${money(data.totalResetCosts)})`}
+              tone="warn"
+            />
+          )}
+          <DashChip
+            label="Success rate"
+            value={`${data.totalAccounts > 0 ? ((data.accountsWithPayouts / data.totalAccounts) * 100).toFixed(0) : 0}%`}
+            tone={data.accountsWithPayouts > 0 ? "success" : "neutral"}
+          />
           {data.actualPnl < 0 && data.avgPayout > 0 && (
-            <span>Break-even in: <b className="text-amber-600">{Math.ceil(Math.abs(data.actualPnl) / data.avgPayout)} more payout{Math.ceil(Math.abs(data.actualPnl) / data.avgPayout) !== 1 ? "s" : ""}</b></span>
+            <DashChip
+              label="Break-even in"
+              value={`${Math.ceil(Math.abs(data.actualPnl) / data.avgPayout)} more payout${Math.ceil(Math.abs(data.actualPnl) / data.avgPayout) !== 1 ? "s" : ""}`}
+              tone="warn"
+            />
           )}
         </div>
       </div>
 
       {/* ── By Firm ── */}
       {data.firmRows.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-sm font-bold text-gray-700">By Firm</h3>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 border-b bg-gray-50/50">
-                <th className="text-left py-2 px-3 font-medium">Firm</th>
-                <th className="text-right py-2 px-3 font-medium">Accounts</th>
-                <th className="text-right py-2 px-3 font-medium">Expenses</th>
-                <th className="text-right py-2 px-3 font-medium">Income</th>
-                <th className="text-right py-2 px-3 font-medium">P&L</th>
-                <th className="text-right py-2 px-3 font-medium">ROI</th>
-                <th className="text-right py-2 px-3 font-medium">Payouts</th>
+        <DashTable title="By Firm" icon={Building2}>
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+              <th className="px-3 py-2 text-left">Firm</th>
+              <th className="px-3 py-2 text-right">Accounts</th>
+              <th className="px-3 py-2 text-right">Expenses</th>
+              <th className="px-3 py-2 text-right">Income</th>
+              <th className="px-3 py-2 text-right">P&L</th>
+              <th className="px-3 py-2 text-right">ROI</th>
+              <th className="px-3 py-2 text-right">Payouts</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data.firmRows.map(r => (
+              <tr key={r.firmName} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.firmName}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.accountCount}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
+                <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                  {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
+                </td>
+                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                  {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
               </tr>
-            </thead>
-            <tbody>
-              {data.firmRows.map(r => (
-                <tr key={r.firmName} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 px-3 font-medium text-gray-700">{r.firmName}</td>
-                  <td className="py-2 px-3 text-right text-gray-600">{r.accountCount}</td>
-                  <td className="py-2 px-3 text-right text-red-600">{money(r.expenses)}</td>
-                  <td className="py-2 px-3 text-right text-emerald-600">{money(r.income)}</td>
-                  <td className={`py-2 px-3 text-right font-semibold ${pnlClr(r.pnl)}`}>{r.pnl >= 0 ? "+" : ""}{money(r.pnl)}</td>
-                  <td className={`py-2 px-3 text-right ${roiClr(r.roi)}`}>{r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}</td>
-                  <td className="py-2 px-3 text-right text-gray-600">{r.payouts}</td>
-                </tr>
-              ))}
-            </tbody>
-            {data.firmRows.length > 1 && (
-              <tfoot>
-                <tr className="border-t border-gray-200 text-xs font-semibold text-gray-600 bg-gray-50/50">
-                  <td className="py-2 px-3">Total</td>
-                  <td className="py-2 px-3 text-right">{data.totalAccounts}</td>
-                  <td className="py-2 px-3 text-right text-red-600">{money(data.totalExpenses)}</td>
-                  <td className="py-2 px-3 text-right text-emerald-600">{money(data.totalIncome)}</td>
-                  <td className={`py-2 px-3 text-right font-bold ${pnlClr(data.actualPnl)}`}>{data.actualPnl >= 0 ? "+" : ""}{money(data.actualPnl)}</td>
-                  <td className={`py-2 px-3 text-right ${roiClr(data.actualRoi)}`}>{data.totalExpenses > 0 ? `${data.actualRoi >= 0 ? "+" : ""}${(data.actualRoi * 100).toFixed(0)}%` : "—"}</td>
-                  <td className="py-2 px-3 text-right">{data.payoutCount}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+            ))}
+          </tbody>
+          {data.firmRows.length > 1 && (
+            <tfoot>
+              <tr className="border-t border-slate-200 bg-slate-50/70 text-[12px] font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300">
+                <td className="px-3 py-2">Total</td>
+                <td className="px-3 py-2 text-right tabular-nums">{data.totalAccounts}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(data.totalExpenses)}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(data.totalIncome)}</td>
+                <td className={"px-3 py-2 text-right font-bold tabular-nums " + pnlClr(data.actualPnl)}>
+                  {data.actualPnl >= 0 ? "+" : ""}{money(data.actualPnl)}
+                </td>
+                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(data.actualRoi)}>
+                  {data.totalExpenses > 0 ? `${data.actualRoi >= 0 ? "+" : ""}${(data.actualRoi * 100).toFixed(0)}%` : "—"}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">{data.payoutCount}</td>
+              </tr>
+            </tfoot>
+          )}
+        </DashTable>
       )}
 
       {/* ── By Month ── */}
       {data.monthRows.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-sm font-bold text-gray-700">By Month</h3>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 border-b bg-gray-50/50">
-                <th className="text-left py-2 px-3 font-medium">Month</th>
-                <th className="text-right py-2 px-3 font-medium">Expenses</th>
-                <th className="text-right py-2 px-3 font-medium">Income</th>
-                <th className="text-right py-2 px-3 font-medium">P&L</th>
-                <th className="text-right py-2 px-3 font-medium">ROI</th>
-                <th className="text-right py-2 px-3 font-medium">Payouts</th>
-                <th className="text-right py-2 px-3 font-medium">Cumulative P&L</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(() => {
-                let cum = 0;
-                return [...data.monthRows].reverse().map(r => {
-                  cum += r.pnl;
-                  return { ...r, cumPnl: cum };
-                }).reverse().map(r => (
-                  <tr key={r.month} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-2 px-3 font-medium text-gray-700">{monthName(r.month)}</td>
-                    <td className="py-2 px-3 text-right text-red-600">{r.expenses > 0 ? money(r.expenses) : "—"}</td>
-                    <td className="py-2 px-3 text-right text-emerald-600">{r.income > 0 ? money(r.income) : "—"}</td>
-                    <td className={`py-2 px-3 text-right font-semibold ${pnlClr(r.pnl)}`}>{r.pnl >= 0 ? "+" : ""}{money(r.pnl)}</td>
-                    <td className={`py-2 px-3 text-right ${roiClr(r.roi)}`}>{r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}</td>
-                    <td className="py-2 px-3 text-right text-gray-600">{r.payouts > 0 ? r.payouts : "—"}</td>
-                    <td className={`py-2 px-3 text-right font-semibold ${pnlClr(r.cumPnl)}`}>{r.cumPnl >= 0 ? "+" : ""}{money(r.cumPnl)}</td>
-                  </tr>
-                ));
-              })()}
-            </tbody>
-            {/* YTD total */}
+        <DashTable title="By Month" icon={Clock}>
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+              <th className="px-3 py-2 text-left">Month</th>
+              <th className="px-3 py-2 text-right">Expenses</th>
+              <th className="px-3 py-2 text-right">Income</th>
+              <th className="px-3 py-2 text-right">P&L</th>
+              <th className="px-3 py-2 text-right">ROI</th>
+              <th className="px-3 py-2 text-right">Payouts</th>
+              <th className="px-3 py-2 text-right">Cumulative P&L</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {(() => {
-              const currentYear = new Date().getFullYear().toString();
-              const ytdMonths = data.monthRows.filter(r => r.month.startsWith(currentYear));
-              if (ytdMonths.length === 0) return null;
-              const ytdExpenses = ytdMonths.reduce((s, r) => s + r.expenses, 0);
-              const ytdIncome = ytdMonths.reduce((s, r) => s + r.income, 0);
-              const ytdPnl = ytdIncome - ytdExpenses;
-              const ytdRoi = ytdExpenses > 0 ? ytdPnl / ytdExpenses : 0;
-              const ytdPayouts = ytdMonths.reduce((s, r) => s + r.payouts, 0);
-              return (
-                <tfoot>
-                  <tr className="border-t-2 border-gray-200 bg-gray-50/80 text-xs font-bold text-gray-700">
-                    <td className="py-2.5 px-3">YTD {currentYear}</td>
-                    <td className="py-2.5 px-3 text-right text-red-600">{ytdExpenses > 0 ? money(ytdExpenses) : "—"}</td>
-                    <td className="py-2.5 px-3 text-right text-emerald-600">{ytdIncome > 0 ? money(ytdIncome) : "—"}</td>
-                    <td className={`py-2.5 px-3 text-right font-bold ${pnlClr(ytdPnl)}`}>{ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}</td>
-                    <td className={`py-2.5 px-3 text-right ${roiClr(ytdRoi)}`}>{ytdExpenses > 0 ? `${ytdRoi >= 0 ? "+" : ""}${(ytdRoi * 100).toFixed(0)}%` : "—"}</td>
-                    <td className="py-2.5 px-3 text-right">{ytdPayouts > 0 ? ytdPayouts : "—"}</td>
-                    <td className={`py-2.5 px-3 text-right font-bold ${pnlClr(ytdPnl)}`}>{ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}</td>
-                  </tr>
-                </tfoot>
-              );
+              let cum = 0;
+              return [...data.monthRows].reverse().map(r => {
+                cum += r.pnl;
+                return { ...r, cumPnl: cum };
+              }).reverse().map(r => (
+                <tr key={r.month} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                  <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{monthName(r.month)}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">
+                    {r.expenses > 0 ? money(r.expenses) : <span className="text-slate-300 dark:text-slate-700">—</span>}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {r.income > 0 ? money(r.income) : <span className="text-slate-300 dark:text-slate-700">—</span>}
+                  </td>
+                  <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                    {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
+                  </td>
+                  <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                    {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : <span className="text-slate-300 dark:text-slate-700">—</span>}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                    {r.payouts > 0 ? r.payouts : <span className="text-slate-300 dark:text-slate-700">—</span>}
+                  </td>
+                  <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.cumPnl)}>
+                    {r.cumPnl >= 0 ? "+" : ""}{money(r.cumPnl)}
+                  </td>
+                </tr>
+              ));
             })()}
-          </table>
-        </div>
+          </tbody>
+          {(() => {
+            const currentYear = new Date().getFullYear().toString();
+            const ytdMonths = data.monthRows.filter(r => r.month.startsWith(currentYear));
+            if (ytdMonths.length === 0) return null;
+            const ytdExpenses = ytdMonths.reduce((s, r) => s + r.expenses, 0);
+            const ytdIncome = ytdMonths.reduce((s, r) => s + r.income, 0);
+            const ytdPnl = ytdIncome - ytdExpenses;
+            const ytdRoi = ytdExpenses > 0 ? ytdPnl / ytdExpenses : 0;
+            const ytdPayouts = ytdMonths.reduce((s, r) => s + r.payouts, 0);
+            return (
+              <tfoot>
+                <tr className="border-t-2 border-slate-300 bg-blue-50/60 text-[12px] font-bold text-slate-800 dark:border-slate-700 dark:bg-blue-950/30 dark:text-slate-200">
+                  <td className="px-3 py-2.5">YTD {currentYear}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-red-600 dark:text-red-400">{ytdExpenses > 0 ? money(ytdExpenses) : "—"}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{ytdIncome > 0 ? money(ytdIncome) : "—"}</td>
+                  <td className={"px-3 py-2.5 text-right font-bold tabular-nums " + pnlClr(ytdPnl)}>
+                    {ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}
+                  </td>
+                  <td className={"px-3 py-2.5 text-right tabular-nums " + roiClr(ytdRoi)}>
+                    {ytdExpenses > 0 ? `${ytdRoi >= 0 ? "+" : ""}${(ytdRoi * 100).toFixed(0)}%` : "—"}
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">{ytdPayouts > 0 ? ytdPayouts : "—"}</td>
+                  <td className={"px-3 py-2.5 text-right font-bold tabular-nums " + pnlClr(ytdPnl)}>
+                    {ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}
+                  </td>
+                </tr>
+              </tfoot>
+            );
+          })()}
+        </DashTable>
       )}
 
       {/* ── By Year ── */}
       {data.yearRows.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-sm font-bold text-gray-700">By Year</h3>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-gray-400 border-b bg-gray-50/50">
-                <th className="text-left py-2 px-3 font-medium">Year</th>
-                <th className="text-right py-2 px-3 font-medium">Expenses</th>
-                <th className="text-right py-2 px-3 font-medium">Income</th>
-                <th className="text-right py-2 px-3 font-medium">P&L</th>
-                <th className="text-right py-2 px-3 font-medium">ROI</th>
-                <th className="text-right py-2 px-3 font-medium">Payouts</th>
+        <DashTable title="By Year" icon={Calculator}>
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/70 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+              <th className="px-3 py-2 text-left">Year</th>
+              <th className="px-3 py-2 text-right">Expenses</th>
+              <th className="px-3 py-2 text-right">Income</th>
+              <th className="px-3 py-2 text-right">P&L</th>
+              <th className="px-3 py-2 text-right">ROI</th>
+              <th className="px-3 py-2 text-right">Payouts</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            {data.yearRows.map(r => (
+              <tr key={r.year} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
+                <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.year}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
+                <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                  {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
+                </td>
+                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                  {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
               </tr>
-            </thead>
-            <tbody>
-              {data.yearRows.map(r => (
-                <tr key={r.year} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-2 px-3 font-medium text-gray-700">{r.year}</td>
-                  <td className="py-2 px-3 text-right text-red-600">{money(r.expenses)}</td>
-                  <td className="py-2 px-3 text-right text-emerald-600">{money(r.income)}</td>
-                  <td className={`py-2 px-3 text-right font-semibold ${pnlClr(r.pnl)}`}>{r.pnl >= 0 ? "+" : ""}{money(r.pnl)}</td>
-                  <td className={`py-2 px-3 text-right ${roiClr(r.roi)}`}>{r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}</td>
-                  <td className="py-2 px-3 text-right text-gray-600">{r.payouts}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </DashTable>
       )}
+    </div>
+  );
+}
+
+// ── Dashboard KPI card (hero row) ──
+const DASH_KPI_TONES = {
+  red:     { chip: "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",         border: "border-slate-200 dark:border-slate-800" },
+  emerald: { chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400", border: "border-slate-200 dark:border-slate-800" },
+  slate:   { chip: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",   border: "border-slate-200 dark:border-slate-800" },
+  blue:    { chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",     border: "border-slate-200 dark:border-slate-800" },
+};
+function DashKpi({ icon: Icon, tone = "slate", label, value, sub, highlight }) {
+  const t = DASH_KPI_TONES[tone] || DASH_KPI_TONES.slate;
+  return (
+    <div
+      className={
+        "rounded-xl border bg-white p-4 shadow-soft dark:bg-slate-900 " +
+        t.border +
+        (highlight ? " ring-1 ring-slate-100 dark:ring-slate-800" : "")
+      }
+    >
+      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        {Icon && (
+          <span aria-hidden="true" className={"flex h-4 w-4 items-center justify-center rounded " + t.chip}>
+            <Icon size={10} strokeWidth={2.5} />
+          </span>
+        )}
+        <span>{label}</span>
+      </div>
+      <div className="mt-1.5 text-[22px] font-bold leading-tight tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
+        {value}
+      </div>
+      {sub && <div className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-slate-400">{sub}</div>}
+    </div>
+  );
+}
+
+// ── Dashboard chip (secondary stats) ──
+const DASH_CHIP_TONES = {
+  neutral: "border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+  success: "border-emerald-200 bg-emerald-50/60 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300",
+  warn:    "border-amber-200 bg-amber-50/60 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
+};
+function DashChip({ label, value, tone = "neutral" }) {
+  const cls = DASH_CHIP_TONES[tone] || DASH_CHIP_TONES.neutral;
+  return (
+    <span className={"inline-flex items-baseline gap-1 rounded-full border px-2.5 py-1 text-[11.5px] " + cls}>
+      <span className="text-slate-500 dark:text-slate-400">{label}:</span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </span>
+  );
+}
+
+// ── Dashboard table wrapper (Card + header + scrollable table) ──
+function DashTable({ title, icon: Icon, children }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        {Icon && (
+          <span
+            aria-hidden="true"
+            className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+          >
+            <Icon size={12} strokeWidth={2.25} />
+          </span>
+        )}
+        <h3 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[13px]">{children}</table>
+      </div>
     </div>
   );
 }
@@ -3099,140 +4439,382 @@ function calcUnifiedObjective(withMetrics) {
   };
 }
 
+// ─── Warning severity config ────────────────────────────────────────────────
+const WARN_CONFIG = {
+  critical: {
+    Icon: AlertCircle,
+    iconClass: "text-red-600 dark:text-red-400",
+    rowClass: "bg-red-50/70 border-red-200 dark:bg-red-950/30 dark:border-red-900",
+    textClass: "text-red-800 dark:text-red-200",
+    label: "Critical",
+  },
+  warning: {
+    Icon: AlertTriangle,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    rowClass: "bg-amber-50/70 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900",
+    textClass: "text-amber-900 dark:text-amber-200",
+    label: "Warning",
+  },
+  info: {
+    Icon: Info,
+    iconClass: "text-sky-600 dark:text-sky-400",
+    rowClass: "bg-sky-50/60 border-sky-200 dark:bg-sky-950/30 dark:border-sky-900",
+    textClass: "text-sky-900 dark:text-sky-200",
+    label: "Info",
+  },
+};
+
 function UnifiedObjectiveCard({ withMetrics }) {
   const result = useMemo(() => calcUnifiedObjective(withMetrics), [withMetrics]);
   const { unified, active, excluded, warnings, firmGroups } = result;
   const [expanded, setExpanded] = useState(false);
 
+  // ── Empty state: no eligible accounts ─────────────────────────────────────
   if (!unified) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
-        <b>Trade Copier:</b> {warnings[0]?.msg || "No accounts eligible."}
+      <div
+        role="alert"
+        aria-live="polite"
+        className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950/40"
+      >
+        <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+        <div className="text-sm">
+          <div className="font-semibold text-red-900 dark:text-red-200">Trade Copier — No eligible accounts</div>
+          <div className="mt-0.5 text-red-700 dark:text-red-300">{warnings[0]?.msg || "No accounts are eligible to trade today."}</div>
+        </div>
       </div>
     );
   }
 
-  const money = (n) => `$${Math.round(n).toLocaleString()}`;
+  const money = (n) => `$${Math.round(Math.abs(n)).toLocaleString()}`;
+  const totalAccounts = active.length + excluded.length;
+  const panelId = "unified-obj-details";
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-      {/* Main stats row */}
-      <div className="px-5 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Zap size={16} className="text-amber-500" />
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Trade Copier — Unified Daily Objective</span>
+    <section
+      aria-labelledby="unified-obj-title"
+      className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900"
+    >
+      {/* ── HEADER BAR ──────────────────────────────────────────── */}
+      <header className="flex items-center justify-between border-b border-slate-100 px-5 py-3 dark:border-slate-800">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
+            aria-hidden="true"
+          >
+            <Zap size={14} className="text-white" strokeWidth={2.5} />
           </div>
-          <div className="flex items-center gap-2">
-            {unified.hasConflict && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">⚠ CONFLICT</span>
-            )}
-            <span className="text-[10px] text-gray-400">{active.length}/{active.length + excluded.length} active</span>
+          <div>
+            <h2
+              id="unified-obj-title"
+              className="text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100"
+            >
+              Trade Copier — Unified Daily Objective
+            </h2>
+            <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400">
+              Single plan that copies across all accounts
+            </p>
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-6 text-center">
-          <div>
-            <div className="text-2xl font-bold text-emerald-600">{money(unified.target)}</div>
-            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Daily Target</div>
+
+        <div className="flex items-center gap-2">
+          {unified.hasConflict && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+              <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
+              <span>Conflict</span>
+            </span>
+          )}
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+            aria-label={`${active.length} of ${totalAccounts} accounts active`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            {active.length}/{totalAccounts} active
+          </span>
+        </div>
+      </header>
+
+      {/* ── HERO KPI ROW ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-0 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:divide-x md:divide-slate-100 md:dark:divide-slate-800">
+        {/* Primary KPI — Daily Target */}
+        <div className="relative bg-gradient-to-br from-emerald-50/60 to-white px-6 py-5 dark:from-emerald-950/20 dark:to-slate-900">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+            <Target size={12} strokeWidth={2.5} aria-hidden="true" />
+            <span>Daily Target</span>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{unified.contracts}</div>
-            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Contracts</div>
+          <div className="mt-1 flex items-baseline gap-1 tabular-nums">
+            <span className="text-[13px] font-medium text-slate-400 dark:text-slate-500">$</span>
+            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {Math.round(unified.target).toLocaleString()}
+            </span>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-red-500">{money(unified.maxLoss)}</div>
-            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Max Loss</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-700">{active.length}</div>
-            <div className="text-[10px] text-gray-400 uppercase mt-0.5">Accounts</div>
+          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            per account · per day
           </div>
         </div>
+
+        {/* Contracts */}
+        <KpiCell
+          icon={Layers}
+          label="Contracts"
+          value={unified.contracts}
+          sub="min across accounts"
+          tone="blue"
+        />
+
+        {/* Max Daily Loss */}
+        <KpiCell
+          icon={Shield}
+          label="Max Loss"
+          value={`−${money(unified.maxLoss)}`}
+          sub="tightest limit"
+          tone="red"
+        />
+
+        {/* Active Accounts */}
+        <KpiCell
+          icon={Users}
+          label="Active"
+          value={`${active.length}`}
+          sub={`of ${totalAccounts} accounts`}
+          tone="slate"
+        />
       </div>
 
-      {/* Warnings */}
+      {/* ── WARNINGS ────────────────────────────────────────────── */}
       {warnings.length > 0 && (
-        <div className="border-t border-gray-100 px-5 py-2.5 bg-gray-50 space-y-1">
-          {warnings.map((w, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs leading-relaxed">
-              <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${w.level === "critical" ? "bg-red-500" : w.level === "warning" ? "bg-amber-500" : "bg-blue-400"}`} />
-              <span className={w.level === "critical" ? "text-red-700" : w.level === "warning" ? "text-amber-700" : "text-gray-500"}>{w.msg}</span>
-            </div>
-          ))}
-        </div>
+        <ul
+          aria-label={`${warnings.length} ${warnings.length === 1 ? "warning" : "warnings"}`}
+          className="space-y-1.5 border-t border-slate-100 bg-slate-50/50 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/40"
+        >
+          {warnings.map((w, i) => {
+            const cfg = WARN_CONFIG[w.level] || WARN_CONFIG.info;
+            const IconEl = cfg.Icon;
+            return (
+              <li
+                key={i}
+                className={`flex items-start gap-2.5 rounded-md border px-3 py-2 text-[12.5px] leading-snug ${cfg.rowClass}`}
+              >
+                <IconEl
+                  size={14}
+                  strokeWidth={2.25}
+                  className={`mt-0.5 shrink-0 ${cfg.iconClass}`}
+                  aria-hidden="true"
+                />
+                <div className={`flex-1 ${cfg.textClass}`}>
+                  <span className="sr-only">{cfg.label}: </span>
+                  {w.msg}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
-      {/* Expand/collapse details */}
-      <div className="border-t border-gray-100">
-        <button onClick={() => setExpanded(!expanded)} className="w-full px-5 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1 transition-colors">
-          {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          {expanded ? "Hide details" : "Show per-account breakdown"}
-        </button>
-      </div>
+      {/* ── EXPAND/COLLAPSE TRIGGER ─────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => setExpanded(v => !v)}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
+      >
+        <ChevronDown
+          size={14}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className={`transition-transform duration-200 ease-out ${expanded ? "rotate-0" : "-rotate-90"}`}
+        />
+        <span>{expanded ? "Hide per-account breakdown" : "Show per-account breakdown"}</span>
+      </button>
 
-      {expanded && (
-        <div className="border-t border-gray-100">
+      {/* ── EXPANDED DETAILS ────────────────────────────────────── */}
+      <div
+        id={panelId}
+        className={`grid overflow-hidden border-t border-slate-100 transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none dark:border-slate-800 ${
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
           {/* Firm summary chips */}
-          <div className="px-5 py-2.5 flex flex-wrap gap-2">
-            {Object.entries(firmGroups).map(([name, g]) => (
-              <span key={name} className="text-[10px] px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-medium">
-                {name}: {g.active} accts — {money(Math.min(...g.targets))}
-                {Math.min(...g.targets) !== Math.max(...g.targets) ? `–${money(Math.max(...g.targets))}` : ""}/day
-              </span>
-            ))}
-          </div>
+          {Object.keys(firmGroups).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 border-b border-slate-100 bg-slate-50/40 px-5 py-3 dark:border-slate-800 dark:bg-slate-950/30">
+              {Object.entries(firmGroups).map(([name, g]) => {
+                const minT = Math.min(...g.targets);
+                const maxT = Math.max(...g.targets);
+                return (
+                  <span
+                    key={name}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                  >
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{name}</span>
+                    <span className="text-slate-400 dark:text-slate-600">·</span>
+                    <span className="text-slate-600 dark:text-slate-400">{g.active} acct{g.active !== 1 ? "s" : ""}</span>
+                    <span className="text-slate-400 dark:text-slate-600">·</span>
+                    <span className="tabular-nums text-slate-700 dark:text-slate-300">
+                      {money(minT)}
+                      {minT !== maxT ? `–${money(maxT)}` : ""}/day
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
           {/* Per-account table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-full text-[12.5px]">
               <thead>
-                <tr className="bg-gray-50 text-gray-500">
-                  <th className="text-left px-4 py-1.5 font-medium">Account</th>
-                  <th className="text-right px-4 py-1.5 font-medium">Own Target</th>
-                  <th className="text-right px-4 py-1.5 font-medium">Cap</th>
-                  <th className="text-right px-4 py-1.5 font-medium">Contracts</th>
-                  <th className="text-center px-4 py-1.5 font-medium">Days (own)</th>
-                  <th className="text-center px-4 py-1.5 font-medium">Days (unified)</th>
-                  <th className="text-left px-4 py-1.5 font-medium">Impact</th>
+                <tr className="border-b border-slate-100 bg-slate-50/60 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-400">
+                  <th scope="col" className="px-4 py-2 text-left">Account</th>
+                  <th scope="col" className="px-4 py-2 text-right">Own Target</th>
+                  <th scope="col" className="px-4 py-2 text-right">Cap</th>
+                  <th scope="col" className="px-4 py-2 text-right">Contracts</th>
+                  <th scope="col" className="px-4 py-2 text-center">Days (own)</th>
+                  <th scope="col" className="px-4 py-2 text-center">Days (unified)</th>
+                  <th scope="col" className="px-4 py-2 text-left">Impact</th>
                 </tr>
               </thead>
-              <tbody>
-                {active.map(({ acc, firmData, m, daysIndividual, daysUnified, impact }) => (
-                  <tr key={acc.id} className="border-t border-gray-50 hover:bg-gray-50/50">
-                    <td className="px-4 py-1.5">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
-                      {acc.label || acc.id}
-                      <span className="text-gray-400 ml-1">{firmData ? firmData.name : ""}</span>
-                    </td>
-                    <td className="text-right px-4 py-1.5 tabular-nums">{money(m.todayPlan.idealDailyTarget)}</td>
-                    <td className="text-right px-4 py-1.5 tabular-nums">{m.todayPlan.maxDailyProfit != null ? money(m.todayPlan.maxDailyProfit) : "—"}</td>
-                    <td className="text-right px-4 py-1.5 tabular-nums">{m.todayPlan.contractsAllowed}</td>
-                    <td className="text-center px-4 py-1.5 tabular-nums">{daysIndividual}</td>
-                    <td className="text-center px-4 py-1.5 tabular-nums">{daysUnified}</td>
-                    <td className="px-4 py-1.5">
-                      {impact ? (
-                        <span className={impact.startsWith("+") ? "text-red-600 font-medium" : "text-emerald-600 font-medium"}>
-                          {impact}
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                {active.map(({ acc, firmData, m, daysIndividual, daysUnified, impact }) => {
+                  const isSlower = impact && impact.startsWith("+");
+                  const isFaster = impact && impact.startsWith("-");
+                  const ImpactIcon = isSlower ? TrendingDown : isFaster ? TrendingUp : Minus;
+                  return (
+                    <tr
+                      key={acc.id}
+                      className="transition-colors duration-100 hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                            aria-label="active"
+                          />
+                          <span className="font-medium text-slate-900 dark:text-slate-100">
+                            {acc.label || acc.id}
+                          </span>
+                          {firmData && (
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                              {firmData.name}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                        {money(m.todayPlan.idealDailyTarget)}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                        {m.todayPlan.maxDailyProfit != null ? money(m.todayPlan.maxDailyProfit) : "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                        {m.todayPlan.contractsAllowed}
+                      </td>
+                      <td className="px-4 py-2 text-center tabular-nums text-slate-700 dark:text-slate-300">
+                        {daysIndividual}
+                      </td>
+                      <td className="px-4 py-2 text-center tabular-nums">
+                        <span
+                          className={
+                            isSlower
+                              ? "font-semibold text-red-600 dark:text-red-400"
+                              : isFaster
+                              ? "font-semibold text-emerald-600 dark:text-emerald-400"
+                              : "text-slate-700 dark:text-slate-300"
+                          }
+                        >
+                          {daysUnified}
                         </span>
-                      ) : <span className="text-gray-300">—</span>}
-                    </td>
-                  </tr>
-                ))}
-                {excluded.map(({ acc, m }) => (
-                  <tr key={acc.id} className="border-t border-gray-50 opacity-40">
-                    <td className="px-4 py-1.5">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5" />
-                      {acc.label || acc.id}
-                    </td>
-                    <td className="text-right px-4 py-1.5 text-gray-400" colSpan={6}>
-                      {m.todayPlan?.isBreached ? "Breached" : m.todayPlan?.isTargetHit ? "Target hit" : "Excluded"}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-2">
+                        {impact ? (
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                              isSlower
+                                ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                                : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                            }`}
+                          >
+                            <ImpactIcon size={11} strokeWidth={2.5} aria-hidden="true" />
+                            <span>{impact}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 dark:text-slate-700" aria-label="no change">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {excluded.map(({ acc, m }) => {
+                  const reason = m.todayPlan?.isBreached
+                    ? "Breached"
+                    : m.todayPlan?.isTargetHit
+                    ? "Target hit"
+                    : "Not eligible";
+                  return (
+                    <tr key={acc.id} className="opacity-60">
+                      <td className="px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600"
+                            aria-label="excluded"
+                          />
+                          <span className="font-medium text-slate-500 line-through decoration-slate-300 dark:text-slate-400 dark:decoration-slate-600">
+                            {acc.label || acc.id}
+                          </span>
+                        </div>
+                      </td>
+                      <td colSpan={6} className="px-4 py-2 text-right text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                          <X size={10} strokeWidth={2.5} aria-hidden="true" />
+                          {reason}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
-      )}
+      </div>
+    </section>
+  );
+}
+
+// ─── KPI cell used in the hero row ─────────────────────────────────────────
+function KpiCell({ icon: Icon, label, value, sub, tone = "slate" }) {
+  const toneMap = {
+    blue: {
+      accent: "text-blue-600 dark:text-blue-400",
+      chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",
+    },
+    red: {
+      accent: "text-red-600 dark:text-red-400",
+      chip: "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",
+    },
+    slate: {
+      accent: "text-slate-700 dark:text-slate-200",
+      chip: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+    },
+    emerald: {
+      accent: "text-emerald-600 dark:text-emerald-400",
+      chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
+    },
+  };
+  const t = toneMap[tone] || toneMap.slate;
+  return (
+    <div className="px-5 py-5">
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <span className={`flex h-4 w-4 items-center justify-center rounded ${t.chip}`} aria-hidden="true">
+          <Icon size={10} strokeWidth={2.5} />
+        </span>
+        <span>{label}</span>
+      </div>
+      <div className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${t.accent}`}>
+        {value}
+      </div>
+      <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>
     </div>
   );
 }
@@ -3348,86 +4930,156 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     return list;
   }, [filtered, sortKey]);
 
+  const filtersActive = search || filterPhase !== "all" || filterStatus !== "all";
+
   return (
     <div className="space-y-4">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-800">{t("trackAccount")}</h2>
-          <p className="text-xs text-gray-500">{t("clickTrackAccount")}</p>
+      {/* ── Header row ── */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">{t("trackAccount")}</h2>
+          <p className="mt-0.5 text-[12.5px] text-slate-500 dark:text-slate-400">{t("clickTrackAccount")}</p>
         </div>
         {!adding && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm">
-            <Plus size={16} /> {t("trackNewAccount")}
-          </button>
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<Plus size={14} strokeWidth={2.5} />}
+            onClick={() => setAdding(true)}
+          >
+            {t("trackNewAccount")}
+          </Button>
         )}
       </div>
 
       {adding && <NewAccountForm firms={firms} onSave={handleSaveAccount} onSaveBulk={handleSaveBulk} onCancel={() => setAdding(false)} />}
 
-      {/* Search, filter, sort toolbar */}
+      {/* ── Search / Filter / Sort toolbar ── */}
       {activeAccounts.length > 0 && (() => {
         const visibleIds = sorted.map(s => s.acc.id);
         const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
         const someSelected = selectedIds.size > 0;
+        const selectCls =
+          "h-8 appearance-none rounded-md border border-slate-300 bg-white pl-2.5 pr-7 text-[12.5px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
         return (
-        <div className="space-y-0">
-          <div className="flex flex-wrap items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-            {/* Select all checkbox */}
-            <label className="flex items-center gap-1.5 cursor-pointer shrink-0" title={allVisibleSelected ? "Deselect all" : "Select all shown"}>
-              <input type="checkbox" className="accent-blue-600 w-3.5 h-3.5" checked={allVisibleSelected} onChange={() => {
-                if (allVisibleSelected) {
-                  setSelectedIds(prev => { const next = new Set(prev); visibleIds.forEach(id => next.delete(id)); return next; });
-                } else {
-                  setSelectedIds(prev => { const next = new Set(prev); visibleIds.forEach(id => next.add(id)); return next; });
-                }
-              }} />
-              <span className="text-[10px] text-gray-500 select-none">{allVisibleSelected ? "All" : ""}</span>
-            </label>
-            {/* Search */}
-            <div className="flex-1 min-w-[180px]">
-              <input type="text" className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" placeholder={t("searchAccounts")} value={search} onChange={e => setSearch(e.target.value)} />
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+              {/* Select all */}
+              <label
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 px-0.5"
+                title={allVisibleSelected ? "Deselect all" : "Select all shown"}
+              >
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-blue-600"
+                  checked={allVisibleSelected}
+                  onChange={() => {
+                    if (allVisibleSelected) {
+                      setSelectedIds(prev => { const next = new Set(prev); visibleIds.forEach(id => next.delete(id)); return next; });
+                    } else {
+                      setSelectedIds(prev => { const next = new Set(prev); visibleIds.forEach(id => next.add(id)); return next; });
+                    }
+                  }}
+                />
+              </label>
+              {/* Search with icon */}
+              <div className="relative min-w-[200px] flex-1">
+                <Search
+                  size={13}
+                  strokeWidth={2.25}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+                />
+                <input
+                  type="text"
+                  className="h-8 w-full rounded-md border border-slate-300 bg-white pl-8 pr-2.5 text-[13px] text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  placeholder={t("searchAccounts")}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  aria-label={t("searchAccounts")}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+              {/* Phase filter */}
+              <div className="relative shrink-0">
+                <select className={selectCls} value={filterPhase} onChange={e => setFilterPhase(e.target.value)} aria-label="Filter by phase">
+                  <option value="all">{t("allPhases")}</option>
+                  <option value="challenge">{t("challenge")}</option>
+                  <option value="funded">{t("funded")}</option>
+                </select>
+                <ChevronDown size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+              {/* Status filter */}
+              <div className="relative shrink-0">
+                <select className={selectCls} value={filterStatus} onChange={e => setFilterStatus(e.target.value)} aria-label="Filter by status">
+                  <option value="all">{t("allStatuses")}</option>
+                  <option value="active">{t("statusActive")}</option>
+                  <option value="target_hit">{t("targetHitPayout")}</option>
+                  <option value="breached">{t("breached")}</option>
+                </select>
+                <ChevronDown size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+              {/* Sort */}
+              <div className="relative shrink-0">
+                <select className={selectCls} value={sortKey} onChange={e => setSortKey(e.target.value)} aria-label="Sort">
+                  {getTrackerSortOpts().map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+                <ArrowDownWideNarrow size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+              {/* Collapse/Expand */}
+              <div className="ml-1 flex shrink-0 items-center gap-1 border-l border-slate-200 pl-2 dark:border-slate-800">
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  leftIcon={allCollapsed ? <Eye size={11} strokeWidth={2.5} /> : <EyeOff size={11} strokeWidth={2.5} />}
+                  onClick={allCollapsed ? expandAll : collapseAll}
+                  title={allCollapsed ? t("expandAll") : t("collapseAll")}
+                >
+                  {allCollapsed ? t("expandAll") : t("collapseAll")}
+                </Button>
+              </div>
+              {/* Result count */}
+              {filtersActive && (
+                <Badge variant="neutral" size="sm" className="shrink-0">
+                  {sorted.length}/{activeAccounts.length} shown
+                </Badge>
+              )}
             </div>
-            {/* Phase filter */}
-            <select className="border border-gray-200 rounded px-2 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-blue-500" value={filterPhase} onChange={e => setFilterPhase(e.target.value)}>
-              <option value="all">{t("allPhases")}</option>
-              <option value="challenge">{t("challenge")}</option>
-              <option value="funded">{t("funded")}</option>
-            </select>
-            {/* Status filter */}
-            <select className="border border-gray-200 rounded px-2 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-blue-500" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option value="all">{t("allStatuses")}</option>
-              <option value="active">{t("statusActive")}</option>
-              <option value="target_hit">{t("targetHitPayout")}</option>
-              <option value="breached">{t("breached")}</option>
-            </select>
-            {/* Sort */}
-            <select className="border border-gray-200 rounded px-2 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-blue-500" value={sortKey} onChange={e => setSortKey(e.target.value)}>
-              {getTrackerSortOpts().map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-            </select>
-            {/* Collapse / Expand all */}
-            <div className="border-l border-gray-200 pl-2 flex items-center gap-1">
-              <button onClick={allCollapsed ? expandAll : collapseAll} className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded border border-gray-200" title={allCollapsed ? t("expandAll") : t("collapseAll")}>
-                {allCollapsed ? t("expandAll") : t("collapseAll")}
-              </button>
-            </div>
-            {/* Result count */}
-            {(search || filterPhase !== "all" || filterStatus !== "all") && (
-              <span className="text-[10px] text-gray-400">{sorted.length}/{activeAccounts.length} shown</span>
+
+            {/* Selection action bar */}
+            {someSelected && (
+              <div className="flex items-center gap-3 border-t border-blue-200 bg-blue-50 px-3 py-1.5 dark:border-blue-900 dark:bg-blue-950/40">
+                <Badge variant="accent" size="sm">{selectedIds.size} selected</Badge>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-[11.5px] font-medium text-blue-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400"
+                >
+                  {t("deselectAll")}
+                </button>
+                <div className="flex-1" />
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  leftIcon={<Trash2 size={11} strokeWidth={2.5} />}
+                  className="!border-red-200 !text-red-700 hover:!border-red-300 hover:!bg-red-50 dark:!border-red-900 dark:!text-red-400 dark:hover:!bg-red-950/40"
+                  onClick={handleDeleteSelected}
+                >
+                  {t("deleteSelected")}
+                </Button>
+              </div>
             )}
           </div>
-          {/* Selection action bar */}
-          {someSelected && (
-            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 border-t-0 rounded-b-lg px-3 py-1.5 -mt-1">
-              <span className="text-xs font-medium text-blue-800">{selectedIds.size} selected</span>
-              <button onClick={() => setSelectedIds(new Set())} className="text-xs text-blue-600 hover:text-blue-800 underline">{t("deselectAll")}</button>
-              <div className="flex-1" />
-              <button onClick={handleDeleteSelected} className="flex items-center gap-1 px-3 py-1 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 rounded border border-red-200">
-                <Trash2 size={12} /> {t("deleteSelected")}
-              </button>
-            </div>
-          )}
-        </div>);
+        );
       })()}
 
       {/* ── Unified Trade Copier Objective ── */}
@@ -3436,27 +5088,55 @@ function AccountTracker({ accounts, onUpdate, firms }) {
       )}
 
       {activeAccounts.length === 0 && !adding && (
-        <div className="text-center py-16 text-gray-400">
-          <p className="text-lg">{t("noAccountsYet")}</p>
-          <p className="text-sm mt-1">{t("clickTrackAccount")}</p>
-        </div>
+        <EmptyState
+          icon={Wallet}
+          title={t("noAccountsYet")}
+          description={t("clickTrackAccount")}
+          action={<Button variant="primary" size="sm" leftIcon={<Plus size={14} strokeWidth={2.5} />} onClick={() => setAdding(true)}>{t("trackNewAccount")}</Button>}
+        />
       )}
 
       {sorted.length === 0 && activeAccounts.length > 0 && !adding && (
-        <div className="text-center py-8 text-gray-400 text-sm">{t("noAccountsMatch")}</div>
+        <div className="py-8 text-center text-[13px] text-slate-400 dark:text-slate-500">
+          {t("noAccountsMatch")}
+        </div>
       )}
 
-      {sorted.map(({ acc, firmData }) => (
-        <AccountCard key={acc.id} account={acc} firmData={firmData} onUpdate={handleUpdateAccount} onDelete={handleDeleteAccount} collapsed={collapsedIds.has(acc.id)} onToggleCollapse={() => toggleCollapse(acc.id)} selected={selectedIds.has(acc.id)} onToggleSelect={() => toggleSelect(acc.id)} />
-      ))}
+      <div className="space-y-3">
+        {sorted.map(({ acc, firmData }) => (
+          <AccountCard
+            key={acc.id}
+            account={acc}
+            firmData={firmData}
+            onUpdate={handleUpdateAccount}
+            onDelete={handleDeleteAccount}
+            collapsed={collapsedIds.has(acc.id)}
+            onToggleCollapse={() => toggleCollapse(acc.id)}
+            selected={selectedIds.has(acc.id)}
+            onToggleSelect={() => toggleSelect(acc.id)}
+          />
+        ))}
+      </div>
 
       {archivedAccounts.length > 0 && (
-        <details className="mt-4">
-          <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-600">Archived accounts ({archivedAccounts.length})</summary>
-          <div className="mt-2 space-y-3 opacity-60">
+        <details className="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900/60">
+          <summary className="cursor-pointer text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+            Archived accounts ({archivedAccounts.length})
+          </summary>
+          <div className="mt-3 space-y-3 opacity-70">
             {archivedAccounts.map(acc => {
               const firmData = firms.find(f => f.id === acc.firmId);
-              return <AccountCard key={acc.id} account={acc} firmData={firmData} onUpdate={handleUpdateAccount} onDelete={handleDeleteAccount} collapsed={collapsedIds.has(acc.id)} onToggleCollapse={() => toggleCollapse(acc.id)} />;
+              return (
+                <AccountCard
+                  key={acc.id}
+                  account={acc}
+                  firmData={firmData}
+                  onUpdate={handleUpdateAccount}
+                  onDelete={handleDeleteAccount}
+                  collapsed={collapsedIds.has(acc.id)}
+                  onToggleCollapse={() => toggleCollapse(acc.id)}
+                />
+              );
             })}
           </div>
         </details>
@@ -3514,58 +5194,106 @@ function AuthInline() {
     }
   };
 
+  const inputCls =
+    "h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-[14px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "disabled:opacity-50 disabled:cursor-not-allowed " +
+    "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+
   return (
-    <div className="max-w-md mx-auto mt-8">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">{t("authRequiredTitle")}</h2>
-        <p className="text-gray-500 text-center mb-6 text-sm">{t("authRequiredDesc")}</p>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600 text-sm">{error}</p>
+    <div className="mx-auto mt-8 max-w-md">
+      <div className="rounded-xl border border-slate-200 bg-white p-7 shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
+        {/* Brand lockup */}
+        <div className="mb-5 flex flex-col items-center text-center">
+          <div
+            aria-hidden="true"
+            className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 shadow-soft"
+          >
+            <Lock size={17} strokeWidth={2.25} className="text-white" />
           </div>
-        )}
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-600 text-sm">{successMessage}</p>
-          </div>
-        )}
-
-        <form onSubmit={doAuth} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">{t("authEmail")}</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-              placeholder="you@example.com" />
-          </div>
-          <div>
-            <label className="block text-gray-700 text-sm font-medium mb-1">{t("authPassword")}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required disabled={loading}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-              placeholder="••••••••" />
-          </div>
-          <button type="submit" disabled={loading}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors">
-            {loading ? "..." : isSignUp ? t("authSignUpBtn") : t("authSignInBtn")}
-          </button>
-        </form>
-
-        <div className="mt-5 flex items-center gap-4">
-          <div className="flex-1 border-t border-gray-200"></div>
-          <span className="text-gray-400 text-sm">{t("authOr")}</span>
-          <div className="flex-1 border-t border-gray-200"></div>
+          <h2 className="text-[20px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+            {t("authRequiredTitle")}
+          </h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400">
+            {t("authRequiredDesc")}
+          </p>
         </div>
 
-        <button onClick={doGoogle} disabled={loading}
-          className="w-full mt-5 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2">
-          <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          {t("authGoogleBtn")}
-        </button>
+        {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
+        {successMessage && <Alert variant="success" className="mb-4">{successMessage}</Alert>}
 
-        <p className="mt-5 text-center text-gray-500 text-sm">
+        <form onSubmit={doAuth} className="space-y-3.5">
+          <div>
+            <label htmlFor="auth-email" className="mb-1 block text-[12px] font-medium text-slate-700 dark:text-slate-300">
+              {t("authEmail")}
+            </label>
+            <input
+              id="auth-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              disabled={loading}
+              className={inputCls}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="auth-password" className="mb-1 block text-[12px] font-medium text-slate-700 dark:text-slate-300">
+              {t("authPassword")}
+            </label>
+            <input
+              id="auth-password"
+              type="password"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              disabled={loading}
+              className={inputCls}
+              placeholder="••••••••"
+            />
+          </div>
+          <Button type="submit" variant="primary" size="lg" loading={loading} className="mt-4 w-full">
+            {isSignUp ? t("authSignUpBtn") : t("authSignInBtn")}
+          </Button>
+        </form>
+
+        {/* Divider */}
+        <div className="mt-5 flex items-center gap-3" aria-hidden="true">
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+          <span className="text-[11.5px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            {t("authOr")}
+          </span>
+          <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+        </div>
+
+        <Button
+          variant="secondary"
+          size="lg"
+          onClick={doGoogle}
+          disabled={loading}
+          className="mt-4 w-full"
+          leftIcon={
+            <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+          }
+        >
+          {t("authGoogleBtn")}
+        </Button>
+
+        <p className="mt-6 text-center text-[12.5px] text-slate-500 dark:text-slate-400">
           {isSignUp ? t("authToggleSignIn") : t("authToggleSignUp")}
-          <button type="button" onClick={() => { setIsSignUp(!isSignUp); setError(""); setSuccessMessage(""); }}
-            className="ml-2 text-blue-600 hover:text-blue-800 font-semibold transition-colors">
+          <button
+            type="button"
+            onClick={() => { setIsSignUp(!isSignUp); setError(""); setSuccessMessage(""); }}
+            className="ml-1.5 font-semibold text-blue-600 transition-colors hover:text-blue-700 focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+          >
             {isSignUp ? t("authSignIn") : t("authSignUp")}
           </button>
         </p>
@@ -3645,45 +5373,111 @@ function AdminPanel({ getAdminUsers, addAdminUser, removeAdminUser, currentUserI
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <Shield size={24} className="text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">{t("adminTitle")}</h2>
+    <div className="mx-auto mt-2 max-w-2xl">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div
+              aria-hidden="true"
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+            >
+              <Shield size={15} strokeWidth={2.25} />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                {t("adminTitle")}
+              </h2>
+              <p className="mt-0.5 text-[11.5px] text-slate-500 dark:text-slate-400">
+                Manage users with admin privileges.
+              </p>
+            </div>
+          </div>
+          <Badge variant="info" size="sm">
+            {admins.length} {admins.length === 1 ? "admin" : "admins"}
+          </Badge>
         </div>
 
-        {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{error}</div>}
-        {success && <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">{success}</div>}
+        <div className="space-y-4 p-5">
+          {error && <Alert variant="danger">{error}</Alert>}
+          {success && <Alert variant="success">{success}</Alert>}
 
-        {/* Add admin form */}
-        <form onSubmit={handleAdd} className="flex gap-2 mb-6">
-          <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder={t("adminEmailPlaceholder")}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
-          <button type="submit" className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-            <UserPlus size={16} /> {t("adminAdd")}
-          </button>
-        </form>
+          {/* Add admin form */}
+          <form onSubmit={handleAdd} className="flex flex-wrap gap-2">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              placeholder={t("adminEmailPlaceholder")}
+              aria-label={t("adminEmailPlaceholder")}
+              className="h-9 min-w-[200px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-[13.5px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              leftIcon={<UserPlus size={14} strokeWidth={2.5} />}
+            >
+              {t("adminAdd")}
+            </Button>
+          </form>
 
-        {/* Admin list */}
-        {loading ? (
-          <p className="text-gray-400 text-sm">{t("loading")}...</p>
-        ) : (
-          <div className="space-y-2">
-            {admins.map(admin => (
-              <div key={admin.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">{admin.user_id}</span>
-                  {admin.user_id === currentUserId && <span className="ml-2 text-xs text-blue-600 font-semibold">({t("adminYou")})</span>}
-                </div>
-                {admin.user_id !== currentUserId && (
-                  <button onClick={() => handleRemove(admin.user_id)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                    <UserMinus size={14} /> {t("adminRemove")}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+          {/* Admin list */}
+          {loading ? (
+            <div className="flex items-center gap-2 py-3 text-[13px] text-slate-500 dark:text-slate-400">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              {t("loading")}...
+            </div>
+          ) : admins.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No admins yet"
+              description="Add a user above to grant admin privileges."
+            />
+          ) : (
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+              {admins.map(admin => {
+                const isYou = admin.user_id === currentUserId;
+                return (
+                  <li
+                    key={admin.id}
+                    className="flex items-center justify-between gap-3 bg-white px-3.5 py-2.5 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/40"
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                      >
+                        <Users size={13} strokeWidth={2.25} />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="truncate font-mono text-[12px] text-slate-700 dark:text-slate-300">
+                            {admin.user_id}
+                          </span>
+                          {isYou && <Badge variant="info" size="sm">{t("adminYou")}</Badge>}
+                        </div>
+                      </div>
+                    </div>
+                    {!isYou && (
+                      <Button
+                        variant="ghost-danger"
+                        size="xs"
+                        leftIcon={<UserMinus size={12} strokeWidth={2.5} />}
+                        onClick={() => handleRemove(admin.user_id)}
+                      >
+                        {t("adminRemove")}
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -3784,137 +5578,220 @@ export default function App({ session, onSignOut }) {
 
   if (dataLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-lg">Loading your data...</div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm">
+          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+          Loading your data…
+        </div>
       </div>
     );
   }
 
+  // ── Tab definitions ──────────────────────────────────────
+  const activeAccountsCount = accounts.filter(a => a.status !== "archived").length;
+  const tabDefs = [
+    { key: "compare", label: t("tabComparison"), icon: BarChart3 },
+    { key: "details", label: t("tabDetails"), icon: Building2 },
+    {
+      key: "tracker",
+      label: t("tabTracker"),
+      icon: session ? Briefcase : Lock,
+      badge: session && activeAccountsCount > 0 ? activeAccountsCount : undefined,
+      gated: !session,
+    },
+    { key: "dashboard", label: t("tabDashboard"), icon: session ? LineChart : Lock, gated: !session },
+    { key: "metrics", label: t("tabMetrics"), icon: BookOpen },
+    ...(session && isAdmin ? [{ key: "admin", label: t("tabAdmin"), icon: Shield }] : []),
+  ];
+  const handleTabChange = (key) => {
+    const def = tabDefs.find(d => d.key === key);
+    if (def?.gated) setTab("login");
+    else setTab(key);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* HEADER */}
-      <div className="bg-slate-800 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Award size={28} className="text-yellow-400" />
-              <div>
-                <h1 className="text-xl font-bold">{t("appTitle")}</h1>
-                <p className="text-xs text-slate-400">{t("appSubtitle", firms.length)}</p>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/85">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          {/* Top row: brand + global controls */}
+          <div className="flex h-14 items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div
+                aria-hidden="true"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
+              >
+                <Award size={16} strokeWidth={2.5} className="text-white" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
+                  {t("appTitle")}
+                </h1>
+                <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">
+                  {t("appSubtitle", firms.length)}
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={toggleLang} className="px-2 py-1.5 rounded-lg text-slate-400 hover:text-blue-300 hover:bg-slate-700 transition-colors flex items-center gap-1 text-xs font-semibold" title={lang === "en" ? "Schimbă în Română" : "Switch to English"}>
-                <Globe size={15} /> {lang === "en" ? "RO" : "EN"}
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleLang}
+                title={lang === "en" ? "Schimbă în Română" : "Switch to English"}
+                className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+              >
+                <Globe size={13} strokeWidth={2.25} />
+                {lang === "en" ? "RO" : "EN"}
               </button>
-              <button onClick={() => setDarkMode(d => !d)} className="p-2 rounded-lg text-slate-400 hover:text-yellow-300 hover:bg-slate-700 transition-colors" title={darkMode ? t("lightMode") : t("darkMode")}>
-                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
+              <IconButton
+                icon={darkMode ? Sun : Moon}
+                label={darkMode ? t("lightMode") : t("darkMode")}
+                size="icon-sm"
+                onClick={() => setDarkMode(d => !d)}
+              />
               {session && isAdmin && (
-                <button onClick={() => setEditing({})} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors">
-                  <Plus size={16} /> {t("addFirm")}
-                </button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<Plus size={14} strokeWidth={2.5} />}
+                  onClick={() => setEditing({})}
+                  className="ml-1"
+                >
+                  {t("addFirm")}
+                </Button>
               )}
               {session ? (
-                <button onClick={onSignOut} className="p-2 rounded-lg text-slate-400 hover:text-red-300 hover:bg-slate-700 transition-colors" title={t("authSignOut")}>
-                  <LogOut size={18} />
-                </button>
+                <IconButton
+                  icon={LogOut}
+                  label={t("authSignOut")}
+                  size="icon-sm"
+                  variant="ghost-danger"
+                  onClick={onSignOut}
+                />
               ) : (
-                <button onClick={() => setTab("login")} className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<LogIn size={14} strokeWidth={2.5} />}
+                  onClick={() => setTab("login")}
+                  className="ml-1"
+                >
                   {t("authSignIn")}
-                </button>
+                </Button>
               )}
             </div>
           </div>
-          {best && (
-            <div className="mt-2 flex items-center gap-2 text-sm">
-              <span className="text-slate-400">{t("topPick")}</span>
-              <span className="font-semibold text-yellow-300">{best.name}</span>
-              <span className="text-slate-400">—</span>
-              <span className="text-emerald-300">{pct(best.overallEase)} {t("overallEase")}</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-slate-300">{money(best.maxNetProfit)} {t("maxProfit")}</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-slate-300">{money(best.totalCost)} {t("cost")}</span>
-            </div>
-          )}
-          {/* TABS */}
-          <div className="flex gap-1 mt-3 -mb-px flex-wrap">
-            <button onClick={() => setTab("compare")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "compare" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-              {t("tabComparison")}
-            </button>
-            <button onClick={() => setTab("details")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "details" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-              {t("tabDetails")}
-            </button>
-            <button onClick={() => session ? setTab("tracker") : setTab("login")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-1 ${tab === "tracker" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-              {!session && <Lock size={12} />}
-              {t("tabTracker")}{session && accounts.length > 0 ? ` (${accounts.filter(a => a.status !== "archived").length})` : ""}
-            </button>
-            <button onClick={() => session ? setTab("dashboard") : setTab("login")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-1 ${tab === "dashboard" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-              {!session && <Lock size={12} />}
-              {t("tabDashboard")}
-            </button>
-            <button onClick={() => setTab("metrics")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${tab === "metrics" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-              {t("tabMetrics")}
-            </button>
-            {session && isAdmin && (
-              <button onClick={() => setTab("admin")} className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors flex items-center gap-1 ${tab === "admin" ? "bg-gray-50 text-slate-800" : "text-slate-400 hover:text-white hover:bg-slate-700"}`}>
-                <Shield size={14} /> {t("tabAdmin")}
-              </button>
-            )}
+
+          {/* Tab bar */}
+          <UiTabs
+            tabs={tabDefs}
+            value={tab}
+            onChange={handleTabChange}
+            ariaLabel="Main navigation"
+            className="-mx-1 border-b-0"
+          />
+        </div>
+      </header>
+
+      {/* ── TOP PICK BANNER ── */}
+      {best && tab === "compare" && (
+        <div className="border-b border-slate-200 bg-gradient-to-r from-amber-50/60 via-white to-white dark:border-slate-800 dark:from-amber-950/20 dark:via-slate-950 dark:to-slate-950">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 text-[13px] sm:px-6">
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+              <Trophy size={14} className="text-amber-500" strokeWidth={2.25} aria-hidden="true" />
+              {t("topPick")}
+            </span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">{best.name}</span>
+            <Badge variant="success" size="sm">
+              {pct(best.overallEase)} {t("overallEase")}
+            </Badge>
+            <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+              <TrendingUp size={12} strokeWidth={2.25} aria-hidden="true" className="text-emerald-500" />
+              <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.maxNetProfit)}</span>
+              <span className="text-slate-500 dark:text-slate-500">{t("maxProfit")}</span>
+            </span>
+            <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+              <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.totalCost)}</span>
+              <span className="text-slate-500 dark:text-slate-500">{t("cost")}</span>
+            </span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* TAB CONTENT */}
-      <div className="max-w-6xl mx-auto px-4 py-4">
+      {/* ── TAB CONTENT ── */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         {tab === "compare" && (
-          <>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-gray-500">{t("clickToSort")}</p>
-              <div className="flex items-center gap-3 text-xs text-gray-400">
-                <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" /> {t("easeGreen")}</span>
-                <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-200" /> {t("easeAmber")}</span>
-                <span className="inline-flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 border border-red-200" /> {t("easeRed")}</span>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[12.5px] text-slate-500 dark:text-slate-400">
+                {t("clickToSort")}
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge variant="success" size="sm" dot>{t("easeGreen")}</Badge>
+                <Badge variant="warn" size="sm" dot>{t("easeAmber")}</Badge>
+                <Badge variant="danger" size="sm" dot>{t("easeRed")}</Badge>
               </div>
             </div>
             <ComparisonTable firms={computed} sortKey={sortBy} onSort={setSortBy} onFirmClick={handleFirmClick} />
-            <div className="mt-4">
-              <HowItWorks open={showGuide} onToggle={() => setShowGuide(!showGuide)} />
-            </div>
-          </>
+            <HowItWorks open={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+          </div>
         )}
 
         {tab === "details" && (
-          <>
-            <div className="flex items-center justify-between mb-4">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-500 font-medium">Sort:</label>
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                  {getSortOpts().map(o => <option key={o.key} value={o.key}>{o.label}</option>)}
-                </select>
+                <label
+                  htmlFor="firm-details-sort"
+                  className="text-[11.5px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                >
+                  Sort by
+                </label>
+                <div className="relative">
+                  <select
+                    id="firm-details-sort"
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value)}
+                    className="h-8 appearance-none rounded-md border border-slate-300 bg-white pl-3 pr-8 text-[13px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    {getSortOpts().map(o => (
+                      <option key={o.key} value={o.key}>{o.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    size={13}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="success" size="sm" dot>{t("easeGreen")}</Badge>
+                <Badge variant="warn" size="sm" dot>{t("easeAmber")}</Badge>
+                <Badge variant="danger" size="sm" dot>{t("easeRed")}</Badge>
               </div>
             </div>
 
-            <div className="mb-4">
-              <HowItWorks open={showGuide} onToggle={() => setShowGuide(!showGuide)} />
-            </div>
+            <HowItWorks open={showGuide} onToggle={() => setShowGuide(!showGuide)} />
 
-            <div className="space-y-3">
-              {computed.map((firm, i) => (
-                <div key={firm.id} id={`firm-${firm.id}`}>
-                  <FirmCard firm={firm} rank={i + 1} onEdit={isAdmin ? (f => setEditing(f)) : null} onDelete={isAdmin ? handleDelete : null} />
-                </div>
-              ))}
-            </div>
-
-            {computed.length === 0 && (
-              <div className="text-center py-16 text-gray-400">
-                <p className="text-lg">{t("noFirmsYet")}</p>
-                {isAdmin && <p className="text-sm mt-1">{t("clickAddFirm")}</p>}
+            {computed.length === 0 ? (
+              <EmptyState
+                icon={Building2}
+                title={t("noFirmsYet")}
+                description={isAdmin ? t("clickAddFirm") : undefined}
+              />
+            ) : (
+              <div className="space-y-3">
+                {computed.map((firm, i) => (
+                  <div key={firm.id} id={`firm-${firm.id}`}>
+                    <FirmCard firm={firm} rank={i + 1} onEdit={isAdmin ? (f => setEditing(f)) : null} onDelete={isAdmin ? handleDelete : null} />
+                  </div>
+                ))}
               </div>
             )}
-          </>
+          </div>
         )}
 
         {tab === "tracker" && session && (
