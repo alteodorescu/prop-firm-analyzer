@@ -125,7 +125,8 @@ namespace NinjaTrader.NinjaScript.Strategies
         private static readonly TimeSpan NewYorkClose = new TimeSpan(16, 0, 0);
 
         // ────────────────────────────────────────────────────────────────────
-        //  Internal state
+        //  Internal state — each session (LDN, NY) tracks its own OR
+        //  independently because the sessions OVERLAP between 09:30–11:30 ET.
         // ────────────────────────────────────────────────────────────────────
 
         private TimeZoneInfo   etZone;
@@ -133,9 +134,18 @@ namespace NinjaTrader.NinjaScript.Strategies
         private bool           londonDone;
         private bool           newYorkDone;
         private bool           haltedForDay;
-        private double         orHigh;
-        private double         orLow;
-        private SessionChoice? currentOrSession;
+
+        // Per-session OR state
+        private bool           londonOrEstablished;
+        private double         londonOrHigh;
+        private double         londonOrLow;
+        private bool           newYorkOrEstablished;
+        private double         newYorkOrHigh;
+        private double         newYorkOrLow;
+
+        // Which session "owns" the currently open position (for session-end flatten)
+        private SessionChoice? currentPositionSession;
+
         private MarketPosition lastPosition = MarketPosition.Flat;
         private double         dailyRealizedPnl;
 
@@ -201,97 +211,141 @@ namespace NinjaTrader.NinjaScript.Strategies
 
         // ────────────────────────────────────────────────────────────────────
         //  Main loop
+        //
+        //  LDN (03:00–11:30 ET) and NY (09:30–16:00 ET) overlap between
+        //  09:30–11:30. Each session therefore maintains its OWN OR state and
+        //  is processed independently on every bar — we can't treat "current
+        //  session" as a singleton.
         // ────────────────────────────────────────────────────────────────────
 
         protected override void OnBarUpdate()
         {
             if (CurrentBar < BarsRequiredToTrade) return;
 
-            DateTime etNow  = ToEt(Time[0]);
-            DateTime today  = etNow.Date;
-            TimeSpan tod    = etNow.TimeOfDay;
+            DateTime etNow = ToEt(Time[0]);
+            DateTime today = etNow.Date;
 
             // New trading day → reset daily state
             if (today != lastDay)
             {
-                lastDay          = today;
-                dailyRealizedPnl = 0;
-                haltedForDay     = false;
-                londonDone       = false;
-                newYorkDone      = false;
-                currentOrSession = null;
+                lastDay               = today;
+                dailyRealizedPnl      = 0;
+                haltedForDay          = false;
+                londonDone            = false;
+                newYorkDone           = false;
+                londonOrEstablished   = false;
+                newYorkOrEstablished  = false;
                 Print($"[{ProfileName}] ── New trading day: {today:yyyy-MM-dd} ──");
             }
 
             if (haltedForDay) return;
 
-            // Determine which session (if any) this bar belongs to
-            SessionChoice? sess = DetermineSession(tod);
-            if (!sess.HasValue) return;
+            // Process each enabled session INDEPENDENTLY.
+            if (SessionMode == SessionChoice.London || SessionMode == SessionChoice.Both)
+                ProcessSession(SessionChoice.London, etNow, today);
+            if (SessionMode == SessionChoice.NewYork || SessionMode == SessionChoice.Both)
+                ProcessSession(SessionChoice.NewYork, etNow, today);
+        }
 
-            // Is this session enabled for this instance?
-            bool enabled = SessionMode == SessionChoice.Both || SessionMode == sess.Value;
-            if (!enabled) return;
+        /// <summary>
+        /// Per-session logic: accumulate OR, fire breakout, flatten at close.
+        /// Called independently for each enabled session. Respects the
+        /// single-position constraint (only one session "owns" the position
+        /// at a time via <see cref="currentPositionSession"/>).
+        /// </summary>
+        private void ProcessSession(SessionChoice sess, DateTime etNow, DateTime today)
+        {
+            bool done = sess == SessionChoice.London ? londonDone : newYorkDone;
+            if (done) return;
 
-            // Skip if already traded this session today
-            if (sess.Value == SessionChoice.London   && londonDone)  return;
-            if (sess.Value == SessionChoice.NewYork  && newYorkDone) return;
-
-            TimeSpan openTod   = sess.Value == SessionChoice.London ? LondonOpen  : NewYorkOpen;
-            TimeSpan closeTod  = sess.Value == SessionChoice.London ? LondonClose : NewYorkClose;
+            TimeSpan openTod  = sess == SessionChoice.London ? LondonOpen  : NewYorkOpen;
+            TimeSpan closeTod = sess == SessionChoice.London ? LondonClose : NewYorkClose;
             DateTime sessionOpen  = today + openTod;
             DateTime sessionClose = today + closeTod;
             DateTime orEnd        = sessionOpen.AddMinutes(OpeningRangeMinutes);
             DateTime flattenBy    = sessionClose.AddMinutes(-SessionExitBufferMinutes);
 
-            // ── Opening range accumulation ──
-            if (etNow >= sessionOpen && etNow < orEnd)
+            // Out of this session's time window entirely
+            if (etNow < sessionOpen || etNow >= sessionClose) return;
+
+            // ── OR accumulation window ──
+            if (etNow < orEnd)
             {
-                if (currentOrSession != sess)
+                bool established = sess == SessionChoice.London ? londonOrEstablished : newYorkOrEstablished;
+                if (!established)
                 {
-                    orHigh = High[0];
-                    orLow  = Low[0];
-                    currentOrSession = sess;
-                    Print($"[{ProfileName}] {sess} OR started at {etNow:HH:mm} ET — opening H={orHigh:F2} L={orLow:F2}");
+                    if (sess == SessionChoice.London)
+                    {
+                        londonOrHigh = High[0];
+                        londonOrLow  = Low[0];
+                        londonOrEstablished = true;
+                    }
+                    else
+                    {
+                        newYorkOrHigh = High[0];
+                        newYorkOrLow  = Low[0];
+                        newYorkOrEstablished = true;
+                    }
+                    Print($"[{ProfileName}] {sess} OR started at {etNow:HH:mm} ET — opening H={High[0]:F2} L={Low[0]:F2}");
                 }
                 else
                 {
-                    if (High[0] > orHigh) orHigh = High[0];
-                    if (Low[0]  < orLow)  orLow  = Low[0];
+                    if (sess == SessionChoice.London)
+                    {
+                        if (High[0] > londonOrHigh) londonOrHigh = High[0];
+                        if (Low[0]  < londonOrLow)  londonOrLow  = Low[0];
+                    }
+                    else
+                    {
+                        if (High[0] > newYorkOrHigh) newYorkOrHigh = High[0];
+                        if (Low[0]  < newYorkOrLow)  newYorkOrLow  = Low[0];
+                    }
                 }
                 return;
             }
 
+            // Beyond OR window — need an established OR to trade
+            bool orEst = sess == SessionChoice.London ? londonOrEstablished : newYorkOrEstablished;
+            if (!orEst) return;  // chart may have started mid-session; skip this session today
+
+            double orH = sess == SessionChoice.London ? londonOrHigh : newYorkOrHigh;
+            double orL = sess == SessionChoice.London ? londonOrLow  : newYorkOrLow;
+
             // ── Breakout entry window ──
-            if (etNow >= orEnd && etNow < flattenBy && Position.MarketPosition == MarketPosition.Flat && currentOrSession == sess)
+            // Require flat position. In "Both" mode, if LDN is still in a trade when
+            // NY wants to enter, NY is skipped for the day (one position at a time).
+            if (etNow < flattenBy && Position.MarketPosition == MarketPosition.Flat)
             {
-                string tag    = $"{sess}-{today:yyyyMMdd}";
+                string tag     = $"{sess}-{today:yyyyMMdd}";
                 int    tpTicks = (int)Math.Round(TpPoints * 4.0);  // NQ: 4 ticks per point
 
-                if (Close[0] > orHigh)
+                if (Close[0] > orH)
                 {
-                    double stopPrice = SlMode == StopLossMode.OrOpposite ? orLow : Close[0] - SlFixedPoints;
+                    double stopPrice = SlMode == StopLossMode.OrOpposite ? orL : Close[0] - SlFixedPoints;
                     Print($"[{ProfileName}] {sess} LONG breakout — entry~{Close[0]:F2}, TP=+{TpPoints}pt, SL@{stopPrice:F2}");
                     SetStopLoss($"{tag}-L",    CalculationMode.Price, stopPrice, false);
                     SetProfitTarget($"{tag}-L", CalculationMode.Ticks, tpTicks);
                     EnterLong(Contracts, $"{tag}-L");
-                    MarkSessionDone(sess.Value);
+                    MarkSessionDone(sess);
+                    currentPositionSession = sess;
                 }
-                else if (Close[0] < orLow)
+                else if (Close[0] < orL)
                 {
-                    double stopPrice = SlMode == StopLossMode.OrOpposite ? orHigh : Close[0] + SlFixedPoints;
+                    double stopPrice = SlMode == StopLossMode.OrOpposite ? orH : Close[0] + SlFixedPoints;
                     Print($"[{ProfileName}] {sess} SHORT breakout — entry~{Close[0]:F2}, TP=+{TpPoints}pt, SL@{stopPrice:F2}");
                     SetStopLoss($"{tag}-S",    CalculationMode.Price, stopPrice, false);
                     SetProfitTarget($"{tag}-S", CalculationMode.Ticks, tpTicks);
                     EnterShort(Contracts, $"{tag}-S");
-                    MarkSessionDone(sess.Value);
+                    MarkSessionDone(sess);
+                    currentPositionSession = sess;
                 }
-
                 return;
             }
 
             // ── End-of-session flatten ──
-            if (etNow >= flattenBy && Position.MarketPosition != MarketPosition.Flat && currentOrSession == sess)
+            // Only flatten if the current position was opened by THIS session (otherwise
+            // NY's flatten logic could prematurely close a LDN trade, or vice versa).
+            if (etNow >= flattenBy && Position.MarketPosition != MarketPosition.Flat && currentPositionSession == sess)
             {
                 Print($"[{ProfileName}] {sess} session-end flatten at {etNow:HH:mm} ET");
                 ExitLong();
@@ -321,6 +375,7 @@ namespace NinjaTrader.NinjaScript.Strategies
                         Print($"[{ProfileName}] !! HALTED FOR DAY !! — daily loss {dailyRealizedPnl:C} reached limit {-MaxDailyLoss:C}");
                     }
                 }
+                currentPositionSession = null;  // position closed — release the session ownership flag
             }
             lastPosition = marketPosition;
         }
@@ -342,13 +397,6 @@ namespace NinjaTrader.NinjaScript.Strategies
             {
                 return localBarTime;  // Fallback — shouldn't hit in practice
             }
-        }
-
-        private static SessionChoice? DetermineSession(TimeSpan tod)
-        {
-            if (tod >= LondonOpen  && tod < LondonClose)  return SessionChoice.London;
-            if (tod >= NewYorkOpen && tod < NewYorkClose) return SessionChoice.NewYork;
-            return null;
         }
 
         private void MarkSessionDone(SessionChoice sess)
