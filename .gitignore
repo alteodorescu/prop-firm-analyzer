@@ -13,3 +13,10 @@ package-lock.json
 # Local-only reference docs and stray clones
 SKILL.md
 /prop-firm-analyzer/
+
+# MT5 EA reference material (source lives in the user's archive, not the repo)
+/.ea-extract/
+/Archive.zip
+
+# NinjaTrader backtest output logs
+/ns-output.txt
