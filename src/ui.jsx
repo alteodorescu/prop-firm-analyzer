@@ -113,13 +113,24 @@ function Spinner({ size = 14 }) {
 // Card
 // ═══════════════════════════════════════════════════════════
 
-export function Card({ as: Tag = "section", className, children, hover = false, ...rest }) {
+// Card — flat surface by default. Shadows are reserved for floating overlays
+// (modals, dropdowns, tooltips). Pass `elevated` to opt a surface back into
+// soft-shadow styling. `hover` adds a subtle ring on hover for clickable rows.
+export function Card({
+  as: Tag = "section",
+  className,
+  children,
+  hover = false,
+  elevated = false,
+  ...rest
+}) {
   return (
     <Tag
       className={cx(
-        "rounded-xl border border-slate-200 bg-white shadow-soft",
+        "rounded-lg border border-slate-200 bg-white",
         "dark:border-slate-800 dark:bg-slate-900",
-        hover && "transition-shadow duration-150 hover:shadow-soft-md",
+        elevated && "shadow-soft",
+        hover && "transition-colors duration-150 hover:border-slate-300 dark:hover:border-slate-700",
         className
       )}
       {...rest}
@@ -133,7 +144,7 @@ export function CardHeader({ className, children, ...rest }) {
   return (
     <div
       className={cx(
-        "flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4",
+        "flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3",
         "dark:border-slate-800",
         className
       )}
@@ -168,7 +179,7 @@ export function CardDescription({ className, children, ...rest }) {
 
 export function CardBody({ className, children, ...rest }) {
   return (
-    <div className={cx("px-5 py-4", className)} {...rest}>
+    <div className={cx("px-4 py-3.5", className)} {...rest}>
       {children}
     </div>
   );
@@ -178,7 +189,7 @@ export function CardFooter({ className, children, ...rest }) {
   return (
     <div
       className={cx(
-        "flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3",
+        "flex items-center justify-end gap-2 border-t border-slate-100 px-4 py-2.5",
         "dark:border-slate-800",
         className
       )}
@@ -262,27 +273,16 @@ export function Badge({
 // StatTile — KPI cell
 // ═══════════════════════════════════════════════════════════
 
+// Flat KPI tiles — label on top, value in large tabular numerics, optional sub.
+// Tone now affects **only** the value color (semantic meaning stays) — no more
+// tinted chip backgrounds behind the icon. This is the density-friendly default.
+// Pass `icon` to prefix the label with a small monochrome icon.
 const TILE_TONES = {
-  slate: {
-    accent: "text-slate-900 dark:text-slate-100",
-    chip: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
-  },
-  blue: {
-    accent: "text-blue-700 dark:text-blue-400",
-    chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",
-  },
-  emerald: {
-    accent: "text-emerald-700 dark:text-emerald-400",
-    chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
-  },
-  red: {
-    accent: "text-red-600 dark:text-red-400",
-    chip: "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",
-  },
-  amber: {
-    accent: "text-amber-700 dark:text-amber-400",
-    chip: "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400",
-  },
+  slate:   { accent: "text-slate-900 dark:text-slate-100" },
+  blue:    { accent: "text-blue-700 dark:text-blue-400" },
+  emerald: { accent: "text-emerald-700 dark:text-emerald-400" },
+  red:     { accent: "text-red-600 dark:text-red-400" },
+  amber:   { accent: "text-amber-700 dark:text-amber-400" },
 };
 
 export function StatTile({
@@ -291,24 +291,226 @@ export function StatTile({
   value,
   sub,
   tone = "slate",
+  size = "md",           // "sm" | "md" | "lg"
   className,
   ...rest
 }) {
   const t = TILE_TONES[tone] || TILE_TONES.slate;
+  const valueCls =
+    size === "sm" ? "text-[17px]" :
+    size === "lg" ? "text-[26px]" :
+                    "text-[21px]";
+  const pad = size === "sm" ? "px-3 py-2.5" : size === "lg" ? "px-4 py-4" : "px-4 py-3";
   return (
-    <div className={cx("px-5 py-4", className)} {...rest}>
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        {Icon && (
-          <span className={cx("flex h-4 w-4 items-center justify-center rounded", t.chip)} aria-hidden="true">
-            <Icon size={10} strokeWidth={2.5} />
-          </span>
-        )}
+    <div className={cx(pad, className)} {...rest}>
+      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className={cx("mt-1 text-2xl font-bold tabular-nums tracking-tight", t.accent)}>
+      <div className={cx("mt-0.5 font-semibold tabular-nums tracking-tight leading-tight", valueCls, t.accent)}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// PageHeader — consistent title/description/actions block.
+// Use as the first child inside a tab panel. Supersedes ad-hoc
+// `<div><h2><p></div>` patterns sprinkled through App.jsx.
+// ═══════════════════════════════════════════════════════════
+
+export function PageHeader({ title, description, actions, eyebrow, className }) {
+  return (
+    <div className={cx("flex flex-wrap items-start justify-between gap-3", className)}>
+      <div className="min-w-0">
+        {eyebrow && (
+          <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            {eyebrow}
+          </div>
+        )}
+        <h1 className="text-[20px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
+          {title}
+        </h1>
+        {description && (
+          <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400 max-w-2xl">
+            {description}
+          </p>
+        )}
+      </div>
+      {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// KpiRow — responsive strip of StatTiles.
+// Default layout: N cols on desktop, 3 on tablet, 2 on mobile.
+// Dividers between tiles render automatically; override cols if needed.
+// Usage:
+//   <KpiRow>
+//     <StatTile label="…" value="…" />
+//     <StatTile label="…" value="…" />
+//   </KpiRow>
+// ═══════════════════════════════════════════════════════════
+
+export function KpiRow({ children, cols, className, dividers = true, flat = false }) {
+  const count = Array.isArray(children) ? children.filter(Boolean).length : 1;
+  const desktopCols = cols || Math.min(Math.max(count, 2), 6);
+  // Tailwind JIT can't see dynamic class names, so enumerate.
+  const lgClass = {
+    2: "lg:grid-cols-2",
+    3: "lg:grid-cols-3",
+    4: "lg:grid-cols-4",
+    5: "lg:grid-cols-5",
+    6: "lg:grid-cols-6",
+  }[desktopCols] || "lg:grid-cols-4";
+  const gridCls = cx("grid grid-cols-2 sm:grid-cols-3", lgClass);
+  const wrapper = flat
+    ? "overflow-hidden"
+    : "overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900";
+  return (
+    <div className={cx(wrapper, className)}>
+      <div className={cx(gridCls, dividers && "divide-x divide-y divide-slate-100 dark:divide-slate-800")}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// DataTable — responsive table that becomes a card-list below `md`.
+// Columns: [{ key, header, render?, align?, className?, mono?, widthClass? }]
+// Rows: array of objects. `rowKey` = prop name or function returning a key.
+// If `mobileCard` is provided, it's used for the <md view instead of the auto
+// stacked-row fallback; gives callers full control of mobile density.
+// ═══════════════════════════════════════════════════════════
+
+export function DataTable({
+  columns,
+  rows,
+  rowKey = "id",
+  onRowClick,
+  selectedRowKey,
+  empty,
+  mobileCard,
+  className,
+  stickyHeader = true,
+  striped = false,
+  dense = false,
+}) {
+  if (!rows || rows.length === 0) return empty || null;
+  const keyOf = typeof rowKey === "function" ? rowKey : (r, i) => (r[rowKey] ?? i);
+
+  const thPad = dense ? "px-2.5 py-2" : "px-3 py-2.5";
+  const tdPad = dense ? "px-2.5 py-2" : "px-3 py-2.5";
+
+  // Desktop: proper table.
+  const desktop = (
+    <div className="hidden md:block overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="max-w-full overflow-x-auto">
+        <table className="w-full text-[12.5px]">
+          <thead className={cx(stickyHeader && "sticky top-0 z-10 bg-slate-50/80 backdrop-blur dark:bg-slate-900/80")}>
+            <tr className="border-b border-slate-200 dark:border-slate-800">
+              {columns.map(c => (
+                <th
+                  key={c.key}
+                  scope="col"
+                  className={cx(
+                    thPad,
+                    "text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400",
+                    c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left",
+                    c.widthClass
+                  )}
+                >
+                  {c.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const k = keyOf(r, i);
+              const selected = k === selectedRowKey;
+              return (
+                <tr
+                  key={k}
+                  onClick={onRowClick ? () => onRowClick(r, i) : undefined}
+                  className={cx(
+                    "border-b border-slate-100 last:border-b-0 dark:border-slate-800/60",
+                    onRowClick && "cursor-pointer transition-colors",
+                    onRowClick && "hover:bg-slate-50 dark:hover:bg-slate-800/40",
+                    striped && i % 2 === 1 && "bg-slate-50/40 dark:bg-slate-900/40",
+                    selected && "bg-blue-50/60 dark:bg-blue-950/30"
+                  )}
+                >
+                  {columns.map(c => {
+                    const val = c.render ? c.render(r, i) : r[c.key];
+                    return (
+                      <td
+                        key={c.key}
+                        className={cx(
+                          tdPad,
+                          "align-middle text-slate-900 dark:text-slate-100",
+                          c.mono && "tabular-nums",
+                          c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left",
+                          c.className
+                        )}
+                      >
+                        {val}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Mobile: stacked-row fallback or caller's custom card.
+  const mobile = (
+    <div className="md:hidden space-y-2">
+      {rows.map((r, i) => {
+        const k = keyOf(r, i);
+        if (mobileCard) return <div key={k}>{mobileCard(r, i)}</div>;
+        return (
+          <div
+            key={k}
+            onClick={onRowClick ? () => onRowClick(r, i) : undefined}
+            className={cx(
+              "rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900",
+              onRowClick && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/40"
+            )}
+          >
+            <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-[12.5px]">
+              {columns.map(c => {
+                const val = c.render ? c.render(r, i) : r[c.key];
+                return (
+                  <div key={c.key} className="contents">
+                    <dt className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 self-center">
+                      {c.header}
+                    </dt>
+                    <dd className={cx("text-slate-900 dark:text-slate-100", c.mono && "tabular-nums", "text-right")}>
+                      {val}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className={className}>
+      {desktop}
+      {mobile}
     </div>
   );
 }
