@@ -5057,9 +5057,23 @@ function AccountTracker({ accounts, onUpdate, firms }) {
   const [collapsedIds, setCollapsedIds] = useState(new Set());
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [search, setSearch] = useState("");
-  const [filterPhase, setFilterPhase] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  // Combined phase + status filter. Values: all, challenge_active, challenge_target_hit,
+  // funded_active, funded_target_hit, breached
+  const [filterPreset, setFilterPreset] = useState("all");
   const [sortKey, setSortKey] = useState("newest");
+
+  // Decompose preset -> (phase, status) pair used by the row-level filter.
+  // Keeping the two concepts separate internally makes the match logic readable.
+  const { filterPhase, filterStatus } = useMemo(() => {
+    switch (filterPreset) {
+      case "challenge_active":     return { filterPhase: "challenge", filterStatus: "active" };
+      case "challenge_target_hit": return { filterPhase: "challenge", filterStatus: "target_hit" };
+      case "funded_active":        return { filterPhase: "funded",    filterStatus: "active" };
+      case "funded_target_hit":    return { filterPhase: "funded",    filterStatus: "target_hit" };
+      case "breached":             return { filterPhase: "all",       filterStatus: "breached" };
+      default:                     return { filterPhase: "all",       filterStatus: "all" };
+    }
+  }, [filterPreset]);
 
   const toggleCollapse = (id) => {
     setCollapsedIds(prev => {
@@ -5163,7 +5177,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     return list;
   }, [filtered, sortKey]);
 
-  const filtersActive = search || filterPhase !== "all" || filterStatus !== "all";
+  const filtersActive = search || filterPreset !== "all";
 
   return (
     <div className="space-y-4">
@@ -5242,21 +5256,14 @@ function AccountTracker({ accounts, onUpdate, firms }) {
                   </button>
                 )}
               </div>
-              {/* Phase filter */}
+              {/* Combined phase + status filter */}
               <div className="relative shrink-0">
-                <select className={selectCls} value={filterPhase} onChange={e => setFilterPhase(e.target.value)} aria-label="Filter by phase">
-                  <option value="all">{t("allPhases")}</option>
-                  <option value="challenge">{t("challenge")}</option>
-                  <option value="funded">{t("funded")}</option>
-                </select>
-                <ChevronDown size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
-              {/* Status filter */}
-              <div className="relative shrink-0">
-                <select className={selectCls} value={filterStatus} onChange={e => setFilterStatus(e.target.value)} aria-label="Filter by status">
-                  <option value="all">{t("allStatuses")}</option>
-                  <option value="active">{t("statusActive")}</option>
-                  <option value="target_hit">{t("targetHitPayout")}</option>
+                <select className={selectCls} value={filterPreset} onChange={e => setFilterPreset(e.target.value)} aria-label="Filter accounts by status">
+                  <option value="all">{t("filterAllAccounts")}</option>
+                  <option value="challenge_active">{t("filterChallengeActive")}</option>
+                  <option value="challenge_target_hit">{t("filterChallengeTargetHit")}</option>
+                  <option value="funded_active">{t("filterFundedActive")}</option>
+                  <option value="funded_target_hit">{t("filterFundedTargetHit")}</option>
                   <option value="breached">{t("breached")}</option>
                 </select>
                 <ChevronDown size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
