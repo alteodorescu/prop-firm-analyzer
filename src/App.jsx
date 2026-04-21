@@ -484,20 +484,32 @@ function Field({ label, tip, value, onChange, prefix, suffix, placeholder, type,
 // ═══════════════════════════════════════════════════════════
 // FIRM CARD
 // ═══════════════════════════════════════════════════════════
-// Helper: render an ease tile within the FirmCard KPI row
+// Helper: render an ease tile within the FirmCard KPI row (flat treatment —
+// color lives in the value text + a tiny dot, no more full tinted background).
 function EaseTile({ value, label, tip, isPrimary }) {
+  const clr = easeClr(value);
+  // Extract the semantic text-color class from `easeClr` (returns bg+text together)
+  // and use only the text portion so the tile stays transparent. Fallback: slate.
+  const textCls =
+    clr.includes("emerald") ? "text-emerald-700 dark:text-emerald-400" :
+    clr.includes("amber")   ? "text-amber-700 dark:text-amber-400" :
+    clr.includes("red")     ? "text-red-700 dark:text-red-400" :
+                              "text-slate-700 dark:text-slate-300";
+  const dotCls =
+    clr.includes("emerald") ? "bg-emerald-500" :
+    clr.includes("amber")   ? "bg-amber-500" :
+    clr.includes("red")     ? "bg-red-500" :
+                              "bg-slate-400";
   return (
     <div
-      className={
-        "flex flex-col items-center justify-center rounded-lg px-2 py-2 " +
-        easeClr(value)
-      }
+      className="flex flex-col items-center justify-center rounded-md border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40"
       title={label}
     >
-      <div className={"tabular-nums font-bold leading-none " + (isPrimary ? "text-[18px]" : "text-[15px]")}>
+      <div className={"tabular-nums font-semibold leading-none " + (isPrimary ? "text-[17px]" : "text-[14px]") + " " + textCls}>
         {pct(value)}
       </div>
-      <div className="mt-1 flex items-center gap-0.5 text-[10.5px] font-medium opacity-80">
+      <div className="mt-1 flex items-center gap-1 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
+        <span aria-hidden="true" className={"h-1.5 w-1.5 rounded-full " + dotCls} />
         <span>{label}</span>
         {tip && <Tip text={tip} />}
       </div>
@@ -513,8 +525,8 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
   return (
     <div
       className={
-        "group relative overflow-hidden rounded-xl border bg-white shadow-soft transition-shadow duration-150 " +
-        "hover:shadow-soft-md dark:bg-slate-900 " +
+        "group relative overflow-hidden rounded-lg border bg-white transition-colors duration-150 " +
+        "dark:bg-slate-900 " +
         easeBorder(f.overallEase)
       }
       aria-label={`${f.name} — ease tier: ${easeTier(f.overallEase)}`}
@@ -592,9 +604,10 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
             <EaseTile value={f.easeToPass} label="Pass" tip={TIPS.easeToPass} />
           )}
           <EaseTile value={f.easeToGetPaid} label="Paid" tip={TIPS.easeToGetPaid} />
-          <div className="flex flex-col items-center justify-center rounded-lg bg-indigo-50 px-2 py-2 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
-            <div className="text-[15px] font-bold leading-none tabular-nums">{pct(f.maxRoi)}</div>
-            <div className="mt-1 flex items-center gap-0.5 text-[10.5px] font-medium opacity-80">
+          <div className="flex flex-col items-center justify-center rounded-md border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
+            <div className="text-[14px] font-semibold leading-none tabular-nums text-blue-700 dark:text-blue-400">{pct(f.maxRoi)}</div>
+            <div className="mt-1 flex items-center gap-1 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-blue-500" />
               <span>ROI</span>
               <Tip text={TIPS.roi} />
             </div>
