@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff, Copy, Code2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff, Copy, Code2, Archive } from "lucide-react";
 import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState } from "./ui";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
@@ -5052,28 +5052,59 @@ function KpiCell({ icon: Icon, label, value, sub, tone = "slate" }) {
   );
 }
 
+// ─── Segmented pill-group filter — always-visible alternative to a dropdown.
+// Used inside AccountTracker for the Type + Status filters. Value is a string
+// key; onChange receives the new key. Non-`all` values are visually highlighted
+// so an active filter is obvious at a glance.
+function PillGroup({ label, value, onChange, options }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {label && (
+        <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {label}
+        </span>
+      )}
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/60"
+      >
+        {options.map(opt => {
+          const selected = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(opt.value)}
+              className={
+                "h-6 rounded px-2 text-[11.5px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+                (selected
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100")
+              }
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AccountTracker({ accounts, onUpdate, firms }) {
   const [adding, setAdding] = useState(false);
   const [collapsedIds, setCollapsedIds] = useState(new Set());
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [search, setSearch] = useState("");
-  // Combined phase + status filter. Values: all, challenge_active, challenge_target_hit,
-  // funded_active, funded_target_hit, breached
-  const [filterPreset, setFilterPreset] = useState("all");
+  // Two independent, always-visible filters: account type (phase) and live status.
+  // filterPhase:  all | challenge | funded
+  // filterStatus: all | active | breached   (target-hit accounts count as "active")
+  const [filterPhase, setFilterPhase] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [sortKey, setSortKey] = useState("newest");
-
-  // Decompose preset -> (phase, status) pair used by the row-level filter.
-  // Keeping the two concepts separate internally makes the match logic readable.
-  const { filterPhase, filterStatus } = useMemo(() => {
-    switch (filterPreset) {
-      case "challenge_active":     return { filterPhase: "challenge", filterStatus: "active" };
-      case "challenge_target_hit": return { filterPhase: "challenge", filterStatus: "target_hit" };
-      case "funded_active":        return { filterPhase: "funded",    filterStatus: "active" };
-      case "funded_target_hit":    return { filterPhase: "funded",    filterStatus: "target_hit" };
-      case "breached":             return { filterPhase: "all",       filterStatus: "breached" };
-      default:                     return { filterPhase: "all",       filterStatus: "all" };
-    }
-  }, [filterPreset]);
 
   const toggleCollapse = (id) => {
     setCollapsedIds(prev => {
@@ -5123,6 +5154,20 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     setSelectedIds(new Set());
   };
 
+  // Archive = soft delete. The row is hidden from the main list + filters, but
+  // its payouts/expenses still feed the Dashboard (FinancialDashboard iterates
+  // all accounts regardless of status).
+  const handleArchiveAccount = (id) => {
+    onUpdate(prev => prev.map(a => a.id === id ? { ...a, status: "archived" } : a));
+  };
+
+  const handleArchiveSelected = () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(t("alertArchiveSelected", selectedIds.size))) return;
+    onUpdate(prev => prev.map(a => selectedIds.has(a.id) ? { ...a, status: "archived" } : a));
+    setSelectedIds(new Set());
+  };
+
   const activeAccounts = accounts.filter(a => a.status !== "archived");
   const archivedAccounts = accounts.filter(a => a.status === "archived");
 
@@ -5132,6 +5177,34 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     const m = calcLiveMetrics(acc, firmData);
     return { acc, firmData, m };
   }), [activeAccounts, firms]);
+
+  // Stable key of currently-breached account ids — only changes when the *set*
+  // of breached ids changes, not on every render. Keeps the auto-archive effect
+  // below from firing on each re-render.
+  const breachedIdsKey = useMemo(() => {
+    return withMetrics
+      .filter(({ m }) => m.mllBreached || m.ddPct <= 0)
+      .map(({ acc }) => acc.id)
+      .sort((a, b) => a - b)
+      .join(",");
+  }, [withMetrics]);
+
+  // Auto-archive breached accounts — they no longer need live tracking but their
+  // history must persist for the Dashboard (FinancialDashboard iterates all
+  // accounts regardless of status).
+  useEffect(() => {
+    if (!breachedIdsKey) return;
+    const ids = new Set(breachedIdsKey.split(",").map(Number));
+    onUpdate(prev => prev.map(a => ids.has(a.id) && a.status !== "archived" ? { ...a, status: "archived" } : a));
+    setSelectedIds(prev => {
+      if (prev.size === 0) return prev;
+      const next = new Set(prev);
+      let changed = false;
+      ids.forEach(id => { if (next.delete(id)) changed = true; });
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [breachedIdsKey]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -5152,9 +5225,10 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     // Status filter
     if (filterStatus !== "all") {
       list = list.filter(({ m }) => {
-        if (filterStatus === "target_hit") return m.allRulesMet;
         if (filterStatus === "breached") return m.mllBreached || m.ddPct <= 0;
-        if (filterStatus === "active") return !m.allRulesMet && !m.mllBreached && m.ddPct > 0;
+        // "Active" = anything not breached. Target-hit / payout-ready accounts
+        // are still active until the user either takes payout or archives them.
+        if (filterStatus === "active") return !m.mllBreached && m.ddPct > 0;
         return true;
       });
     }
@@ -5177,7 +5251,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     return list;
   }, [filtered, sortKey]);
 
-  const filtersActive = search || filterPreset !== "all";
+  const filtersActive = search || filterPhase !== "all" || filterStatus !== "all";
 
   return (
     <div className="space-y-4">
@@ -5256,18 +5330,28 @@ function AccountTracker({ accounts, onUpdate, firms }) {
                   </button>
                 )}
               </div>
-              {/* Combined phase + status filter */}
-              <div className="relative shrink-0">
-                <select className={selectCls} value={filterPreset} onChange={e => setFilterPreset(e.target.value)} aria-label="Filter accounts by status">
-                  <option value="all">{t("filterAllAccounts")}</option>
-                  <option value="challenge_active">{t("filterChallengeActive")}</option>
-                  <option value="challenge_target_hit">{t("filterChallengeTargetHit")}</option>
-                  <option value="funded_active">{t("filterFundedActive")}</option>
-                  <option value="funded_target_hit">{t("filterFundedTargetHit")}</option>
-                  <option value="breached">{t("breached")}</option>
-                </select>
-                <ChevronDown size={12} aria-hidden="true" className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
+              {/* Type filter — always-visible segmented pills */}
+              <PillGroup
+                label={t("filterTypeLabel")}
+                value={filterPhase}
+                onChange={setFilterPhase}
+                options={[
+                  { value: "all",       label: t("all") },
+                  { value: "challenge", label: t("challenge") },
+                  { value: "funded",    label: t("funded") },
+                ]}
+              />
+              {/* Status filter — always-visible segmented pills */}
+              <PillGroup
+                label={t("filterStatusLabel")}
+                value={filterStatus}
+                onChange={setFilterStatus}
+                options={[
+                  { value: "all",      label: t("all") },
+                  { value: "active",   label: t("active") },
+                  { value: "breached", label: t("breached") },
+                ]}
+              />
               {/* Sort */}
               <div className="relative shrink-0">
                 <select className={selectCls} value={sortKey} onChange={e => setSortKey(e.target.value)} aria-label="Sort">
@@ -5307,6 +5391,14 @@ function AccountTracker({ accounts, onUpdate, firms }) {
                   {t("deselectAll")}
                 </button>
                 <div className="flex-1" />
+                <Button
+                  size="xs"
+                  variant="secondary"
+                  leftIcon={<Archive size={11} strokeWidth={2.5} />}
+                  onClick={handleArchiveSelected}
+                >
+                  {t("archiveSelected")}
+                </Button>
                 <Button
                   size="xs"
                   variant="secondary"
