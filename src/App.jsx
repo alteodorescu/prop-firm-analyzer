@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff, Copy, Code2, Archive } from "lucide-react";
-import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState } from "./ui";
+import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState, PageHeader } from "./ui";
 import { AppShell } from "./shell.jsx";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
@@ -2644,8 +2644,8 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
   return (
     <div
       className={
-        "group relative overflow-hidden rounded-xl border bg-white shadow-soft transition-shadow duration-150 " +
-        "hover:shadow-soft-md dark:bg-slate-900 " + cardBorder
+        "group relative overflow-hidden rounded-lg border bg-white transition-colors duration-150 " +
+        "dark:bg-slate-900 " + cardBorder
       }
     >
       {/* Status accent strip */}
@@ -3647,7 +3647,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
   if (bulkAccounts) {
     const validCount = bulkAccounts.filter(a => !a.error).length;
     return (
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -3769,7 +3769,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
   // ── Single account mode ──
   const importBorderCls = importedJournal ? "!border-blue-400 !bg-blue-50/40 dark:!bg-blue-950/20" : "";
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <span
@@ -4334,7 +4334,7 @@ function DashChip({ label, value, tone = "neutral" }) {
 // ── Dashboard table wrapper (Card + header + scrollable table) ──
 function DashTable({ title, icon: Icon, children }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
         {Icon && (
           <span
@@ -4509,7 +4509,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
   // ── Empty state: no eligible accounts in the selected scope ──
   if (!unified) {
     return (
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Always render the group selector so the user can switch away */}
         {groupOptions.length > 1 && (
           <div className="border-b border-slate-100 px-5 py-3 dark:border-slate-800">
@@ -4579,7 +4579,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
   return (
     <section
       aria-labelledby="unified-obj-title"
-      className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900"
+      className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
     >
       {/* ── HEADER BAR ──────────────────────────────────────────── */}
       <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
@@ -4637,18 +4637,18 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
       {/* ── HERO KPI ROW ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-0 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:divide-x md:divide-slate-100 md:dark:divide-slate-800">
         {/* Primary KPI — Daily Target */}
-        <div className="relative bg-gradient-to-br from-emerald-50/60 to-white px-6 py-5 dark:from-emerald-950/20 dark:to-slate-900">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-            <Target size={12} strokeWidth={2.5} aria-hidden="true" />
+        <div className="relative bg-gradient-to-br from-emerald-50/60 to-white px-4 py-3 dark:from-emerald-950/20 dark:to-slate-900">
+          <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+            <Target size={11} strokeWidth={2.5} aria-hidden="true" />
             <span>Daily Target</span>
           </div>
-          <div className="mt-1 flex items-baseline gap-1 tabular-nums">
-            <span className="text-[13px] font-medium text-slate-400 dark:text-slate-500">$</span>
-            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          <div className="mt-0.5 flex items-baseline gap-1 tabular-nums">
+            <span className="text-[12px] font-medium text-slate-400 dark:text-slate-500">$</span>
+            <span className="text-[24px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
               {Math.round(unified.target).toLocaleString()}
             </span>
           </div>
-          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
             per account · per day
           </div>
         </div>
@@ -5016,39 +5016,25 @@ function GroupSelector({ options, allCount, value, onChange }) {
   );
 }
 
-// ─── KPI cell used in the hero row ─────────────────────────────────────────
+// ─── KPI cell used in the hero row (flat, dense treatment) ────────────────
 function KpiCell({ icon: Icon, label, value, sub, tone = "slate" }) {
-  const toneMap = {
-    blue: {
-      accent: "text-blue-600 dark:text-blue-400",
-      chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",
-    },
-    red: {
-      accent: "text-red-600 dark:text-red-400",
-      chip: "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",
-    },
-    slate: {
-      accent: "text-slate-700 dark:text-slate-200",
-      chip: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-    },
-    emerald: {
-      accent: "text-emerald-600 dark:text-emerald-400",
-      chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
-    },
+  const accentMap = {
+    blue:    "text-blue-600 dark:text-blue-400",
+    red:     "text-red-600 dark:text-red-400",
+    slate:   "text-slate-900 dark:text-slate-100",
+    emerald: "text-emerald-700 dark:text-emerald-400",
   };
-  const t = toneMap[tone] || toneMap.slate;
+  const accent = accentMap[tone] || accentMap.slate;
   return (
-    <div className="px-5 py-5">
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        <span className={`flex h-4 w-4 items-center justify-center rounded ${t.chip}`} aria-hidden="true">
-          <Icon size={10} strokeWidth={2.5} />
-        </span>
+    <div className="px-4 py-3">
+      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className={`mt-1 text-2xl font-bold tabular-nums tracking-tight ${t.accent}`}>
+      <div className={`mt-0.5 text-[22px] font-semibold tabular-nums leading-tight tracking-tight ${accent}`}>
         {value}
       </div>
-      <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>
+      {sub && <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>}
     </div>
   );
 }
@@ -5097,7 +5083,17 @@ function PillGroup({ label, value, onChange, options }) {
 
 function AccountTracker({ accounts, onUpdate, firms }) {
   const [adding, setAdding] = useState(false);
-  const [collapsedIds, setCollapsedIds] = useState(new Set());
+  // Default to all-collapsed so the list is scannable at a glance. Each collapsed
+  // card shows ~40px of info (label + 3 KPIs). Users expand only what they need.
+  const [collapsedIds, setCollapsedIds] = useState(() => new Set(accounts.map(a => a.id)));
+  // Track seen account ids — any account added after first mount starts expanded
+  // (so the "Just tracked" flow still shows details immediately).
+  const seenIdsRef = useRef(new Set(accounts.map(a => a.id)));
+  useEffect(() => {
+    const currentIds = new Set(accounts.map(a => a.id));
+    // Newly-seen ids: don't add to collapsedIds so they render expanded.
+    currentIds.forEach(id => { if (!seenIdsRef.current.has(id)) seenIdsRef.current.add(id); });
+  }, [accounts]);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [search, setSearch] = useState("");
   // Two independent, always-visible filters: account type (phase) and live status.
@@ -5256,13 +5252,10 @@ function AccountTracker({ accounts, onUpdate, firms }) {
 
   return (
     <div className="space-y-4">
-      {/* ── Header row ── */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">{t("trackAccount")}</h2>
-          <p className="mt-0.5 text-[12.5px] text-slate-500 dark:text-slate-400">{t("clickTrackAccount")}</p>
-        </div>
-        {!adding && (
+      <PageHeader
+        title={t("trackAccount")}
+        description={t("clickTrackAccount")}
+        actions={!adding && (
           <Button
             variant="primary"
             size="md"
@@ -5272,7 +5265,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
             {t("trackNewAccount")}
           </Button>
         )}
-      </div>
+      />
 
       {adding && <NewAccountForm firms={firms} onSave={handleSaveAccount} onSaveBulk={handleSaveBulk} onCancel={() => setAdding(false)} />}
 
@@ -5707,7 +5700,7 @@ function AdminPanel({ getAdminUsers, addAdminUser, removeAdminUser, currentUserI
 
   return (
     <div className="mx-auto mt-2 max-w-2xl">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
