@@ -4033,19 +4033,13 @@ function FinancialDashboard({ accounts, firms }) {
     <div className="space-y-5">
       {/* ── Header + Summary Cards ── */}
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              Financial Dashboard
-            </h2>
-            <p className="mt-0.5 text-[12.5px] text-slate-500 dark:text-slate-400">
-              Real profits and losses across all accounts — eval fees, activations, resets, and payouts.
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          title="Financial Dashboard"
+          description="Real profits and losses across all accounts — eval fees, activations, resets, and payouts."
+        />
 
         {/* KPI row */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <DashKpi
             icon={TrendingDown}
             tone="red"
@@ -4282,32 +4276,29 @@ function FinancialDashboard({ accounts, firms }) {
   );
 }
 
-// ── Dashboard KPI card (hero row) ──
-const DASH_KPI_TONES = {
-  red:     { chip: "bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400",         border: "border-slate-200 dark:border-slate-800" },
-  emerald: { chip: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400", border: "border-slate-200 dark:border-slate-800" },
-  slate:   { chip: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",   border: "border-slate-200 dark:border-slate-800" },
-  blue:    { chip: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",     border: "border-slate-200 dark:border-slate-800" },
+// ── Dashboard KPI card (hero row) — flat surface, no tinted icon chip. ──
+// `tone` now only affects the value color. `highlight` adds a subtle accent
+// on the primary P&L card so your eye lands on it first.
+const DASH_KPI_ACCENT = {
+  red:     "text-red-600 dark:text-red-400",
+  emerald: "text-emerald-700 dark:text-emerald-400",
+  slate:   "text-slate-900 dark:text-slate-100",
+  blue:    "text-blue-700 dark:text-blue-400",
 };
 function DashKpi({ icon: Icon, tone = "slate", label, value, sub, highlight }) {
-  const t = DASH_KPI_TONES[tone] || DASH_KPI_TONES.slate;
+  const accent = DASH_KPI_ACCENT[tone] || DASH_KPI_ACCENT.slate;
   return (
     <div
       className={
-        "rounded-xl border bg-white p-4 shadow-soft dark:bg-slate-900 " +
-        t.border +
-        (highlight ? " ring-1 ring-slate-100 dark:ring-slate-800" : "")
+        "rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900 " +
+        (highlight ? "ring-1 ring-blue-500/20 dark:ring-blue-500/25" : "")
       }
     >
       <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-        {Icon && (
-          <span aria-hidden="true" className={"flex h-4 w-4 items-center justify-center rounded " + t.chip}>
-            <Icon size={10} strokeWidth={2.5} />
-          </span>
-        )}
+        {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className="mt-1.5 text-[22px] font-bold leading-tight tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
+      <div className={"mt-0.5 text-[22px] font-semibold leading-tight tabular-nums tracking-tight " + accent}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-slate-400">{sub}</div>}
