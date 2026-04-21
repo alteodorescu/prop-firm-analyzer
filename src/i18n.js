@@ -15,10 +15,17 @@ const translations = {
   darkMode: { en: "Switch to dark mode", ro: "Mod întunecat" },
 
   // ── Tabs ──
-  tabComparison: { en: "📊 Comparison", ro: "📊 Comparație" },
-  tabDetails: { en: "📋 Firm Details", ro: "📋 Detalii Firme" },
-  tabTracker: { en: "📈 Account Tracker", ro: "📈 Urmărire Conturi" },
-  tabDashboard: { en: "💰 Dashboard", ro: "💰 Panou Control" },
+  tabComparison: { en: "Comparison", ro: "Comparație" },
+  tabDetails: { en: "Firm Details", ro: "Detalii Firme" },
+  tabTracker: { en: "Account Tracker", ro: "Urmărire Conturi" },
+  tabDashboard: { en: "Dashboard", ro: "Panou Control" },
+  // Short labels for mobile bottom nav / collapsed sidebar
+  tabComparisonShort: { en: "Compare", ro: "Comparare" },
+  tabDetailsShort: { en: "Firms", ro: "Firme" },
+  tabTrackerShort: { en: "Accounts", ro: "Conturi" },
+  tabDashboardShort: { en: "Dashboard", ro: "Panou" },
+  tabMetricsShort: { en: "Metrics", ro: "Metrici" },
+  tabAdminShort: { en: "Admin", ro: "Admin" },
 
   // ── Common labels ──
   name: { en: "Name", ro: "Nume" },
@@ -377,7 +384,7 @@ const translations = {
   specialRulesPlaceholder: { en: "Special rules, promo codes, observations... Use **bold**, *italic*, ==highlight==", ro: "Reguli speciale, coduri promoționale, observații... Folosește **bold**, *italic*, ==highlight==" },
 
   // ── Tab: Metrics Guide ──
-  tabMetrics: { en: "📐 Metrics Guide", ro: "📐 Ghid Metrici" },
+  tabMetrics: { en: "Metrics Guide", ro: "Ghid Metrici" },
 
   // ── Metrics Guide page ──
   mgTitle: { en: "How All Metrics Are Calculated", ro: "Cum Sunt Calculate Toate Metricile" },

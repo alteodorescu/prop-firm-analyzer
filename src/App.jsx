@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, ChevronUp, ArrowUp, ArrowDown, Info, Plus, Pencil, Trash2, X, Award, Sun, Moon, Globe, LogOut, Lock, Shield, UserPlus, UserMinus, Zap, AlertTriangle, AlertCircle, Target, Layers, Users, TrendingUp, TrendingDown, Minus, BarChart3, Building2, Briefcase, LineChart, BookOpen, Trophy, LogIn, ExternalLink, Calculator, Check, CheckCircle2, XCircle, Search, RefreshCw, Upload, FileText, Wallet, Activity, Flame, Ban, ShieldAlert, Filter, ArrowDownWideNarrow, ClipboardList, Clock, Eye, EyeOff, Copy, Code2, Archive } from "lucide-react";
 import { Button, IconButton, Tabs as UiTabs, Badge, Card, CardHeader, CardTitle, CardBody, CardDescription, Alert, EmptyState } from "./ui";
+import { AppShell } from "./shell.jsx";
 import { t, getLang, setLang } from "./i18n.js";
 import { useSupabaseData } from "./useSupabaseData.js";
 import { supabase } from "./supabaseClient.js";
@@ -5925,18 +5926,19 @@ export default function App({ session, onSignOut }) {
   // ── Tab definitions ──────────────────────────────────────
   const activeAccountsCount = accounts.filter(a => a.status !== "archived").length;
   const tabDefs = [
-    { key: "compare", label: t("tabComparison"), icon: BarChart3 },
-    { key: "details", label: t("tabDetails"), icon: Building2 },
+    { key: "compare",   label: t("tabComparison"), shortLabel: t("tabComparisonShort"), icon: BarChart3 },
+    { key: "details",   label: t("tabDetails"),    shortLabel: t("tabDetailsShort"),    icon: Building2 },
     {
       key: "tracker",
       label: t("tabTracker"),
+      shortLabel: t("tabTrackerShort"),
       icon: session ? Briefcase : Lock,
       badge: session && activeAccountsCount > 0 ? activeAccountsCount : undefined,
       gated: !session,
     },
-    { key: "dashboard", label: t("tabDashboard"), icon: session ? LineChart : Lock, gated: !session },
-    { key: "metrics", label: t("tabMetrics"), icon: BookOpen },
-    ...(session && isAdmin ? [{ key: "admin", label: t("tabAdmin"), icon: Shield }] : []),
+    { key: "dashboard", label: t("tabDashboard"), shortLabel: t("tabDashboardShort"), icon: session ? LineChart : Lock, gated: !session },
+    { key: "metrics",   label: t("tabMetrics"),   shortLabel: t("tabMetricsShort"),   icon: BookOpen },
+    ...(session && isAdmin ? [{ key: "admin", label: t("tabAdmin"), shortLabel: t("tabAdminShort"), icon: Shield }] : []),
   ];
   const handleTabChange = (key) => {
     const def = tabDefs.find(d => d.key === key);
@@ -5944,89 +5946,65 @@ export default function App({ session, onSignOut }) {
     else setTab(key);
   };
 
+  // Controls that live in the top-right of the app shell (lang / theme / auth / admin).
+  // Rendered identically on desktop and mobile; sidebar is nav-only.
+  const shellActions = (
+    <>
+      <button
+        onClick={toggleLang}
+        title={lang === "en" ? "Schimbă în Română" : "Switch to English"}
+        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+      >
+        <Globe size={13} strokeWidth={2.25} />
+        {lang === "en" ? "RO" : "EN"}
+      </button>
+      <IconButton
+        icon={darkMode ? Sun : Moon}
+        label={darkMode ? t("lightMode") : t("darkMode")}
+        size="icon-sm"
+        onClick={() => setDarkMode(d => !d)}
+      />
+      {session && isAdmin && (
+        <Button
+          variant="primary"
+          size="sm"
+          leftIcon={<Plus size={14} strokeWidth={2.5} />}
+          onClick={() => setEditing({})}
+          className="ml-1"
+        >
+          {t("addFirm")}
+        </Button>
+      )}
+      {session ? (
+        <IconButton
+          icon={LogOut}
+          label={t("authSignOut")}
+          size="icon-sm"
+          variant="ghost-danger"
+          onClick={onSignOut}
+        />
+      ) : (
+        <Button
+          variant="primary"
+          size="sm"
+          leftIcon={<LogIn size={14} strokeWidth={2.5} />}
+          onClick={() => setTab("login")}
+          className="ml-1"
+        >
+          {t("authSignIn")}
+        </Button>
+      )}
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      {/* ── HEADER ── */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/85">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          {/* Top row: brand + global controls */}
-          <div className="flex h-14 items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div
-                aria-hidden="true"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
-              >
-                <Award size={16} strokeWidth={2.5} className="text-white" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
-                  {t("appTitle")}
-                </h1>
-                <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">
-                  {t("appSubtitle", firms.length)}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={toggleLang}
-                title={lang === "en" ? "Schimbă în Română" : "Switch to English"}
-                className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-              >
-                <Globe size={13} strokeWidth={2.25} />
-                {lang === "en" ? "RO" : "EN"}
-              </button>
-              <IconButton
-                icon={darkMode ? Sun : Moon}
-                label={darkMode ? t("lightMode") : t("darkMode")}
-                size="icon-sm"
-                onClick={() => setDarkMode(d => !d)}
-              />
-              {session && isAdmin && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<Plus size={14} strokeWidth={2.5} />}
-                  onClick={() => setEditing({})}
-                  className="ml-1"
-                >
-                  {t("addFirm")}
-                </Button>
-              )}
-              {session ? (
-                <IconButton
-                  icon={LogOut}
-                  label={t("authSignOut")}
-                  size="icon-sm"
-                  variant="ghost-danger"
-                  onClick={onSignOut}
-                />
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  leftIcon={<LogIn size={14} strokeWidth={2.5} />}
-                  onClick={() => setTab("login")}
-                  className="ml-1"
-                >
-                  {t("authSignIn")}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Tab bar */}
-          <UiTabs
-            tabs={tabDefs}
-            value={tab}
-            onChange={handleTabChange}
-            ariaLabel="Main navigation"
-            className="-mx-1 border-b-0"
-          />
-        </div>
-      </header>
-
+    <AppShell
+      navItems={tabDefs}
+      activeKey={tab === "login" ? null : tab}
+      onSelect={handleTabChange}
+      brand={{ icon: Award, title: t("appTitle"), subtitle: t("appSubtitle", firms.length) }}
+      topBarActions={shellActions}
+    >
       {/* ── TOP PICK BANNER ── */}
       {best && tab === "compare" && (
         <div className="border-b border-slate-200 bg-gradient-to-r from-amber-50/60 via-white to-white dark:border-slate-800 dark:from-amber-950/20 dark:via-slate-950 dark:to-slate-950">
@@ -6154,6 +6132,6 @@ export default function App({ session, onSignOut }) {
           onCancel={() => setEditing(null)}
         />
       )}
-    </div>
+    </AppShell>
   );
 }
