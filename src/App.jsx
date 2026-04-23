@@ -5160,16 +5160,22 @@ function AccountTracker({ accounts, onUpdate, firms }) {
 
   // Archive = soft delete. The row is hidden from the main list + filters, but
   // its payouts/expenses still feed the Dashboard (FinancialDashboard iterates
-  // all accounts regardless of status).
+  // all accounts regardless of status). We tag `archiveReason` so the
+  // auto-reconciliation effect below knows which archives to undo if the
+  // underlying cause clears — manual archives stay archived forever.
   const handleArchiveAccount = (id) => {
-    onUpdate(prev => prev.map(a => a.id === id ? { ...a, status: "archived" } : a));
+    onUpdate(prev => prev.map(a => a.id === id ? { ...a, status: "archived", archiveReason: "manual" } : a));
   };
 
   const handleArchiveSelected = () => {
     if (selectedIds.size === 0) return;
     if (!confirm(t("alertArchiveSelected", selectedIds.size))) return;
-    onUpdate(prev => prev.map(a => selectedIds.has(a.id) ? { ...a, status: "archived" } : a));
+    onUpdate(prev => prev.map(a => selectedIds.has(a.id) ? { ...a, status: "archived", archiveReason: "manual" } : a));
     setSelectedIds(new Set());
+  };
+
+  const handleUnarchiveAccount = (id) => {
+    onUpdate(prev => prev.map(a => a.id === id ? { ...a, status: "active", archiveReason: undefined } : a));
   };
 
   const activeAccounts = accounts.filter(a => a.status !== "archived");
@@ -5182,33 +5188,76 @@ function AccountTracker({ accounts, onUpdate, firms }) {
     return { acc, firmData, m };
   }), [activeAccounts, firms]);
 
-  // Stable key of currently-breached account ids — only changes when the *set*
-  // of breached ids changes, not on every render. Keeps the auto-archive effect
-  // below from firing on each re-render.
-  const breachedIdsKey = useMemo(() => {
-    return withMetrics
-      .filter(({ m }) => m.mllBreached || m.ddPct <= 0)
-      .map(({ acc }) => acc.id)
-      .sort((a, b) => a - b)
-      .join(",");
-  }, [withMetrics]);
+  // ── Auto archive/unarchive reconciliation ───────────────────────────────
+  // The auto-archive rule is: breached accounts get archived so the live
+  // tracker stays focused on tradeable accounts. The *un*archive rule is the
+  // mirror: if a previously-auto-archived account is no longer breached
+  // (e.g. user deleted the problem day or bumped the balance back), put it
+  // back. We need to compute breach status across ALL accounts — including
+  // archived ones — otherwise an archived account's state is frozen and can
+  // never recover.
+  //
+  // Manual archives (archiveReason === "manual") are never auto-reconciled —
+  // the user explicitly put them aside, so leaving them there is the
+  // correct behavior.
+  const breachReconKey = useMemo(() => {
+    // For each account compute "is it breached right now?" regardless of its
+    // current archived status. Build a deterministic key so the effect only
+    // runs when the reconciliation set changes, not on every render.
+    const rows = accounts.map(acc => {
+      const firmData = firms.find(f => f.id === acc.firmId);
+      const m = calcLiveMetrics(acc, firmData);
+      const breached = !!(m.mllBreached || m.ddPct <= 0);
+      return `${acc.id}:${breached ? 1 : 0}:${acc.status || "active"}:${acc.archiveReason || ""}`;
+    });
+    return rows.sort().join("|");
+  }, [accounts, firms]);
 
-  // Auto-archive breached accounts — they no longer need live tracking but their
-  // history must persist for the Dashboard (FinancialDashboard iterates all
-  // accounts regardless of status).
   useEffect(() => {
-    if (!breachedIdsKey) return;
-    const ids = new Set(breachedIdsKey.split(",").map(Number));
-    onUpdate(prev => prev.map(a => ids.has(a.id) && a.status !== "archived" ? { ...a, status: "archived" } : a));
+    // Recompute breach status fresh here so we don't depend on the memo map.
+    const nextAccounts = accounts.map(a => {
+      const firmData = firms.find(f => f.id === a.firmId);
+      const m = calcLiveMetrics(a, firmData);
+      const breached = !!(m.mllBreached || m.ddPct <= 0);
+      const isArchived = a.status === "archived";
+      const reason = a.archiveReason;
+
+      // 1. Breached + not archived → auto-archive with reason "breach".
+      if (breached && !isArchived) {
+        return { ...a, status: "archived", archiveReason: "breach" };
+      }
+      // 2. Not breached + archived due to breach → auto-unarchive.
+      if (!breached && isArchived && reason === "breach") {
+        const { archiveReason: _drop, ...rest } = a;
+        return { ...rest, status: "active" };
+      }
+      return a;
+    });
+
+    // Only push the update if something actually changed — avoids an infinite
+    // render loop and avoids dirtying Supabase with no-op writes.
+    const changed = nextAccounts.some((n, i) =>
+      n.status !== accounts[i].status || n.archiveReason !== accounts[i].archiveReason
+    );
+    if (!changed) return;
+
+    // Drop any auto-archived ids from the selection set so the bulk action
+    // bar doesn't show stale selections.
     setSelectedIds(prev => {
       if (prev.size === 0) return prev;
       const next = new Set(prev);
-      let changed = false;
-      ids.forEach(id => { if (next.delete(id)) changed = true; });
-      return changed ? next : prev;
+      let mutated = false;
+      nextAccounts.forEach((n, i) => {
+        if (n.status === "archived" && accounts[i].status !== "archived") {
+          if (next.delete(n.id)) mutated = true;
+        }
+      });
+      return mutated ? next : prev;
     });
+
+    onUpdate(() => nextAccounts);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [breachedIdsKey]);
+  }, [breachReconKey]);
 
   // Filter
   const filtered = useMemo(() => {
@@ -5456,19 +5505,37 @@ function AccountTracker({ accounts, onUpdate, firms }) {
           <summary className="cursor-pointer text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
             Archived accounts ({archivedAccounts.length})
           </summary>
-          <div className="mt-3 space-y-3 opacity-70">
+          <div className="mt-3 space-y-3">
             {archivedAccounts.map(acc => {
               const firmData = firms.find(f => f.id === acc.firmId);
+              // Show the reason so manually-archived accounts don't look like
+              // a bug to the user ("why isn't this being restored?").
+              const reasonLabel = acc.archiveReason === "breach"
+                ? "Auto-archived (breached)"
+                : "Manually archived";
               return (
-                <AccountCard
-                  key={acc.id}
-                  account={acc}
-                  firmData={firmData}
-                  onUpdate={handleUpdateAccount}
-                  onDelete={handleDeleteAccount}
-                  collapsed={collapsedIds.has(acc.id)}
-                  onToggleCollapse={() => toggleCollapse(acc.id)}
-                />
+                <div key={acc.id} className="space-y-1.5 opacity-80">
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {reasonLabel}
+                    </span>
+                    <Button
+                      size="xs"
+                      variant="secondary"
+                      onClick={() => handleUnarchiveAccount(acc.id)}
+                    >
+                      Unarchive
+                    </Button>
+                  </div>
+                  <AccountCard
+                    account={acc}
+                    firmData={firmData}
+                    onUpdate={handleUpdateAccount}
+                    onDelete={handleDeleteAccount}
+                    collapsed={collapsedIds.has(acc.id)}
+                    onToggleCollapse={() => toggleCollapse(acc.id)}
+                  />
+                </div>
               );
             })}
           </div>
