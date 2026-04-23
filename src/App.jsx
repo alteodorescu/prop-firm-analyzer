@@ -15,7 +15,7 @@ const TIPS = {
   pt: "Profit Target — the profit you must reach to pass the evaluation.",
   dll: "Daily Loss Limit — max loss per session before trading pauses. None = full MLL available per session (preferred for risk-takers).",
   mll: "Max Loss Limit — total drawdown before the account is breached. Higher = more runway.",
-  mllType: "Drawdown type affects how the MLL moves:\n• Static — MLL stays fixed from start. Best case.\n• Trailing EOD — MLL floor trails up based on highest end-of-day balance. Moderate penalty.\n• Trailing Intraday — MLL floor trails every tick. Severe penalty.\n\nTrailing drawdowns shrink effective room as you profit, making the target harder to reach.",
+  mllType: "Drawdown type affects how the MLL floor moves:\n• Static — MLL floor stays fixed from start. Best case.\n• Trailing EOD — floor trails up with highest end-of-day balance.\n• Trailing Intraday — floor trails up with every tick.\n\nUniversal futures-prop rule: trailing drawdowns LOCK once the floor reaches your starting balance.\nExample: $25K start, $1K MLL → initial floor $24K. Balance $26K → floor $25K (locked). Balance $30K → floor still $25K.",
   consistency: "Max % of total profit from a single day. E.g. 40% → need at least ⌈1/0.4⌉ = 3 profitable days. None = no restriction.",
   minDays: "Minimum profitable trading days required by the firm before you can pass/request payout.",
   minProfit: "Minimum daily profit ($) to count as a 'profitable day' for consistency/payout purposes.",
@@ -1875,13 +1875,16 @@ function calcLiveMetrics(account, firmData) {
     // DLL check — daily loss vs daily loss limit
     const dllBreach = dll != null && dll > 0 && dayPnl < 0 && Math.abs(dayPnl) > dll;
 
-    // Trailing DD floor at this point
+    // Trailing DD floor at this point.
+    // Universal futures-prop-firm rule: trailing drawdown LOCKS at the cycle's
+    // starting balance. Once peakBal − mll would exceed startBal, the floor
+    // pins to startBal and stops trailing — no matter how high the peak goes.
+    // E.g. 25K start, 1K MLL: peak 26K → floor 25K; peak 27K → floor still 25K.
     let ddFloorHere;
     if (mllType === "static" || !mllType) {
       ddFloorHere = startBal - mll;
     } else {
-      ddFloorHere = peakBal - mll;
-      if (ddFloorHere > startBal) ddFloorHere = Math.max(ddFloorHere, startBal);
+      ddFloorHere = Math.min(peakBal - mll, startBal);
     }
     const mllBreach = bal < ddFloorHere;
 
@@ -1911,12 +1914,12 @@ function calcLiveMetrics(account, firmData) {
   const pctComplete = effectiveTarget > 0 ? Math.min(1, totalPnl / effectiveTarget) : 0;
 
   // ── Drawdown safety (current state) ──
+  // Trailing DD locks at startBal (see per-day comment above).
   let ddFloor;
   if (mllType === "static" || !mllType) {
     ddFloor = startBal - mll;
   } else {
-    ddFloor = peakBal - mll;
-    if (ddFloor > startBal) ddFloor = Math.max(ddFloor, startBal);
+    ddFloor = Math.min(peakBal - mll, startBal);
   }
   const roomToDD = currentBal - ddFloor;
   const ddPct = mll > 0 ? roomToDD / mll : 1;
