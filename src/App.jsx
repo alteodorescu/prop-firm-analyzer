@@ -1405,7 +1405,7 @@ function MetricsGuide() {
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Title & intro */}
       <header className="text-center">
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-br from-blue-500 to-indigo-600 shadow-soft">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-amber-500">
           <BookOpen size={18} strokeWidth={2.25} className="text-white" aria-hidden="true" />
         </div>
         <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -1613,11 +1613,13 @@ const getTableCols = () => [
   { key: "totalDays", label: t("daysToPayoutCol"), fmt: (v, f) => f && f.isInstant ? `${f.daysToPayout}d` : v != null ? `${v}d` : "—", sort: true, desc: false },
 ];
 
-// ── Rank badge (replaces emoji medals with a polished pill) ──
+// ── Rank badge ──
+// Brand: flat by design. Top-3 ranks differentiated by border + bg tint
+// only — no gradients, no shadows, no medal-pill metaphor.
 const RANK_STYLES = {
-  1: "bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow-sm ring-1 ring-amber-400/50",
-  2: "bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800 shadow-sm ring-1 ring-slate-400/50 dark:from-slate-300 dark:to-slate-500 dark:text-slate-900",
-  3: "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-950 shadow-sm ring-1 ring-orange-400/50",
+  1: "bg-amber-500 text-slate-950",
+  2: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
+  3: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
 };
 function RankBadge({ rank }) {
   const top = rank <= 3;
@@ -2642,7 +2644,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
   const phaseLabel = firmData?.instant ? t("labelInstant") : account.phase === "challenge" ? t("labelChallenge") : t("labelFunded");
   // Outer card tone
   const cardBorder = selected
-    ? "border-blue-400 ring-2 ring-blue-500/20 dark:border-blue-500"
+    ? "border-amber-500 ring-2 ring-amber-500/30 dark:border-amber-500"
     : statusColor === "red"
     ? "border-red-200 dark:border-red-900/60"
     : statusColor === "green"
@@ -4592,7 +4594,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
       <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
         <div className="flex items-start gap-2.5 min-w-0">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-amber-500"
             aria-hidden="true"
           >
             <Zap size={14} className="text-white" strokeWidth={2.5} />
@@ -5607,7 +5609,7 @@ function AuthInline() {
         <div className="mb-5 flex flex-col items-center text-center">
           <div
             aria-hidden="true"
-            className="mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-br from-amber-400 to-amber-500 shadow-soft"
+            className="mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-amber-500"
           >
             <Lock size={17} strokeWidth={2.25} className="text-white" />
           </div>

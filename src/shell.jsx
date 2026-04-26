@@ -123,7 +123,7 @@ export function NavRail({
                     collapsed ? "h-9 justify-center px-0" : "h-9 px-2.5",
                     "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950",
                     active
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                      ? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
                   )}
                 >
@@ -133,7 +133,7 @@ export function NavRail({
                     <span className={cx(
                       "inline-flex h-5 min-w-[20px] items-center justify-center rounded-none px-1 text-[11px] font-semibold font-mono tabular-nums",
                       active
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
+                        ? "bg-amber-500 text-slate-950"
                         : "bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                     )}>
                       {it.badge}
@@ -144,7 +144,7 @@ export function NavRail({
                   )}
                   {/* Active indicator on collapsed: left bar */}
                   {active && collapsed && (
-                    <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-blue-600 dark:bg-blue-500" />
+                    <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-amber-500" />
                   )}
                 </button>
               </li>
@@ -219,19 +219,19 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
                   "relative flex w-full flex-col items-center justify-center gap-0.5 py-2 text-[10.5px] font-medium",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500",
                   active
-                    ? "text-blue-700 dark:text-blue-400"
+                    ? "text-amber-600 dark:text-amber-400"
                     : "text-slate-500 dark:text-slate-400"
                 )}
               >
                 {Icon && <Icon size={18} strokeWidth={2.25} aria-hidden="true" />}
                 <span className="truncate max-w-full px-1">{it.shortLabel || it.label}</span>
                 {it.badge != null && (
-                  <span className="absolute top-1.5 right-[calc(50%-22px)] h-4 min-w-[16px] rounded-full bg-blue-600 px-1 text-[9.5px] font-semibold leading-4 text-white">
+                  <span className="absolute top-1.5 right-[calc(50%-22px)] h-4 min-w-[16px] rounded-full bg-amber-500 px-1 text-[9.5px] font-semibold leading-4 text-slate-950">
                     {it.badge}
                   </span>
                 )}
                 {active && (
-                  <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+                  <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-amber-500" />
                 )}
               </button>
             </li>
@@ -247,14 +247,14 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
               className={cx(
                 "relative flex w-full flex-col items-center justify-center gap-0.5 py-2 text-[10.5px] font-medium",
                 moreActive
-                  ? "text-blue-700 dark:text-blue-400"
+                  ? "text-amber-600 dark:text-amber-400"
                   : "text-slate-500 dark:text-slate-400"
               )}
             >
               <MoreHorizontal size={18} strokeWidth={2.25} aria-hidden="true" />
               <span>More</span>
               {moreActive && (
-                <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-blue-600 dark:bg-blue-500" />
+                <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-amber-500" />
               )}
             </button>
           </li>
@@ -281,7 +281,7 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
                     className={cx(
                       "flex w-full items-center gap-2 px-3 py-2 text-left text-[13px]",
                       active
-                        ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                        ? "bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
                         : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/60"
                     )}
                   >
