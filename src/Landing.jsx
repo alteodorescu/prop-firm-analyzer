@@ -424,7 +424,7 @@ export default function Landing() {
             </h1>
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400 sm:text-[16px]">
               Stop guessing which firm to buy, which rules bite, or how many contracts to trade today.
-              One dashboard for <b className="text-slate-900 dark:text-slate-200">20+ firms</b>, all your accounts, and every payout — auto-calculated from your live balance.
+              One dashboard for <b className="text-slate-900 dark:text-slate-200">20+ plans</b> across the major firms, all your accounts, and every payout — auto-calculated from your live balance.
             </p>
             <WaitlistForm size="lg" className="mt-6 max-w-lg" onSuccess={handleSignupSuccess} />
             <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">
@@ -487,7 +487,7 @@ export default function Landing() {
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Manual trading</li>
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Tradesyncer + NinjaTrader</li>
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Tradovate / Rithmic</li>
-              <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />20+ firms</li>
+              <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />20+ plans</li>
             </ul>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] text-slate-500 dark:text-slate-500">
@@ -495,10 +495,9 @@ export default function Landing() {
             <span>FundedNext</span>
             <span>Top One Futures</span>
             <span>Tradeify</span>
-            <span>PAAPEX</span>
             <span>Apex</span>
             <span>Lucid Trading</span>
-            <span className="text-slate-400 dark:text-slate-600">+ 14 more</span>
+            <span className="text-slate-400 dark:text-slate-600">+ 15 more</span>
           </div>
         </div>
       </section>
