@@ -152,7 +152,7 @@ function WaitlistForm({ size = "md", autoFocus = false, className, onSuccess }) 
     return (
       <div
         role="status"
-        className={`flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13.5px] text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100 ${className || ""}`}
+        className={`flex items-center gap-2.5 rounded-none border border-emerald-200 bg-emerald-50 px-4 py-3 text-[13.5px] text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100 ${className || ""}`}
       >
         <Check size={16} strokeWidth={2.5} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
         <div>
@@ -188,13 +188,13 @@ function WaitlistForm({ size = "md", autoFocus = false, className, onSuccess }) 
             disabled={status === "loading"}
             placeholder="you@example.com"
             aria-label="Email address"
-            className={`w-full ${inputH} rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-[14px] text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500`}
+            className={`w-full ${inputH} rounded-none border border-slate-300 bg-white pl-9 pr-3 text-[14px] text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500`}
           />
         </div>
         <button
           type="submit"
           disabled={status === "loading"}
-          className={`${btnH} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-900 font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus-visible:ring-offset-slate-950`}
+          className={`${btnH} inline-flex shrink-0 items-center justify-center gap-1.5 rounded-none bg-amber-500 font-semibold text-slate-950 transition-colors hover:bg-amber-400 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950`}
         >
           {status === "loading" ? "Joining…" : "Join waitlist"}
           {status !== "loading" && <ArrowRight size={14} strokeWidth={2.5} />}
@@ -215,18 +215,18 @@ function MockTracker() {
   return (
     <div className="relative w-full max-w-[520px] select-none">
       {/* Browser chrome */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:ring-white/5">
+      <div className="rounded-none border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:ring-white/5">
         {/* Title bar */}
         <div className="flex items-center gap-1.5 border-b border-slate-100 px-3.5 py-2.5 dark:border-slate-800">
           <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
           <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
           <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
-          <div className="ml-3 h-5 flex-1 rounded-md bg-slate-100 dark:bg-slate-800" />
+          <div className="ml-3 h-5 flex-1 rounded-none bg-slate-100 dark:bg-slate-800" />
         </div>
 
         {/* Fake unified objective card */}
         <div className="space-y-2.5 p-3.5">
-          <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
               <div className="flex h-5 w-5 items-center justify-center bg-amber-500">
                 <Zap size={10} strokeWidth={3} className="text-slate-950" />
@@ -234,7 +234,7 @@ function MockTracker() {
               <div className="min-w-0">
                 <div className="truncate text-[11.5px] font-semibold text-slate-900 dark:text-slate-100">Trade Copier — Unified Plan</div>
               </div>
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9.5px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <span className="ml-auto inline-flex items-center gap-1 rounded-none bg-emerald-50 px-1.5 py-0.5 text-[9.5px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
                 <span className="h-1 w-1 rounded-full bg-emerald-500" /> 3/3 active
               </span>
             </div>
@@ -253,11 +253,7 @@ function MockTracker() {
         </div>
       </div>
 
-      {/* Floating accent — soft amber glow behind card */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-gradient-to-br from-amber-200/40 via-blue-100/30 to-transparent blur-3xl dark:from-amber-500/10 dark:via-blue-500/10"
-      />
+      {/* Brand identity forbids glow effects — flat by design. No backdrop. */}
     </div>
   );
 }
@@ -274,7 +270,7 @@ function MockCell({ label, value, tone, icon: Icon }) {
         {Icon && <Icon size={10} strokeWidth={2.25} className="text-slate-400" />}
         <span>{label}</span>
       </div>
-      <div className={`mt-0.5 text-[17px] font-semibold tabular-nums leading-tight ${accentMap[tone] || "text-slate-900"}`}>
+      <div className={`mt-0.5 text-[17px] font-semibold font-mono tabular-nums leading-tight ${accentMap[tone] || "text-slate-900"}`}>
         {value}
       </div>
     </div>
@@ -287,17 +283,17 @@ function MockRow({ badge, badgeTone, label, pnl, dd, ok }) {
     : badgeTone === "blue" ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-300"
     : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300";
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
-      <span className={`inline-flex h-4 items-center rounded-full border px-1.5 text-[9px] font-semibold uppercase tracking-wide ${badgeCls}`}>{badge}</span>
+    <div className="flex items-center gap-2 rounded-none border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+      <span className={`inline-flex h-4 items-center rounded-none border px-1.5 text-[9px] font-semibold uppercase tracking-wide ${badgeCls}`}>{badge}</span>
       <span className="truncate text-[11px] font-semibold text-slate-900 dark:text-slate-100">{label}</span>
       <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
         <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
         <span>Active</span>
       </span>
-      <span className="tabular-nums text-[10.5px] text-slate-600 dark:text-slate-400">
+      <span className="font-mono tabular-nums text-[10.5px] text-slate-600 dark:text-slate-400">
         P&amp;L <b className="text-emerald-600 dark:text-emerald-400">{pnl}</b>
       </span>
-      <span className="tabular-nums text-[10.5px] text-slate-600 dark:text-slate-400 hidden md:inline">
+      <span className="font-mono tabular-nums text-[10.5px] text-slate-600 dark:text-slate-400 hidden md:inline">
         DD <b className="text-emerald-600 dark:text-emerald-400">{dd}</b>
       </span>
     </div>
@@ -313,7 +309,7 @@ function FaqItem({ q, children }) {
         type="button"
         onClick={() => setOpen(v => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-4 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+        className="flex w-full items-center justify-between gap-4 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
       >
         <span className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">{q}</span>
         <ChevronDown
@@ -382,20 +378,20 @@ export default function Landing() {
             <span className="hidden text-[10.5px] leading-tight text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wide sm:inline">prop firm rules, decoded</span>
           </a>
           <nav className="flex items-center gap-1">
-            <button type="button" onClick={() => scrollTo(faqRef)} className="hidden h-8 rounded-md px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white sm:inline-flex">FAQ</button>
-            <a href="/app" className="hidden h-8 items-center rounded-md px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white sm:inline-flex">Preview app</a>
+            <button type="button" onClick={() => scrollTo(faqRef)} className="hidden h-8 rounded-none px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white sm:inline-flex">FAQ</button>
+            <a href="/app" className="hidden h-8 items-center rounded-none px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white sm:inline-flex">Preview app</a>
             <button
               type="button"
               onClick={() => setDark(v => !v)}
               aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-none text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white"
             >
               {dark ? <Sun size={14} strokeWidth={2.25} /> : <Moon size={14} strokeWidth={2.25} />}
             </button>
             <button
               type="button"
               onClick={() => scrollTo(waitlistRef)}
-              className="ml-1 inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-slate-900 px-3 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:bg-blue-600 dark:hover:bg-blue-500 dark:focus-visible:ring-offset-slate-950"
+              className="ml-1 inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-none bg-amber-500 px-3 text-[13px] font-semibold text-slate-950 transition-colors hover:bg-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
             >
               <span className="hidden sm:inline">Join waitlist</span>
               <span className="sm:hidden">Join</span>
@@ -407,15 +403,15 @@ export default function Landing() {
 
       {/* ── HERO ────────────────────────────────────────────── */}
       <section ref={waitlistRef} className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-amber-50/50 via-white to-white dark:from-amber-950/20 dark:via-slate-950 dark:to-slate-950" />
+        {/* Brand: flat — no gradient hero backdrop. The navy bg carries it. */}
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-16 lg:py-24">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+            <div className="inline-flex items-center gap-1.5 rounded-none border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
               <Briefcase size={11} strokeWidth={2.5} />
               For futures prop-firm traders
             </div>
             <h1 className="mt-5 text-[28px] font-semibold leading-[1.1] tracking-tight [text-wrap:balance] sm:text-[36px] lg:text-[46px]">
-              Prop firm rules, <span className="bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent dark:from-amber-400 dark:to-amber-300">in plain English</span>.
+              Prop firm rules, <span className="text-amber-500">in plain English</span>.
               <span className="block text-slate-700 dark:text-slate-300">Plus a daily plan that keeps your account alive.</span>
             </h1>
             <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400 sm:text-[16px]">
@@ -425,7 +421,7 @@ export default function Landing() {
             <WaitlistForm size="lg" className="mt-6 max-w-lg" onSuccess={handleSignupSuccess} />
             <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">
               {waitlistCount != null
-                ? <><b className="tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} on the list — early access drops at 100. No spam.</>
+                ? <><b className="font-mono tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} on the list — early access drops at 100. No spam.</>
                 : <>No spam. Early access drops when we hit 100 signups.</>}
             </p>
           </div>
@@ -449,6 +445,9 @@ export default function Landing() {
           </div>
 
           <div className="mt-12 grid gap-4 sm:grid-cols-3 sm:gap-5">
+            {/* Brand identity: single amber accent. All three feature cards
+                use the same amber treatment — differentiation is by icon
+                shape and copy, not color. */}
             <FeatureCard
               icon={BookOpen}
               title="Decoded rules"
@@ -459,13 +458,13 @@ export default function Landing() {
               icon={Target}
               title="Daily trade plan"
               body="Every morning: how many contracts you can trade, what you're aiming for, what your max loss is. Calculated from your live balance, drawdown floor, and remaining target."
-              tone="emerald"
+              tone="amber"
             />
             <FeatureCard
               icon={LineChart}
               title="Across all your accounts"
               body="Track every eval and funded account in one place. See real P&L across eval fees, activations, resets, and payouts — so you know if a firm actually paid back."
-              tone="blue"
+              tone="amber"
             />
           </div>
         </div>
@@ -525,7 +524,7 @@ export default function Landing() {
             <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">FAQ</div>
             <h2 className="mt-2 text-[28px] font-semibold tracking-tight sm:text-[32px]">Quick answers</h2>
           </div>
-          <div className="mt-10 rounded-lg border border-slate-200 bg-white px-5 dark:border-slate-800 dark:bg-slate-900">
+          <div className="mt-10 rounded-none border border-slate-200 bg-white px-5 dark:border-slate-800 dark:bg-slate-900">
             <FaqItem q="Who is this for?">
               Futures prop-firm traders running one or more eval or funded accounts — especially if you juggle multiple firms or trade through a copier. If you've ever written "DD floor?" or "consistency adj?" in a notebook, you're the audience.
             </FaqItem>
@@ -546,9 +545,9 @@ export default function Landing() {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────── */}
-      <section className="border-t border-slate-100 bg-gradient-to-b from-slate-50/60 to-white dark:border-slate-900 dark:from-slate-950 dark:to-slate-950">
+      <section className="border-t border-slate-100 bg-slate-50/60 dark:border-slate-900 dark:bg-slate-950">
         <div className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 sm:py-20">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <div className="inline-flex items-center gap-1.5 rounded-none border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
             <TrendingUp size={11} strokeWidth={2.5} className="text-amber-600 dark:text-amber-400" />
             Early access
           </div>
@@ -561,7 +560,7 @@ export default function Landing() {
           <WaitlistForm size="lg" className="mx-auto mt-8 max-w-lg" onSuccess={handleSignupSuccess} />
           <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">
             {waitlistCount != null
-              ? <>Join <b className="tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} already on the list. No spam.</>
+              ? <>Join <b className="font-mono tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} already on the list. No spam.</>
               : <>No spam. Unsubscribe any time.</>}
           </p>
         </div>
@@ -594,8 +593,8 @@ function FeatureCard({ icon: Icon, title, body, tone = "slate" }) {
     slate:   "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   }[tone] || "bg-slate-100 text-slate-700";
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${toneBg}`}>
+    <div className="rounded-none border border-slate-200 bg-white p-6 transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700">
+      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-none ${toneBg}`}>
         <Icon size={17} strokeWidth={2.25} />
       </div>
       <h3 className="mt-4 text-[16px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">{title}</h3>
@@ -606,10 +605,10 @@ function FeatureCard({ icon: Icon, title, body, tone = "slate" }) {
 
 function StepCard({ n, title, icon: Icon, children }) {
   return (
-    <li className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+    <li className="rounded-none border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-3">
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[12px] font-bold text-white dark:bg-blue-600">{n}</span>
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-none bg-amber-500 text-[12px] font-bold text-slate-950">{n}</span>
+        <div className="flex h-7 w-7 items-center justify-center rounded-none bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
           <Icon size={14} strokeWidth={2.25} />
         </div>
       </div>

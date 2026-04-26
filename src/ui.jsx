@@ -17,43 +17,46 @@ export const cx = (...args) => args.filter(Boolean).join(" ");
 // Button
 // ═══════════════════════════════════════════════════════════
 
+// Sharp 90° corners + amber primary action per mindOS brand identity.
+// No drop shadows on flat surfaces — `shadow-sm` is reserved for interactive
+// affordances (buttons) where it slightly grounds them against page bg.
 const BUTTON_BASE =
   "inline-flex items-center justify-center gap-1.5 font-medium " +
   "transition-colors duration-150 " +
-  "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 " +
   "focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950 " +
   "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none " +
   "whitespace-nowrap select-none";
 
 const BUTTON_VARIANTS = {
+  // Primary CTAs use brand amber — single dominant action color across the app.
+  // Text is navy on amber for AA contrast (white on amber-500 fails AA).
   primary:
-    "bg-blue-600 text-white hover:bg-blue-700 " +
-    "dark:bg-blue-500 dark:hover:bg-blue-600 " +
-    "shadow-sm",
+    "bg-amber-500 text-slate-950 hover:bg-amber-400 " +
+    "dark:bg-amber-500 dark:hover:bg-amber-400 dark:text-slate-950",
   secondary:
     "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 " +
     "dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800 " +
-    "dark:hover:bg-slate-800 dark:hover:border-slate-700 " +
-    "shadow-sm",
+    "dark:hover:bg-slate-800 dark:hover:border-slate-700",
   ghost:
     "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 " +
     "dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
   danger:
     "bg-red-600 text-white hover:bg-red-700 " +
-    "dark:bg-red-500 dark:hover:bg-red-600 " +
-    "shadow-sm",
+    "dark:bg-red-500 dark:hover:bg-red-600",
   "ghost-danger":
     "bg-transparent text-red-600 hover:bg-red-50 hover:text-red-700 " +
     "dark:text-red-400 dark:hover:bg-red-950/50 dark:hover:text-red-300",
 };
 
+// Sharp corners across all sizes — terminal-aesthetic per brand identity.
 const BUTTON_SIZES = {
-  xs: "h-7 px-2.5 text-xs rounded-md",
-  sm: "h-8 px-3 text-[13px] rounded-md",
-  md: "h-9 px-4 text-sm rounded-lg",
-  lg: "h-10 px-5 text-sm rounded-lg",
-  "icon-sm": "h-8 w-8 rounded-md",
-  "icon-md": "h-9 w-9 rounded-lg",
+  xs: "h-7 px-2.5 text-xs rounded-none",
+  sm: "h-8 px-3 text-[13px] rounded-none",
+  md: "h-9 px-4 text-sm rounded-none",
+  lg: "h-10 px-5 text-sm rounded-none",
+  "icon-sm": "h-8 w-8 rounded-none",
+  "icon-md": "h-9 w-9 rounded-none",
 };
 
 export const Button = forwardRef(function Button(
@@ -127,7 +130,7 @@ export function Card({
   return (
     <Tag
       className={cx(
-        "rounded-lg border border-slate-200 bg-white",
+        "rounded-none border border-slate-200 bg-white",
         "dark:border-slate-800 dark:bg-slate-900",
         elevated && "shadow-soft",
         hover && "transition-colors duration-150 hover:border-slate-300 dark:hover:border-slate-700",
@@ -220,9 +223,11 @@ const BADGE_VARIANTS = {
   info:
     "bg-blue-50 text-blue-700 border-blue-200 " +
     "dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900",
+  // The single brand-amber badge — used for primary highlights (selection
+  // counts, "new", etc). Blue stays reserved for the semantic `info` variant.
   accent:
-    "bg-blue-600 text-white border-blue-600 " +
-    "dark:bg-blue-500 dark:border-blue-500",
+    "bg-amber-500 text-slate-950 border-amber-500 " +
+    "dark:bg-amber-500 dark:border-amber-500 dark:text-slate-950",
 };
 
 const BADGE_SIZES = {
@@ -242,7 +247,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1 rounded-full border font-medium tabular-nums",
+        "inline-flex items-center gap-1 rounded-none border font-medium font-mono tabular-nums",
         BADGE_VARIANTS[variant] || BADGE_VARIANTS.neutral,
         BADGE_SIZES[size] || BADGE_SIZES.md,
         className
@@ -307,7 +312,7 @@ export function StatTile({
         {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className={cx("mt-0.5 font-semibold tabular-nums tracking-tight leading-tight", valueCls, t.accent)}>
+      <div className={cx("mt-0.5 font-semibold font-mono tabular-nums tracking-tight leading-tight", valueCls, t.accent)}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>}
@@ -369,7 +374,7 @@ export function KpiRow({ children, cols, className, dividers = true, flat = fals
   const gridCls = cx("grid grid-cols-2 sm:grid-cols-3", lgClass);
   const wrapper = flat
     ? "overflow-hidden"
-    : "overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900";
+    : "overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900";
   return (
     <div className={cx(wrapper, className)}>
       <div className={cx(gridCls, dividers && "divide-x divide-y divide-slate-100 dark:divide-slate-800")}>
@@ -408,7 +413,7 @@ export function DataTable({
 
   // Desktop: proper table.
   const desktop = (
-    <div className="hidden md:block overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="hidden md:block overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <div className="max-w-full overflow-x-auto">
         <table className="w-full text-[12.5px]">
           <thead className={cx(stickyHeader && "sticky top-0 z-10 bg-slate-50/80 backdrop-blur dark:bg-slate-900/80")}>
@@ -453,7 +458,7 @@ export function DataTable({
                         className={cx(
                           tdPad,
                           "align-middle text-slate-900 dark:text-slate-100",
-                          c.mono && "tabular-nums",
+                          c.mono && "font-mono tabular-nums",
                           c.align === "right" ? "text-right" : c.align === "center" ? "text-center" : "text-left",
                           c.className
                         )}
@@ -482,7 +487,7 @@ export function DataTable({
             key={k}
             onClick={onRowClick ? () => onRowClick(r, i) : undefined}
             className={cx(
-              "rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900",
+              "rounded-none border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900",
               onRowClick && "cursor-pointer active:bg-slate-50 dark:active:bg-slate-800/40"
             )}
           >
@@ -494,7 +499,7 @@ export function DataTable({
                     <dt className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 self-center">
                       {c.header}
                     </dt>
-                    <dd className={cx("text-slate-900 dark:text-slate-100", c.mono && "tabular-nums", "text-right")}>
+                    <dd className={cx("text-slate-900 dark:text-slate-100", c.mono && "font-mono tabular-nums", "text-right")}>
                       {val}
                     </dd>
                   </div>
@@ -588,7 +593,7 @@ export function Modal({
       <div
         ref={panelRef}
         className={cx(
-          "relative w-full rounded-xl border border-slate-200 bg-white shadow-soft-lg",
+          "relative w-full rounded-none border border-slate-200 bg-white shadow-soft-lg",
           "dark:border-slate-800 dark:bg-slate-900",
           "animate-scale-in overflow-hidden",
           sizeClass,
@@ -614,7 +619,7 @@ export function Modal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close dialog"
-                className="-m-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="-m-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-none text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
               >
                 <X size={16} />
               </button>
@@ -638,13 +643,13 @@ export function Modal({
 // ═══════════════════════════════════════════════════════════
 
 const INPUT_BASE =
-  "block w-full rounded-md border bg-white text-slate-900 placeholder-slate-400 " +
+  "block w-full rounded-none border bg-white text-slate-900 placeholder-slate-400 " +
   "border-slate-300 shadow-sm " +
   "transition-colors duration-150 " +
-  "focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 " +
+  "focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 " +
   "disabled:opacity-50 disabled:cursor-not-allowed " +
   "dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500 " +
-  "dark:border-slate-700 dark:focus:border-blue-500";
+  "dark:border-slate-700 dark:focus:border-amber-500";
 
 const INPUT_SIZES = {
   sm: "h-8 px-2.5 text-[13px]",
@@ -818,11 +823,11 @@ export function Tabs({ tabs, value, onChange, className, ariaLabel = "Tabs" }) {
             className={cx(
               "group relative inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-medium",
               "transition-colors duration-150",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2",
               "dark:focus-visible:ring-offset-slate-950",
               t.disabled && "opacity-40 cursor-not-allowed",
               active
-                ? "text-blue-700 dark:text-blue-400"
+                ? "text-slate-900 dark:text-slate-100"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
             )}
           >
@@ -831,9 +836,9 @@ export function Tabs({ tabs, value, onChange, className, ariaLabel = "Tabs" }) {
             {t.badge != null && (
               <span
                 className={cx(
-                  "ml-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums",
+                  "ml-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-none px-1 text-[10px] font-semibold font-mono tabular-nums",
                   active
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
+                    ? "bg-amber-500 text-slate-950"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
                 )}
               >
@@ -844,8 +849,8 @@ export function Tabs({ tabs, value, onChange, className, ariaLabel = "Tabs" }) {
             <span
               aria-hidden="true"
               className={cx(
-                "pointer-events-none absolute inset-x-2 -bottom-px h-[2px] rounded-t-full transition-opacity duration-150",
-                active ? "bg-blue-600 dark:bg-blue-500 opacity-100" : "opacity-0"
+                "pointer-events-none absolute inset-x-2 -bottom-px h-[2px] transition-opacity duration-150",
+                active ? "bg-amber-500 opacity-100" : "opacity-0"
               )}
             />
           </button>
@@ -863,7 +868,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
   return (
     <div
       className={cx(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/40 px-6 py-12 text-center",
+        "flex flex-col items-center justify-center rounded-none border border-dashed border-slate-200 bg-white/40 px-6 py-12 text-center",
         "dark:border-slate-800 dark:bg-slate-900/40",
         className
       )}
@@ -871,7 +876,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       {Icon && (
         <div
           aria-hidden="true"
-          className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+          className="mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
         >
           <Icon size={18} strokeWidth={2} />
         </div>
@@ -940,7 +945,7 @@ export function Alert({ variant = "info", title, children, className, ...rest })
   return (
     <div
       role="alert"
-      className={cx("flex items-start gap-2.5 rounded-lg border px-3.5 py-2.5 text-[13px]", v.wrap, className)}
+      className={cx("flex items-start gap-2.5 rounded-none border px-3.5 py-2.5 text-[13px]", v.wrap, className)}
       {...rest}
     >
       <Icon size={16} strokeWidth={2.25} className={cx("mt-0.5 shrink-0", v.icon)} aria-hidden="true" />

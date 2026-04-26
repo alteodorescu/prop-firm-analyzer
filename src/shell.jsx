@@ -119,9 +119,9 @@ export function NavRail({
                   title={collapsed ? it.label : undefined}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "group relative flex w-full items-center gap-2.5 rounded-md text-[13px] font-medium transition-colors",
+                    "group relative flex w-full items-center gap-2.5 rounded-none text-[13px] font-medium transition-colors",
                     collapsed ? "h-9 justify-center px-0" : "h-9 px-2.5",
-                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950",
                     active
                       ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
                       : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
@@ -131,7 +131,7 @@ export function NavRail({
                   {!collapsed && <span className="min-w-0 flex-1 truncate text-left">{it.label}</span>}
                   {!collapsed && it.badge != null && (
                     <span className={cx(
-                      "inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums",
+                      "inline-flex h-5 min-w-[20px] items-center justify-center rounded-none px-1 text-[11px] font-semibold font-mono tabular-nums",
                       active
                         ? "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300"
                         : "bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -165,7 +165,7 @@ export function NavRail({
           onClick={() => setCollapsed(v => !v)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className={cx(
-            "mt-1.5 flex w-full items-center justify-center rounded-md py-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
+            "mt-1.5 flex w-full items-center justify-center rounded-none py-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200"
           )}
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -217,7 +217,7 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
                 aria-current={active ? "page" : undefined}
                 className={cx(
                   "relative flex w-full flex-col items-center justify-center gap-0.5 py-2 text-[10.5px] font-medium",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500",
                   active
                     ? "text-blue-700 dark:text-blue-400"
                     : "text-slate-500 dark:text-slate-400"
@@ -266,7 +266,7 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
         <div
           ref={sheetRef}
           role="menu"
-          className="absolute bottom-full right-2 mb-2 min-w-[180px] rounded-lg border border-slate-200 bg-white shadow-soft-lg dark:border-slate-800 dark:bg-slate-900"
+          className="absolute bottom-full right-2 mb-2 min-w-[180px] rounded-none border border-slate-200 bg-white shadow-soft-lg dark:border-slate-800 dark:bg-slate-900"
         >
           <ul className="py-1">
             {overflow.map(it => {
@@ -288,7 +288,7 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
                     {Icon && <Icon size={14} strokeWidth={2.25} aria-hidden="true" />}
                     <span className="flex-1">{it.label}</span>
                     {it.badge != null && (
-                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 px-1 text-[11px] font-semibold tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                      <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-none bg-slate-100 px-1 text-[11px] font-semibold font-mono tabular-nums text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {it.badge}
                       </span>
                     )}

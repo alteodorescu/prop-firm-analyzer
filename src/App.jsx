@@ -274,7 +274,7 @@ function Tip({ text }) {
       {show && createPortal(
         <div
           role="tooltip"
-          className="pointer-events-none fixed z-[9999] w-72 whitespace-pre-line rounded-lg bg-slate-900 px-3 py-2.5 text-[12px] leading-relaxed text-slate-100 shadow-soft-lg ring-1 ring-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-300"
+          className="pointer-events-none fixed z-[9999] w-72 whitespace-pre-line rounded-none bg-slate-900 px-3 py-2.5 text-[12px] leading-relaxed text-slate-100 shadow-soft-lg ring-1 ring-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-300"
           style={{ top: pos.top, left: pos.left, transform: "translate(-50%, -100%)" }}
         >
           {text}
@@ -315,7 +315,7 @@ function RichTextEditor({ value, onChange }) {
     setTimeout(() => { el.focus(); el.setSelectionRange(start + before.length, end + before.length); }, 0);
   };
 
-  const toolBtn = "inline-flex h-6 w-7 items-center justify-center rounded border border-slate-300 text-[11.5px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800";
+  const toolBtn = "inline-flex h-6 w-7 items-center justify-center rounded border border-slate-300 text-[11.5px] font-semibold text-slate-700 transition-colors hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800";
   return (
     <div className="col-span-2">
       <label className={FIELD_LABEL_CLS}>{t("notes")}</label>
@@ -336,7 +336,7 @@ function RichTextEditor({ value, onChange }) {
       />
       {value && (
         <div
-          className="mt-1.5 rounded-md border border-slate-200 bg-slate-50 p-2 text-[13px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300"
+          className="mt-1.5 rounded-none border border-slate-200 bg-slate-50 p-2 text-[13px] leading-relaxed text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300"
           dangerouslySetInnerHTML={{ __html: renderRichNotes(value) }}
         />
       )}
@@ -358,7 +358,7 @@ function Section({ title, open, onToggle, children, accent, icon: Icon }) {
   return (
     <div
       className={
-        "mt-2.5 overflow-hidden rounded-lg border border-slate-200 bg-white transition-colors duration-150 " +
+        "mt-2.5 overflow-hidden rounded-none border border-slate-200 bg-white transition-colors duration-150 " +
         "dark:border-slate-800 dark:bg-slate-900/60"
       }
     >
@@ -368,7 +368,7 @@ function Section({ title, open, onToggle, children, accent, icon: Icon }) {
         aria-expanded={open}
         className={
           "group flex w-full items-center justify-between gap-2.5 px-3 py-2.5 text-left transition-colors duration-150 " +
-          "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 " +
+          "hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 " +
           "dark:hover:bg-slate-800/40"
         }
       >
@@ -412,7 +412,7 @@ function Stat({ label, value, tip, sub }) {
         {label}
         {tip && <Tip text={tip} />}
       </div>
-      <div className="text-[13px] font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+      <div className="text-[13px] font-semibold font-mono tabular-nums text-slate-900 dark:text-slate-100">
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400">{sub}</div>}
@@ -425,9 +425,9 @@ function Stat({ label, value, tip, sub }) {
 // ═══════════════════════════════════════════════════════════
 // Base input classes — used by Field, inline forms, and form dialogs
 const FIELD_INPUT_CLS =
-  "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 placeholder-slate-400 shadow-sm " +
+  "w-full rounded-none border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 placeholder-slate-400 shadow-sm " +
   "transition-colors duration-150 " +
-  "focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+  "focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
   "disabled:opacity-50 disabled:cursor-not-allowed " +
   "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500";
 const FIELD_LABEL_CLS =
@@ -502,10 +502,10 @@ function EaseTile({ value, label, tip, isPrimary }) {
                               "bg-slate-400";
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-md border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40"
+      className="flex flex-col items-center justify-center rounded-none border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40"
       title={label}
     >
-      <div className={"tabular-nums font-semibold leading-none " + (isPrimary ? "text-[17px]" : "text-[14px]") + " " + textCls}>
+      <div className={"font-mono tabular-nums font-semibold leading-none " + (isPrimary ? "text-[17px]" : "text-[14px]") + " " + textCls}>
         {pct(value)}
       </div>
       <div className="mt-1 flex items-center gap-1 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
@@ -525,7 +525,7 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
   return (
     <div
       className={
-        "group relative overflow-hidden rounded-lg border bg-white transition-colors duration-150 " +
+        "group relative overflow-hidden rounded-none border bg-white transition-colors duration-150 " +
         "dark:bg-slate-900 " +
         easeBorder(f.overallEase)
       }
@@ -563,7 +563,7 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
               <div className="text-[10.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 {t("totalCost")}
               </div>
-              <div className="text-[13px] font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+              <div className="text-[13px] font-semibold font-mono tabular-nums text-slate-900 dark:text-slate-100">
                 {money(f.totalCost)}
               </div>
             </div>
@@ -604,8 +604,8 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
             <EaseTile value={f.easeToPass} label="Pass" tip={TIPS.easeToPass} />
           )}
           <EaseTile value={f.easeToGetPaid} label="Paid" tip={TIPS.easeToGetPaid} />
-          <div className="flex flex-col items-center justify-center rounded-md border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
-            <div className="text-[14px] font-semibold leading-none tabular-nums text-blue-700 dark:text-blue-400">{pct(f.maxRoi)}</div>
+          <div className="flex flex-col items-center justify-center rounded-none border border-slate-100 bg-slate-50/60 px-2 py-2 dark:border-slate-800 dark:bg-slate-900/40">
+            <div className="text-[14px] font-semibold leading-none font-mono tabular-nums text-blue-700 dark:text-blue-400">{pct(f.maxRoi)}</div>
             <div className="mt-1 flex items-center gap-1 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-blue-500" />
               <span>ROI</span>
@@ -725,7 +725,7 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
             <Stat label={t("reqBalMax")} value={money(f.reqBalMax)} tip={TIPS.reqBalance} />
           </div>
           {f.payoutTiers && f.payoutTiers.length > 0 && (
-            <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+            <div className="mt-3 rounded-none border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
               <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
                 <Layers size={11} strokeWidth={2.5} aria-hidden="true" />
                 {t("payoutTiers")}
@@ -733,13 +733,13 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
               <div className="space-y-1">
                 {f.payoutTiers.map((pt, i) => (
                   <div key={i} className="flex flex-wrap items-baseline gap-x-2 text-[12px] text-slate-600 dark:text-slate-400">
-                    <span className="inline-flex h-4 min-w-[20px] items-center justify-center rounded-full bg-blue-100 px-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
+                    <span className="inline-flex h-4 min-w-[20px] items-center justify-center rounded-none bg-blue-100 px-1 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/60 dark:text-blue-300">
                       #{i + 1}
                     </span>
-                    <span className="tabular-nums">
+                    <span className="font-mono tabular-nums">
                       min <span className="font-semibold text-slate-800 dark:text-slate-200">{money(pt.min || 0)}</span>
                     </span>
-                    <span className="tabular-nums">
+                    <span className="font-mono tabular-nums">
                       max{" "}
                       {pt.max != null ? (
                         <span className="font-semibold text-slate-800 dark:text-slate-200">{money(pt.max)}</span>
@@ -748,7 +748,7 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
                       )}
                     </span>
                     {pt.max != null && f.split && (
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 tabular-nums">
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono tabular-nums">
                         (net: {money((pt.max || 0) * f.split)})
                       </span>
                     )}
@@ -800,7 +800,7 @@ function FirmCard({ firm, rank, onEdit, onDelete }) {
         </Section>
 
         {f.notes && (
-          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+          <div className="mt-3 rounded-none border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
             <div className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               <Info size={11} strokeWidth={2.5} aria-hidden="true" />
               {t("notes")}
@@ -821,7 +821,7 @@ function MetaStat({ label, value, valueClass = "" }) {
   return (
     <span className="inline-flex items-baseline gap-1">
       <span className="text-slate-400 dark:text-slate-500">{label}:</span>
-      <span className={"font-semibold tabular-nums text-slate-800 dark:text-slate-200 " + valueClass}>{value}</span>
+      <span className={"font-semibold font-mono tabular-nums text-slate-800 dark:text-slate-200 " + valueClass}>{value}</span>
     </span>
   );
 }
@@ -837,33 +837,33 @@ const BEST_PLAN_DAY_TONES = {
 };
 function BestPlan({ tone, target, days, endValue, endLabel }) {
   return (
-    <div className={"mt-3 rounded-xl border p-3 " + BEST_PLAN_TONES[tone]}>
+    <div className={"mt-3 rounded-none border p-3 " + BEST_PLAN_TONES[tone]}>
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wide">
           <Target size={11} strokeWidth={2.5} aria-hidden="true" />
           {t("bestPlan")}
           <Tip text={TIPS.dailyTarget} />
         </div>
-        <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
           {days} {t("days")}
         </div>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className="text-[20px] font-bold tabular-nums">{money(target)}</span>
+        <span className="text-[20px] font-bold font-mono tabular-nums">{money(target)}</span>
         <span className="text-[12px] font-medium opacity-70">{t("perDay")}</span>
       </div>
-      <div className="mb-2 text-[11.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+      <div className="mb-2 text-[11.5px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
         {money(target)} × {days} {t("days")} = {money(endValue)} {endLabel}
       </div>
       <div className="flex flex-wrap gap-1">
         {Array.from({ length: days }, (_, i) => (
           <div
             key={i}
-            className={"rounded-md px-2 py-1 text-center " + BEST_PLAN_DAY_TONES[tone]}
+            className={"rounded-none px-2 py-1 text-center " + BEST_PLAN_DAY_TONES[tone]}
             style={{ minWidth: "3.5rem" }}
           >
             <div className="text-[9.5px] opacity-70">D{i + 1}</div>
-            <div className="text-[11.5px] font-bold tabular-nums">{money(target)}</div>
+            <div className="text-[11.5px] font-bold font-mono tabular-nums">{money(target)}</div>
           </div>
         ))}
       </div>
@@ -874,19 +874,19 @@ function BestPlan({ tone, target, days, endValue, endLabel }) {
 // ── Scaling detail sub-card ──
 function ScalingDetail({ factor, tiers, maxNQ }) {
   return (
-    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-950/40">
+    <div className="mt-2 rounded-none border border-slate-200 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-950/40">
       <div className="flex items-center gap-1.5 text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
         <Layers size={11} strokeWidth={2.5} aria-hidden="true" />
         {t("scalingFactor")}
         <Tip text={TIPS.scalingFactor} />
       </div>
       <div className="mt-0.5 flex items-baseline gap-1.5">
-        <span className="text-[13px] font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+        <span className="text-[13px] font-semibold font-mono tabular-nums text-amber-700 dark:text-amber-400">
           {pct(factor)}
         </span>
         <span className="text-[11px] text-slate-500 dark:text-slate-400">— {t("contractsLimited")}</span>
       </div>
-      <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
+      <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
         {tiers.map((ti, i) => {
           const prev = i > 0 ? tiers[i - 1].upTo : 0;
           const isLast = i === tiers.length - 1;
@@ -908,8 +908,8 @@ function ScalingDetail({ factor, tiers, maxNQ }) {
 // ═══════════════════════════════════════════════════════════
 // Compact inline tier-editor input
 const TIER_INPUT_CLS =
-  "rounded-md border border-slate-300 bg-white px-2 py-1 text-[12.5px] tabular-nums text-slate-900 shadow-sm " +
-  "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+  "rounded-none border border-slate-300 bg-white px-2 py-1 text-[12.5px] font-mono tabular-nums text-slate-900 shadow-sm " +
+  "transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
   "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
 
 function PayoutTierEditor({ tiers, onChange }) {
@@ -937,7 +937,7 @@ function PayoutTierEditor({ tiers, onChange }) {
         return (
           <div
             key={i}
-            className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
+            className="flex flex-wrap items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
           >
             <Badge variant="info" size="sm" className="shrink-0">#{i + 1}</Badge>
             <div className="flex items-center gap-1">
@@ -1027,11 +1027,11 @@ function ScalingTierEditor({ tiers, onChange, maxContracts }) {
         return (
           <div
             key={i}
-            className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
+            className="flex flex-wrap items-center gap-2 rounded-none border border-slate-200 bg-slate-50/60 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950/40"
           >
             <Badge variant="neutral" size="sm" className="shrink-0">{i + 1}</Badge>
             <div className="flex items-center gap-1 text-[12px]">
-              <span className="tabular-nums text-slate-500 dark:text-slate-400">${prevUpTo.toLocaleString()}</span>
+              <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">${prevUpTo.toLocaleString()}</span>
               <span className="text-slate-300 dark:text-slate-700" aria-hidden="true">–</span>
               <span className="text-slate-400 dark:text-slate-500">$</span>
               <input
@@ -1077,7 +1077,7 @@ function ScalingTierEditor({ tiers, onChange, maxContracts }) {
         {t("addTier")}
       </Button>
       {rows.length > 0 && (
-        <div className="text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+        <div className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
           Above ${(rows[rows.length - 1]?.upTo || 0).toLocaleString()}: {maxContracts || "?"} contracts (max NQ from Basic Info)
         </div>
       )}
@@ -1143,8 +1143,8 @@ function FirmForm({ initial, onSave, onCancel }) {
   }, [onCancel]);
 
   const selectCls =
-    "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
-    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "w-full rounded-none border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
 
   return createPortal(
@@ -1162,7 +1162,7 @@ function FirmForm({ initial, onSave, onCancel }) {
           <div className="flex items-center gap-2.5 min-w-0">
             <span
               aria-hidden="true"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+              className="flex h-8 w-8 items-center justify-center rounded-none bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
             >
               <Building2 size={15} strokeWidth={2.25} />
             </span>
@@ -1205,7 +1205,7 @@ function FirmForm({ initial, onSave, onCancel }) {
                     aria-pressed={form.resetCost === "na"}
                     title={form.resetCost === "na" ? "Resets not available — click to enable" : "Mark as no resets available"}
                     className={
-                      "shrink-0 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+                      "shrink-0 rounded-none border px-2 py-1.5 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 " +
                       (form.resetCost === "na"
                         ? "border-red-300 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400"
                         : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800")
@@ -1315,14 +1315,14 @@ function FirmForm({ initial, onSave, onCancel }) {
 // ═══════════════════════════════════════════════════════════
 function MetricBlock({ titleKey, formulaKey, inputsKey, descKey, exampleKey }) {
   return (
-    <article className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-soft transition-shadow duration-150 hover:shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
+    <article className="space-y-3 rounded-none border border-slate-200 bg-white p-5 shadow-soft transition-shadow duration-150 hover:shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
       <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">
         {t(titleKey)}
       </h3>
 
       {formulaKey && (
         <MetricSection label={t("mgFormula")} tone="indigo" icon={Calculator}>
-          <pre className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200">
+          <pre className="whitespace-pre-wrap rounded-none border border-slate-200 bg-slate-50 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-200">
             {t(formulaKey)}
           </pre>
         </MetricSection>
@@ -1344,7 +1344,7 @@ function MetricBlock({ titleKey, formulaKey, inputsKey, descKey, exampleKey }) {
 
       {exampleKey && (
         <MetricSection label={t("mgExample")} tone="amber" icon={Target}>
-          <pre className="whitespace-pre-wrap rounded-md border border-amber-200 bg-amber-50/60 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-slate-200">
+          <pre className="whitespace-pre-wrap rounded-none border border-amber-200 bg-amber-50/60 p-3 font-mono text-[11.5px] leading-relaxed text-slate-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-slate-200">
             {t(exampleKey)}
           </pre>
         </MetricSection>
@@ -1387,7 +1387,7 @@ function GuideSection({ variant, title, children }) {
       <div className={"mb-4 flex items-center gap-2.5 border-b-2 pb-2 " + border}>
         <span
           aria-hidden="true"
-          className={"flex h-7 w-7 items-center justify-center rounded-md " + chip}
+          className={"flex h-7 w-7 items-center justify-center rounded-none " + chip}
         >
           <Icon size={14} strokeWidth={2.25} />
         </span>
@@ -1405,7 +1405,7 @@ function MetricsGuide() {
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Title & intro */}
       <header className="text-center">
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-soft">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-br from-blue-500 to-indigo-600 shadow-soft">
           <BookOpen size={18} strokeWidth={2.25} className="text-white" aria-hidden="true" />
         </div>
         <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -1459,7 +1459,7 @@ function HowItWorks({ open, onToggle }) {
   return (
     <div
       className={
-        "overflow-hidden rounded-xl border bg-white shadow-soft transition-colors duration-150 " +
+        "overflow-hidden rounded-none border bg-white shadow-soft transition-colors duration-150 " +
         "border-slate-200 dark:border-slate-800 dark:bg-slate-900"
       }
     >
@@ -1471,14 +1471,14 @@ function HowItWorks({ open, onToggle }) {
         className={
           "group flex w-full items-center justify-between gap-3 px-4 py-3 text-left " +
           "transition-colors duration-150 hover:bg-slate-50 focus:outline-none " +
-          "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 " +
+          "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 " +
           "dark:hover:bg-slate-800/40"
         }
       >
         <span className="flex items-center gap-2.5 min-w-0">
           <span
             aria-hidden="true"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-none bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
           >
             <Calculator size={13} strokeWidth={2.25} />
           </span>
@@ -1628,8 +1628,8 @@ function RankBadge({ rank }) {
     <span
       aria-label={`Rank ${rank}`}
       className={
-        "inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1 " +
-        "text-[11px] font-bold tabular-nums " + cls
+        "inline-flex h-6 min-w-[24px] items-center justify-center rounded-none px-1 " +
+        "text-[11px] font-bold font-mono tabular-nums " + cls
       }
     >
       {rank}
@@ -1755,7 +1755,7 @@ function ComparisonTable({ firms, sortKey, onSort, onFirmClick }) {
                     <button
                       type="button"
                       onClick={() => onFirmClick(f.id)}
-                      className="group/link inline-flex items-center gap-1 rounded text-left text-[13.5px] font-semibold leading-tight text-blue-700 transition-colors hover:text-blue-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                      className="group/link inline-flex items-center gap-1 rounded text-left text-[13.5px] font-semibold leading-tight text-blue-700 transition-colors hover:text-blue-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       <span className="truncate">{f.name}</span>
                       <ExternalLink
@@ -1801,7 +1801,7 @@ function ComparisonTable({ firms, sortKey, onSort, onFirmClick }) {
                       <td
                         key={col.key}
                         className={
-                          "px-2 py-2.5 text-center tabular-nums align-middle " +
+                          "px-2 py-2.5 text-center font-mono tabular-nums align-middle " +
                           cellCls +
                           (col.primary ? " text-[14px] font-bold" : "")
                         }
@@ -2290,10 +2290,10 @@ function parseCsvToJournal(csvText, startBalance) {
 function JournalEntryForm({ onSave, onCancel, initial }) {
   const [form, setForm] = useState(initial || { date: new Date().toISOString().slice(0, 10), balance: "", pnl: "", trades: "", notes: "" });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const inputCls = "w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
   const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+    <div className="space-y-2 rounded-none border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div>
           <label className={labelCls}>Date</label>
@@ -2343,10 +2343,10 @@ const METRIC_TONES = {
 function MetricBadge({ label, value, sub, color }) {
   const cls = METRIC_TONES[color] || METRIC_TONES.gray;
   return (
-    <div className={"rounded-lg border px-2.5 py-2 text-center " + cls}>
+    <div className={"rounded-none border px-2.5 py-2 text-center " + cls}>
       <div className="text-[10px] font-medium uppercase tracking-wide opacity-70">{label}</div>
-      <div className="mt-0.5 text-[15px] font-bold leading-tight tabular-nums">{value}</div>
-      {sub && <div className="mt-0.5 text-[10px] leading-tight opacity-65 tabular-nums">{sub}</div>}
+      <div className="mt-0.5 text-[15px] font-bold leading-tight font-mono tabular-nums">{value}</div>
+      {sub && <div className="mt-0.5 text-[10px] leading-tight opacity-65 font-mono tabular-nums">{sub}</div>}
     </div>
   );
 }
@@ -2399,17 +2399,17 @@ function PayoutForm({ currentBalance, firmData, onSave, onCancel, payoutNumber }
   const belowMin = grossAmount > 0 && grossAmount < tierMin;
   const aboveMax = grossAmount > 0 && tierMax != null && grossAmount > tierMax;
 
-  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const inputCls = "w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
   const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+    <div className="space-y-2 rounded-none border border-emerald-200 bg-emerald-50/70 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[12px] font-semibold text-emerald-800 dark:text-emerald-300">
           <Award size={13} strokeWidth={2.5} aria-hidden="true" />
           Record Payout #{payoutNumber || 1}
         </div>
         {payoutTiers.length > 0 && (
-          <div className="text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+          <div className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
             Tier limits: min {money(tierMin)}{tierMax != null ? ` — max ${money(tierMax)}` : " — no max limit"}
           </div>
         )}
@@ -2433,7 +2433,7 @@ function PayoutForm({ currentBalance, firmData, onSave, onCancel, payoutNumber }
             />
           </div>
           {grossAmount > 0 && split < 1 && (
-            <div className="mt-0.5 text-[10.5px] text-emerald-700 dark:text-emerald-400 tabular-nums">Net after {(split * 100).toFixed(0)}% split: {money(netAmount)}</div>
+            <div className="mt-0.5 text-[10.5px] text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">Net after {(split * 100).toFixed(0)}% split: {money(netAmount)}</div>
           )}
           {belowMin && <div className="mt-0.5 text-[10.5px] text-red-600 dark:text-red-400">Below minimum payout ({money(tierMin)})</div>}
           {aboveMax && <div className="mt-0.5 text-[10.5px] text-red-600 dark:text-red-400">Exceeds maximum payout ({money(tierMax)})</div>}
@@ -2475,10 +2475,10 @@ function ResetForm({ firmData, defaultCost, startBalance, onSave, onCancel }) {
   const [newBalance, setNewBalance] = useState(startBalance);
   const [notes, setNotes] = useState("");
 
-  const inputCls = "w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+  const inputCls = "w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[13px] text-slate-900 outline-none transition-colors focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
   const labelCls = "mb-1 block text-[11px] font-medium text-slate-600 dark:text-slate-400";
   return (
-    <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+    <div className="space-y-2 rounded-none border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900 dark:bg-amber-950/30">
       <div className="flex items-center gap-1.5 text-[12px] font-semibold text-amber-800 dark:text-amber-300">
         <RefreshCw size={13} strokeWidth={2.5} aria-hidden="true" />
         Reset Account
@@ -2660,7 +2660,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
   return (
     <div
       className={
-        "group relative overflow-hidden rounded-lg border bg-white transition-colors duration-150 " +
+        "group relative overflow-hidden rounded-none border bg-white transition-colors duration-150 " +
         "dark:bg-slate-900 " + cardBorder
       }
     >
@@ -2707,28 +2707,28 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
           {/* Collapsed compact stats */}
           {collapsed && f && (
             <div className="ml-auto flex min-w-0 shrink items-center gap-3 overflow-hidden text-[11.5px] text-slate-500 dark:text-slate-400">
-              <span className="shrink-0 tabular-nums">
+              <span className="shrink-0 font-mono tabular-nums">
                 P&L:{" "}
                 <b className={m.totalPnl >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}>
                   {money(m.totalPnl)}
                 </b>
               </span>
-              <span className="shrink-0 tabular-nums">
+              <span className="shrink-0 font-mono tabular-nums">
                 DD:{" "}
                 <b className={m.ddPct >= 0.5 ? "text-emerald-600 dark:text-emerald-400" : m.ddPct >= 0.25 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>
                   {(m.ddPct * 100).toFixed(0)}%
                 </b>
               </span>
-              <span className="shrink-0 tabular-nums">{(m.pctComplete * 100).toFixed(0)}% complete</span>
+              <span className="shrink-0 font-mono tabular-nums">{(m.pctComplete * 100).toFixed(0)}% complete</span>
               {m.todayPlan && !m.todayPlan.isBreached && !m.todayPlan.isTargetHit && m.todayPlan.contractsAllowed && (
-                <span className="hidden shrink-0 border-l border-slate-200 pl-3 tabular-nums dark:border-slate-700 lg:inline">
+                <span className="hidden shrink-0 border-l border-slate-200 pl-3 font-mono tabular-nums dark:border-slate-700 lg:inline">
                   <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.contractsAllowed}</b> NQ → aim{" "}
                   <b className="text-emerald-600 dark:text-emerald-400">{money(m.todayPlan.idealDailyTarget)}</b> / max loss{" "}
                   <b className="text-red-600 dark:text-red-400">{money(m.todayPlan.maxDailyLoss)}</b>
                 </span>
               )}
               {m.totalPayouts > 0 && (
-                <span className="hidden shrink-0 tabular-nums sm:inline">
+                <span className="hidden shrink-0 font-mono tabular-nums sm:inline">
                   Paid: <b className="text-emerald-600 dark:text-emerald-400">{money(m.totalPayouts)}</b>
                 </span>
               )}
@@ -2752,8 +2752,8 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
             title={account.autoEnabled ? t("autoEnabled") : t("autoDisabled")}
             aria-pressed={!!account.autoEnabled}
             className={
-              "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11.5px] font-semibold transition-colors duration-150 " +
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+              "inline-flex h-7 items-center gap-1 rounded-none px-2 text-[11.5px] font-semibold transition-colors duration-150 " +
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 " +
               (account.autoEnabled
                 ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/60"
                 : "text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200")
@@ -2785,7 +2785,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 px-4 pb-2 pl-5 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
         <span className="inline-flex items-center gap-1">
           <Clock size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />
-          {t("started")} <span className="tabular-nums">{account.startDate || "—"}</span>
+          {t("started")} <span className="font-mono tabular-nums">{account.startDate || "—"}</span>
         </span>
         <span className="text-slate-300 dark:text-slate-700">·</span>
         <span>{entries.length} {t("journalEntries")}</span>
@@ -2831,7 +2831,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 <select
                   value={account.autoSessions || "both"}
                   onChange={(e) => onUpdate({ ...account, autoSessions: e.target.value })}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="london">{t("autoSessionLondon")}</option>
                   <option value="ny">{t("autoSessionNy")}</option>
@@ -2845,7 +2845,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                   value={account.tradovateAccountId || ""}
                   onChange={(e) => onUpdate({ ...account, tradovateAccountId: e.target.value })}
                   placeholder={t("autoTradovateIdPlaceholder")}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
               <div>
@@ -2855,7 +2855,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                   value={account.tradovateUsername || ""}
                   onChange={(e) => onUpdate({ ...account, tradovateUsername: e.target.value })}
                   placeholder={t("autoTradovateUsernamePlaceholder")}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
               <div>
@@ -2865,7 +2865,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                   value={account.tradovatePassword || ""}
                   onChange={(e) => onUpdate({ ...account, tradovatePassword: e.target.value })}
                   placeholder={t("autoTradovatePasswordPlaceholder")}
-                  className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full rounded-none border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -2896,7 +2896,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
           {m.todayPlan && !m.todayPlan.isBreached && (
             <div
               className={
-                "space-y-2 rounded-lg border p-3 " +
+                "space-y-2 rounded-none border p-3 " +
                 (m.todayPlan.isTargetHit
                   ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-900 dark:bg-emerald-950/30"
                   : "border-slate-200 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-950/40")
@@ -2928,18 +2928,18 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                     <div className="text-[13px] text-emerald-800 dark:text-emerald-300">
                       <b>{t("requestPayout", m.todayPlan.nextPayoutNum)}</b>
                       {m.todayPlan.payoutMax != null ? (
-                        <> — {t("min")} <span className="tabular-nums">{money(m.todayPlan.payoutMin)}</span>, {t("max")} <span className="tabular-nums">{money(m.todayPlan.payoutMax)}</span></>
+                        <> — {t("min")} <span className="font-mono tabular-nums">{money(m.todayPlan.payoutMin)}</span>, {t("max")} <span className="font-mono tabular-nums">{money(m.todayPlan.payoutMax)}</span></>
                       ) : (
-                        <> — {t("min")} <span className="tabular-nums">{money(m.todayPlan.payoutMin)}</span>, <span className="font-semibold">{t("unlimited")}</span></>
+                        <> — {t("min")} <span className="font-mono tabular-nums">{money(m.todayPlan.payoutMin)}</span>, <span className="font-semibold">{t("unlimited")}</span></>
                       )}
                     </div>
                   ) : (
                     <div className="text-[13px] text-emerald-800 dark:text-emerald-300">
-                      <b>{t("advanceToFunded")}</b> {t("profitTarget").toLowerCase()} {t("of")} <span className="tabular-nums">{money(m.target)}</span> {t("met").toLowerCase()}.
+                      <b>{t("advanceToFunded")}</b> {t("profitTarget").toLowerCase()} {t("of")} <span className="font-mono tabular-nums">{money(m.target)}</span> {t("met").toLowerCase()}.
                     </div>
                   )}
                   {m.todayPlan.contractsAllowed && (
-                    <div className="text-[11.5px] text-slate-500 dark:text-slate-400 tabular-nums">
+                    <div className="text-[11.5px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                       {t("allowed")}: <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.contractsAllowed}</b> / {m.todayPlan.maxContracts || "?"} {t("contracts").toLowerCase()}
                       {m.todayPlan.maxDailyProfit != null && <> • Max safe day profit: <b className="text-amber-700 dark:text-amber-400">{money(m.todayPlan.maxDailyProfit)}</b></>}
                       {m.todayPlan.maxDailyLoss > 0 && <> • Max loss: <b className="text-red-600 dark:text-red-400">{money(m.todayPlan.maxDailyLoss)}</b></>}
@@ -2990,7 +2990,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                   {/* Guardrails row */}
                   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11.5px] text-slate-500 dark:text-slate-400">
                     {m.todayPlan.maxDailyProfit != null && (
-                      <span className="tabular-nums">
+                      <span className="font-mono tabular-nums">
                         {m.todayPlan.maxDailyProfitReason === "consistency" ? (
                           <>{t("doNotProfit")} <b className="text-amber-700 dark:text-amber-400">{money(m.todayPlan.maxDailyProfit)}</b> ({t("consistency").toLowerCase()})</>
                         ) : (
@@ -2998,14 +2998,14 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                         )}
                       </span>
                     )}
-                    <span className="tabular-nums">
+                    <span className="font-mono tabular-nums">
                       {t("ddRoom")}: <b className={m.ddPct >= 0.5 ? "text-emerald-600 dark:text-emerald-400" : m.ddPct >= 0.25 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>{money(m.roomToDD)}</b> ({(m.ddPct * 100).toFixed(0)}%)
                     </span>
                     {m.todayPlan.daysNeeded > 0 && (
-                      <span className="tabular-nums">{t("profitDaysNeeded")}: <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.daysNeeded}</b></span>
+                      <span className="font-mono tabular-nums">{t("profitDaysNeeded")}: <b className="text-slate-700 dark:text-slate-300">{m.todayPlan.daysNeeded}</b></span>
                     )}
                     {m.phase === "funded" && m.todayPlan.payoutMax != null && (
-                      <span className="tabular-nums">{t("payoutMax", m.todayPlan.nextPayoutNum)}: <b className="text-blue-600 dark:text-blue-400">{money(m.todayPlan.payoutMax)}</b></span>
+                      <span className="font-mono tabular-nums">{t("payoutMax", m.todayPlan.nextPayoutNum)}: <b className="text-blue-600 dark:text-blue-400">{money(m.todayPlan.payoutMax)}</b></span>
                     )}
                   </div>
                 </div>
@@ -3023,16 +3023,16 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
 
           {/* Secondary stats */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-slate-500 dark:text-slate-400">
-            <span className="tabular-nums">
+            <span className="font-mono tabular-nums">
               Win rate: <b className="text-slate-700 dark:text-slate-300">{(m.winRate * 100).toFixed(0)}%</b> ({m.wins}W / {m.losses}L)
             </span>
-            <span className="tabular-nums">Peak: <b className="text-slate-700 dark:text-slate-300">{money(m.peakBal)}</b></span>
-            <span className="tabular-nums">MLL: {money(m.mll)} ({m.mllType})</span>
+            <span className="font-mono tabular-nums">Peak: <b className="text-slate-700 dark:text-slate-300">{money(m.peakBal)}</b></span>
+            <span className="font-mono tabular-nums">MLL: {money(m.mll)} ({m.mllType})</span>
             {m.resetCount > 0 && (
-              <span className="tabular-nums">Resets: <b className="text-amber-600 dark:text-amber-400">{m.resetCount}</b> (cost: {money(m.totalResetCost)})</span>
+              <span className="font-mono tabular-nums">Resets: <b className="text-amber-600 dark:text-amber-400">{m.resetCount}</b> (cost: {money(m.totalResetCost)})</span>
             )}
             {m.resetCount > 0 && m.resetsToBreakeven != null && (
-              <span className="tabular-nums">
+              <span className="font-mono tabular-nums">
                 Resets to breakeven:{" "}
                 <b className={m.resetsToBreakeven > 0 ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400"}>
                   {m.resetsToBreakeven > 0 ? m.resetsToBreakeven : "exceeded"}
@@ -3043,7 +3043,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
 
           {/* ── Rules Compliance Panel ── */}
           {m.rules && m.rules.length > 0 && (
-            <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+            <div className="space-y-1.5 rounded-none border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
               <div className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                 <ShieldAlert size={12} strokeWidth={2.5} aria-hidden="true" />
                 Rules Compliance
@@ -3053,13 +3053,13 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
               {/* Consistency target adjustment callouts */}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "challenge" && (
                 <Alert variant="danger" className="mt-2" title="Target adjusted">
-                  <span className="tabular-nums">{money(m.baseTarget)} → {money(m.consistencyAdjTarget)} (+{money(m.consistencyAdjTarget - m.baseTarget)}).</span>
-                  {m.consistencyGap > 0 && <> Need <b className="tabular-nums">{money(m.consistencyGap)}</b> more profit to become compliant, or spread profits across more days.</>}
+                  <span className="font-mono tabular-nums">{money(m.baseTarget)} → {money(m.consistencyAdjTarget)} (+{money(m.consistencyAdjTarget - m.baseTarget)}).</span>
+                  {m.consistencyGap > 0 && <> Need <b className="font-mono tabular-nums">{money(m.consistencyGap)}</b> more profit to become compliant, or spread profits across more days.</>}
                 </Alert>
               )}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "funded" && m.consistencyGap > 0 && (
                 <Alert variant="danger" className="mt-2" title="Payout eligibility at risk">
-                  Need <b className="tabular-nums">{money(m.consistencyGap)}</b> more profit spread across other days before requesting max payout.
+                  Need <b className="font-mono tabular-nums">{money(m.consistencyGap)}</b> more profit spread across other days before requesting max payout.
                 </Alert>
               )}
               {m.consistencyAdjTarget > m.baseTarget && m.phase === "funded" && m.consistencyGap <= 0 && m.allRulesMet && (
@@ -3080,7 +3080,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
               type="button"
               onClick={() => setShowPayouts(!showPayouts)}
               aria-expanded={showPayouts}
-              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-slate-100"
+              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-400 dark:hover:text-slate-100"
             >
               <ChevronDown
                 size={14}
@@ -3132,10 +3132,10 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {[...payouts].reverse().map(p => (
                     <tr key={p.id} className="transition-colors hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20">
-                      <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{p.date}</td>
-                      <td className="px-2 py-1.5 text-right font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{money(p.amount)}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">{money(p.netAmount || p.amount)}</td>
-                      <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(p.newBalance)}</td>
+                      <td className="px-2 py-1.5 font-mono tabular-nums text-slate-600 dark:text-slate-400">{p.date}</td>
+                      <td className="px-2 py-1.5 text-right font-semibold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{money(p.amount)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono tabular-nums text-emerald-700 dark:text-emerald-300">{money(p.netAmount || p.amount)}</td>
+                      <td className="px-2 py-1.5 text-right font-medium font-mono tabular-nums text-slate-700 dark:text-slate-200">{money(p.newBalance)}</td>
                       <td className="max-w-[150px] truncate px-2 py-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">{p.notes || ""}</td>
                       <td className="px-2 py-1.5 text-right">
                         <button
@@ -3153,10 +3153,10 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 <tfoot>
                   <tr className="border-t border-slate-200 text-[11.5px] font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">
                     <td className="px-2 py-1.5">Total ({payouts.length})</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                       {money(payouts.reduce((s, p) => s + (p.amount || 0), 0))}
                     </td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-emerald-700 dark:text-emerald-300">
                       {money(payouts.reduce((s, p) => s + (p.netAmount || p.amount || 0), 0))}
                     </td>
                     <td colSpan={3}></td>
@@ -3176,7 +3176,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
               type="button"
               onClick={() => setShowResets(!showResets)}
               aria-expanded={showResets}
-              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-slate-100"
+              className="group/t inline-flex items-center gap-1.5 rounded text-[13px] font-medium text-slate-600 transition-colors hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-400 dark:hover:text-slate-100"
             >
               <ChevronDown
                 size={14}
@@ -3233,10 +3233,10 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {[...resets].reverse().map((r, i) => (
                     <tr key={r.id} className="transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20">
-                      <td className="px-2 py-1.5 tabular-nums text-[11.5px] text-slate-400 dark:text-slate-500">{resets.length - i}</td>
-                      <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{r.date}</td>
-                      <td className="px-2 py-1.5 text-right font-semibold tabular-nums text-red-600 dark:text-red-400">{money(r.cost)}</td>
-                      <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(r.newBalance)}</td>
+                      <td className="px-2 py-1.5 font-mono tabular-nums text-[11.5px] text-slate-400 dark:text-slate-500">{resets.length - i}</td>
+                      <td className="px-2 py-1.5 font-mono tabular-nums text-slate-600 dark:text-slate-400">{r.date}</td>
+                      <td className="px-2 py-1.5 text-right font-semibold font-mono tabular-nums text-red-600 dark:text-red-400">{money(r.cost)}</td>
+                      <td className="px-2 py-1.5 text-right font-medium font-mono tabular-nums text-slate-700 dark:text-slate-200">{money(r.newBalance)}</td>
                       <td className="max-w-[150px] truncate px-2 py-1.5 text-[11.5px] text-slate-500 dark:text-slate-400">{r.notes || ""}</td>
                       <td className="px-2 py-1.5 text-right">
                         <button
@@ -3254,7 +3254,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 <tfoot>
                   <tr className="border-t border-slate-200 text-[11.5px] font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">
                     <td colSpan={2} className="px-2 py-1.5">Total ({resets.length} reset{resets.length !== 1 ? "s" : ""})</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums text-red-600 dark:text-red-400">
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-red-600 dark:text-red-400">
                       {money(resets.reduce((s, r) => s + (r.cost || 0), 0))}
                     </td>
                     <td colSpan={3}></td>
@@ -3269,7 +3269,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
               <Alert variant={m.resetsToBreakeven > 0 ? "warn" : "danger"}>
                 <b>Resets left to breakeven at current reset price ({money(firmData?.resetPrice || resets[resets.length - 1]?.cost || 0)}):</b>{" "}
                 {m.resetsToBreakeven > 0 ? (
-                  <span className="tabular-nums">{m.resetsToBreakeven}</span>
+                  <span className="font-mono tabular-nums">{m.resetsToBreakeven}</span>
                 ) : (
                   <span>Already exceeded — net loss from resets</span>
                 )}
@@ -3286,7 +3286,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
             type="button"
             onClick={() => setShowJournal(!showJournal)}
             aria-expanded={showJournal}
-            className="flex w-full items-center justify-between gap-2 px-4 py-2 pl-5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800/40"
+            className="flex w-full items-center justify-between gap-2 px-4 py-2 pl-5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 dark:text-slate-400 dark:hover:bg-slate-800/40"
           >
             <span className="flex items-center gap-1.5">
               <ChevronDown
@@ -3325,7 +3325,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                 </div>
               )}
               {importMsg && (
-                <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                <div className="rounded-none border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                   {importMsg}
                 </div>
               )}
@@ -3368,14 +3368,14 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                               (dd?.dllBreach || dd?.mllBreach ? "bg-red-50/50 dark:bg-red-950/20" : "")
                             }
                           >
-                            <td className="px-2 py-1.5 tabular-nums text-slate-600 dark:text-slate-400">{e.date}</td>
-                            <td className="px-2 py-1.5 text-right font-medium tabular-nums text-slate-700 dark:text-slate-200">{money(e.balance)}</td>
+                            <td className="px-2 py-1.5 font-mono tabular-nums text-slate-600 dark:text-slate-400">{e.date}</td>
+                            <td className="px-2 py-1.5 text-right font-medium font-mono tabular-nums text-slate-700 dark:text-slate-200">{money(e.balance)}</td>
                             {(() => {
                               const displayPnl = dd ? dd.pnl : (e.pnl || 0);
                               return (
                                 <td
                                   className={
-                                    "px-2 py-1.5 text-right font-semibold tabular-nums " +
+                                    "px-2 py-1.5 text-right font-semibold font-mono tabular-nums " +
                                     (displayPnl > 0
                                       ? "text-emerald-600 dark:text-emerald-400"
                                       : displayPnl < 0
@@ -3387,7 +3387,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                                 </td>
                               );
                             })()}
-                            <td className="px-2 py-1.5 text-right tabular-nums text-slate-500 dark:text-slate-400">{e.trades || "—"}</td>
+                            <td className="px-2 py-1.5 text-right font-mono tabular-nums text-slate-500 dark:text-slate-400">{e.trades || "—"}</td>
                             <td className="px-2 py-1.5 text-center">
                               {flags.length > 0 ? (
                                 <div className="flex flex-wrap items-center justify-center gap-0.5">
@@ -3396,7 +3396,7 @@ function AccountCard({ account, firmData, onUpdate, onDelete, collapsed, onToggl
                                       key={i}
                                       title={fl.tip}
                                       className={
-                                        "inline-flex h-4 items-center rounded px-1 text-[9.5px] font-bold tabular-nums " +
+                                        "inline-flex h-4 items-center rounded px-1 text-[9.5px] font-bold font-mono tabular-nums " +
                                         (fl.variant === "danger-solid"
                                           ? "bg-red-600 text-white"
                                           : fl.variant === "danger"
@@ -3464,16 +3464,16 @@ const PLAN_STAT_VAL_TONES = {
 };
 function PlanStat({ tone = "slate", icon: Icon, label, value, sub, extra }) {
   return (
-    <div className={"rounded-lg border bg-white p-2.5 text-center dark:bg-slate-900 " + PLAN_STAT_TONES[tone]}>
+    <div className={"rounded-none border bg-white p-2.5 text-center dark:bg-slate-900 " + PLAN_STAT_TONES[tone]}>
       <div className="flex items-center justify-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
         <span className={"inline-flex h-4 w-4 items-center justify-center rounded " + PLAN_STAT_CHIP_TONES[tone]} aria-hidden="true">
           <Icon size={10} strokeWidth={2.5} />
         </span>
         <span>{label}</span>
       </div>
-      <div className={"mt-0.5 text-[17px] font-bold leading-tight tabular-nums " + PLAN_STAT_VAL_TONES[tone]}>{value}</div>
-      {sub && <div className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400 tabular-nums">{sub}</div>}
-      {extra && <div className="mt-0.5 text-[10.5px] tabular-nums">{extra}</div>}
+      <div className={"mt-0.5 text-[17px] font-bold leading-tight font-mono tabular-nums " + PLAN_STAT_VAL_TONES[tone]}>{value}</div>
+      {sub && <div className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">{sub}</div>}
+      {extra && <div className="mt-0.5 text-[10.5px] font-mono tabular-nums">{extra}</div>}
     </div>
   );
 }
@@ -3650,12 +3650,12 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
   };
 
   const selectCls =
-    "w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
-    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "w-full rounded-none border border-slate-300 bg-white px-3 py-1.5 text-[13px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
   const miniInputCls =
-    "w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-[12.5px] text-slate-900 shadow-sm " +
-    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "w-full rounded-none border border-slate-300 bg-white px-2 py-1 text-[12.5px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
   const miniLabelCls = "mb-0.5 block text-[10.5px] font-medium text-slate-500 dark:text-slate-400";
 
@@ -3663,11 +3663,11 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
   if (bulkAccounts) {
     const validCount = bulkAccounts.filter(a => !a.error).length;
     return (
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
+              <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-none bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400">
                 <Upload size={12} strokeWidth={2.5} />
               </span>
               <h3 className="text-[14px] font-semibold text-slate-900 dark:text-slate-100">
@@ -3693,7 +3693,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
             <div
               key={a.key}
               className={
-                "rounded-lg border p-3 transition-colors " +
+                "rounded-none border p-3 transition-colors " +
                 (a.error
                   ? "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/30"
                   : "border-slate-200 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-950/40")
@@ -3736,7 +3736,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
                   <label className={miniLabelCls}>{t("startBal")}</label>
                   <input
                     type="number"
-                    className={miniInputCls + " tabular-nums"}
+                    className={miniInputCls + " font-mono tabular-nums"}
                     value={a.startBalance}
                     onChange={e => updateBulkAccount(a.key, "startBalance", Number(e.target.value))}
                   />
@@ -3785,12 +3785,12 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
   // ── Single account mode ──
   const importBorderCls = importedJournal ? "!border-blue-400 !bg-blue-50/40 dark:!bg-blue-950/20" : "";
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <header className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
         <div className="flex items-center gap-2">
           <span
             aria-hidden="true"
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+            className="flex h-7 w-7 items-center justify-center rounded-none bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
           >
             <Wallet size={14} strokeWidth={2.25} />
           </span>
@@ -3802,7 +3802,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
 
       <div className="space-y-3 p-4">
         {/* CSV Quick-start */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
+        <div className="rounded-none border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/30">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 text-[12px] font-semibold text-blue-800 dark:text-blue-300">
@@ -3825,7 +3825,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
             <input ref={fileInputRef} type="file" accept=".csv,.tsv,.txt" multiple className="hidden" onChange={handleCsvImport} />
           </div>
           {importMsg && (
-            <div className="mt-2 rounded-md border border-blue-200 bg-white px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-blue-900 dark:bg-slate-900 dark:text-slate-300">
+            <div className="mt-2 rounded-none border border-blue-200 bg-white px-2.5 py-1.5 text-[11.5px] text-slate-700 dark:border-blue-900 dark:bg-slate-900 dark:text-slate-300">
               {importMsg}
             </div>
           )}
@@ -3851,7 +3851,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
           <div>
             <label className={FIELD_LABEL_CLS}>{t("phase")}</label>
             {selectedFirm?.instant ? (
-              <div className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+              <div className="w-full rounded-none border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
                 {t("fundedInstant")}
               </div>
             ) : (
@@ -3879,7 +3879,7 @@ function NewAccountForm({ firms, onSave, onSaveBulk, onCancel }) {
               <span className="shrink-0 text-[13px] text-slate-400 dark:text-slate-500">$</span>
               <input
                 type="number"
-                className={FIELD_INPUT_CLS + " " + importBorderCls + " tabular-nums"}
+                className={FIELD_INPUT_CLS + " " + importBorderCls + " font-mono tabular-nums"}
                 value={startBalance}
                 onChange={e => setStartBalance(Number(e.target.value))}
               />
@@ -4147,16 +4147,16 @@ function FinancialDashboard({ accounts, firms }) {
             {data.firmRows.map(r => (
               <tr key={r.firmName} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                 <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.firmName}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.accountCount}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
-                <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">{r.accountCount}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
+                <td className={"px-3 py-2 text-right font-semibold font-mono tabular-nums " + pnlClr(r.pnl)}>
                   {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
                 </td>
-                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                <td className={"px-3 py-2 text-right font-mono tabular-nums " + roiClr(r.roi)}>
                   {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
               </tr>
             ))}
           </tbody>
@@ -4164,16 +4164,16 @@ function FinancialDashboard({ accounts, firms }) {
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50/70 text-[12px] font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300">
                 <td className="px-3 py-2">Total</td>
-                <td className="px-3 py-2 text-right tabular-nums">{data.totalAccounts}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(data.totalExpenses)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(data.totalIncome)}</td>
-                <td className={"px-3 py-2 text-right font-bold tabular-nums " + pnlClr(data.actualPnl)}>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{data.totalAccounts}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-red-600 dark:text-red-400">{money(data.totalExpenses)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{money(data.totalIncome)}</td>
+                <td className={"px-3 py-2 text-right font-bold font-mono tabular-nums " + pnlClr(data.actualPnl)}>
                   {data.actualPnl >= 0 ? "+" : ""}{money(data.actualPnl)}
                 </td>
-                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(data.actualRoi)}>
+                <td className={"px-3 py-2 text-right font-mono tabular-nums " + roiClr(data.actualRoi)}>
                   {data.totalExpenses > 0 ? `${data.actualRoi >= 0 ? "+" : ""}${(data.actualRoi * 100).toFixed(0)}%` : "—"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{data.payoutCount}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums">{data.payoutCount}</td>
               </tr>
             </tfoot>
           )}
@@ -4203,22 +4203,22 @@ function FinancialDashboard({ accounts, firms }) {
               }).reverse().map(r => (
                 <tr key={r.month} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                   <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{monthName(r.month)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-red-600 dark:text-red-400">
                     {r.expenses > 0 ? money(r.expenses) : <span className="text-slate-300 dark:text-slate-700">—</span>}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                     {r.income > 0 ? money(r.income) : <span className="text-slate-300 dark:text-slate-700">—</span>}
                   </td>
-                  <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                  <td className={"px-3 py-2 text-right font-semibold font-mono tabular-nums " + pnlClr(r.pnl)}>
                     {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
                   </td>
-                  <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                  <td className={"px-3 py-2 text-right font-mono tabular-nums " + roiClr(r.roi)}>
                     {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : <span className="text-slate-300 dark:text-slate-700">—</span>}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">
+                  <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">
                     {r.payouts > 0 ? r.payouts : <span className="text-slate-300 dark:text-slate-700">—</span>}
                   </td>
-                  <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.cumPnl)}>
+                  <td className={"px-3 py-2 text-right font-semibold font-mono tabular-nums " + pnlClr(r.cumPnl)}>
                     {r.cumPnl >= 0 ? "+" : ""}{money(r.cumPnl)}
                   </td>
                 </tr>
@@ -4238,16 +4238,16 @@ function FinancialDashboard({ accounts, firms }) {
               <tfoot>
                 <tr className="border-t-2 border-slate-300 bg-blue-50/60 text-[12px] font-bold text-slate-800 dark:border-slate-700 dark:bg-blue-950/30 dark:text-slate-200">
                   <td className="px-3 py-2.5">YTD {currentYear}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-red-600 dark:text-red-400">{ytdExpenses > 0 ? money(ytdExpenses) : "—"}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{ytdIncome > 0 ? money(ytdIncome) : "—"}</td>
-                  <td className={"px-3 py-2.5 text-right font-bold tabular-nums " + pnlClr(ytdPnl)}>
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums text-red-600 dark:text-red-400">{ytdExpenses > 0 ? money(ytdExpenses) : "—"}</td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{ytdIncome > 0 ? money(ytdIncome) : "—"}</td>
+                  <td className={"px-3 py-2.5 text-right font-bold font-mono tabular-nums " + pnlClr(ytdPnl)}>
                     {ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}
                   </td>
-                  <td className={"px-3 py-2.5 text-right tabular-nums " + roiClr(ytdRoi)}>
+                  <td className={"px-3 py-2.5 text-right font-mono tabular-nums " + roiClr(ytdRoi)}>
                     {ytdExpenses > 0 ? `${ytdRoi >= 0 ? "+" : ""}${(ytdRoi * 100).toFixed(0)}%` : "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{ytdPayouts > 0 ? ytdPayouts : "—"}</td>
-                  <td className={"px-3 py-2.5 text-right font-bold tabular-nums " + pnlClr(ytdPnl)}>
+                  <td className="px-3 py-2.5 text-right font-mono tabular-nums">{ytdPayouts > 0 ? ytdPayouts : "—"}</td>
+                  <td className={"px-3 py-2.5 text-right font-bold font-mono tabular-nums " + pnlClr(ytdPnl)}>
                     {ytdPnl >= 0 ? "+" : ""}{money(ytdPnl)}
                   </td>
                 </tr>
@@ -4274,15 +4274,15 @@ function FinancialDashboard({ accounts, firms }) {
             {data.yearRows.map(r => (
               <tr key={r.year} className="transition-colors duration-100 hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                 <td className="px-3 py-2 font-medium text-slate-900 dark:text-slate-100">{r.year}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
-                <td className="px-3 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
-                <td className={"px-3 py-2 text-right font-semibold tabular-nums " + pnlClr(r.pnl)}>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-red-600 dark:text-red-400">{money(r.expenses)}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{money(r.income)}</td>
+                <td className={"px-3 py-2 text-right font-semibold font-mono tabular-nums " + pnlClr(r.pnl)}>
                   {r.pnl >= 0 ? "+" : ""}{money(r.pnl)}
                 </td>
-                <td className={"px-3 py-2 text-right tabular-nums " + roiClr(r.roi)}>
+                <td className={"px-3 py-2 text-right font-mono tabular-nums " + roiClr(r.roi)}>
                   {r.expenses > 0 ? `${r.roi >= 0 ? "+" : ""}${(r.roi * 100).toFixed(0)}%` : "—"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-600 dark:text-slate-400">{r.payouts}</td>
               </tr>
             ))}
           </tbody>
@@ -4306,7 +4306,7 @@ function DashKpi({ icon: Icon, tone = "slate", label, value, sub, highlight }) {
   return (
     <div
       className={
-        "rounded-lg border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900 " +
+        "rounded-none border border-slate-200 bg-white px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900 " +
         (highlight ? "ring-1 ring-blue-500/20 dark:ring-blue-500/25" : "")
       }
     >
@@ -4314,7 +4314,7 @@ function DashKpi({ icon: Icon, tone = "slate", label, value, sub, highlight }) {
         {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className={"mt-0.5 text-[22px] font-semibold leading-tight tabular-nums tracking-tight " + accent}>
+      <div className={"mt-0.5 text-[22px] font-semibold leading-tight font-mono tabular-nums tracking-tight " + accent}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] leading-snug text-slate-500 dark:text-slate-400">{sub}</div>}
@@ -4331,9 +4331,9 @@ const DASH_CHIP_TONES = {
 function DashChip({ label, value, tone = "neutral" }) {
   const cls = DASH_CHIP_TONES[tone] || DASH_CHIP_TONES.neutral;
   return (
-    <span className={"inline-flex items-baseline gap-1 rounded-full border px-2.5 py-1 text-[11.5px] " + cls}>
+    <span className={"inline-flex items-baseline gap-1 rounded-none border px-2.5 py-1 text-[11.5px] " + cls}>
       <span className="text-slate-500 dark:text-slate-400">{label}:</span>
-      <span className="font-semibold tabular-nums">{value}</span>
+      <span className="font-semibold font-mono tabular-nums">{value}</span>
     </span>
   );
 }
@@ -4341,12 +4341,12 @@ function DashChip({ label, value, tone = "neutral" }) {
 // ── Dashboard table wrapper (Card + header + scrollable table) ──
 function DashTable({ title, icon: Icon, children }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+    <div className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
         {Icon && (
           <span
             aria-hidden="true"
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+            className="flex h-6 w-6 items-center justify-center rounded-none bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
           >
             <Icon size={12} strokeWidth={2.25} />
           </span>
@@ -4516,7 +4516,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
   // ── Empty state: no eligible accounts in the selected scope ──
   if (!unified) {
     return (
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <section className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Always render the group selector so the user can switch away */}
         {groupOptions.length > 1 && (
           <div className="border-b border-slate-100 px-5 py-3 dark:border-slate-800">
@@ -4586,13 +4586,13 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
   return (
     <section
       aria-labelledby="unified-obj-title"
-      className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
+      className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
     >
       {/* ── HEADER BAR ──────────────────────────────────────────── */}
       <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3 dark:border-slate-800">
         <div className="flex items-start gap-2.5 min-w-0">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm"
             aria-hidden="true"
           >
             <Zap size={14} className="text-white" strokeWidth={2.5} />
@@ -4614,13 +4614,13 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
 
         <div className="flex shrink-0 items-center gap-2">
           {unified.hasConflict && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+            <span className="inline-flex items-center gap-1 rounded-none border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
               <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
               <span>Conflict</span>
             </span>
           )}
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+            className="inline-flex items-center gap-1 rounded-none bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
             aria-label={`${active.length} of ${totalAccounts} accounts active`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -4649,7 +4649,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
             <Target size={11} strokeWidth={2.5} aria-hidden="true" />
             <span>Daily Target</span>
           </div>
-          <div className="mt-0.5 flex items-baseline gap-1 tabular-nums">
+          <div className="mt-0.5 flex items-baseline gap-1 font-mono tabular-nums">
             <span className="text-[12px] font-medium text-slate-400 dark:text-slate-500">$</span>
             <span className="text-[24px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100">
               {Math.round(unified.target).toLocaleString()}
@@ -4700,7 +4700,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
             return (
               <li
                 key={i}
-                className={`flex items-start gap-2.5 rounded-md border px-3 py-2 text-[12.5px] leading-snug ${cfg.rowClass}`}
+                className={`flex items-start gap-2.5 rounded-none border px-3 py-2 text-[12.5px] leading-snug ${cfg.rowClass}`}
               >
                 <IconEl
                   size={14}
@@ -4724,7 +4724,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
         onClick={() => setExpanded(v => !v)}
         aria-expanded={expanded}
         aria-controls={panelId}
-        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
+        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
       >
         <ChevronDown
           size={14}
@@ -4752,13 +4752,13 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
                 return (
                   <span
                     key={name}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    className="inline-flex items-center gap-1.5 rounded-none border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                   >
                     <span className="font-semibold text-slate-900 dark:text-slate-100">{name}</span>
                     <span className="text-slate-400 dark:text-slate-600">·</span>
                     <span className="text-slate-600 dark:text-slate-400">{g.active} acct{g.active !== 1 ? "s" : ""}</span>
                     <span className="text-slate-400 dark:text-slate-600">·</span>
-                    <span className="tabular-nums text-slate-700 dark:text-slate-300">
+                    <span className="font-mono tabular-nums text-slate-700 dark:text-slate-300">
                       {money(minT)}
                       {minT !== maxT ? `–${money(maxT)}` : ""}/day
                     </span>
@@ -4808,19 +4808,19 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
                         {money(m.todayPlan.idealDailyTarget)}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
                         {m.todayPlan.maxDailyProfit != null ? money(m.todayPlan.maxDailyProfit) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
                         {m.todayPlan.contractsAllowed}
                       </td>
-                      <td className="px-4 py-2 text-center tabular-nums text-slate-700 dark:text-slate-300">
+                      <td className="px-4 py-2 text-center font-mono tabular-nums text-slate-700 dark:text-slate-300">
                         {daysIndividual}
                       </td>
-                      <td className="px-4 py-2 text-center tabular-nums">
+                      <td className="px-4 py-2 text-center font-mono tabular-nums">
                         <span
                           className={
                             isSlower
@@ -4836,7 +4836,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
                       <td className="px-4 py-2">
                         {impact ? (
                           <span
-                            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                            className={`inline-flex items-center gap-1 rounded-none px-1.5 py-0.5 text-[11px] font-semibold ${
                               isSlower
                                 ? "bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300"
                                 : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
@@ -4872,7 +4872,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
                         </div>
                       </td>
                       <td colSpan={6} className="px-4 py-2 text-right text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
+                        <span className="inline-flex items-center gap-1 rounded-none bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">
                           <X size={10} strokeWidth={2.5} aria-hidden="true" />
                           {reason}
                         </span>
@@ -4892,7 +4892,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
         onClick={() => setNsExpanded(v => !v)}
         aria-expanded={nsExpanded}
         aria-controls={nsPanelId}
-        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
+        className="group flex w-full items-center justify-center gap-1.5 border-t border-slate-100 px-5 py-2.5 text-[12px] font-medium text-slate-500 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-slate-200 dark:focus-visible:bg-slate-800/40"
       >
         <Code2
           size={13}
@@ -4939,7 +4939,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
               </Button>
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
               <table className="w-full text-[12.5px]">
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {nsParams.map(p => (
@@ -4948,7 +4948,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
                         <div className="font-mono text-[11.5px] text-slate-700 dark:text-slate-300">{p.key}</div>
                         <div className="text-[10.5px] leading-tight text-slate-400 dark:text-slate-500">{p.label}</div>
                       </td>
-                      <td className="px-3 py-2 tabular-nums font-semibold text-slate-900 dark:text-slate-100">
+                      <td className="px-3 py-2 font-mono tabular-nums font-semibold text-slate-900 dark:text-slate-100">
                         {p.value}
                       </td>
                       <td className="hidden px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400 sm:table-cell">
@@ -4977,8 +4977,8 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
 // ─── Group selector (segmented control used inside UnifiedObjectiveCard) ───
 function GroupSelector({ options, allCount, value, onChange }) {
   const pillBase =
-    "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-medium " +
-    "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500";
+    "inline-flex h-7 items-center gap-1.5 rounded-none border px-2.5 text-[11.5px] font-medium " +
+    "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
   const active =
     "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300";
   const inactive =
@@ -5038,7 +5038,7 @@ function KpiCell({ icon: Icon, label, value, sub, tone = "slate" }) {
         {Icon && <Icon size={11} strokeWidth={2.25} aria-hidden="true" className="text-slate-400 dark:text-slate-500" />}
         <span>{label}</span>
       </div>
-      <div className={`mt-0.5 text-[22px] font-semibold tabular-nums leading-tight tracking-tight ${accent}`}>
+      <div className={`mt-0.5 text-[22px] font-semibold font-mono tabular-nums leading-tight tracking-tight ${accent}`}>
         {value}
       </div>
       {sub && <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">{sub}</div>}
@@ -5061,7 +5061,7 @@ function PillGroup({ label, value, onChange, options }) {
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/60"
+        className="flex items-center gap-0.5 rounded-none border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800/60"
       >
         {options.map(opt => {
           const selected = value === opt.value;
@@ -5073,7 +5073,7 @@ function PillGroup({ label, value, onChange, options }) {
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
               className={
-                "h-6 rounded px-2 text-[11.5px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 " +
+                "h-6 rounded px-2 text-[11.5px] font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 " +
                 (selected
                   ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100")
@@ -5331,9 +5331,9 @@ function AccountTracker({ accounts, onUpdate, firms }) {
         const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
         const someSelected = selectedIds.size > 0;
         const selectCls =
-          "h-8 appearance-none rounded-md border border-slate-300 bg-white pl-2.5 pr-7 text-[12.5px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
+          "h-8 appearance-none rounded-none border border-slate-300 bg-white pl-2.5 pr-7 text-[12.5px] text-slate-900 shadow-sm transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
         return (
-          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
+          <div className="overflow-hidden rounded-none border border-slate-200 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-900">
             <div className="flex flex-wrap items-center gap-2 px-3 py-2">
               {/* Select all */}
               <label
@@ -5363,7 +5363,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
                 />
                 <input
                   type="text"
-                  className="h-8 w-full rounded-md border border-slate-300 bg-white pl-8 pr-2.5 text-[13px] text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  className="h-8 w-full rounded-none border border-slate-300 bg-white pl-8 pr-2.5 text-[13px] text-slate-900 shadow-sm transition-colors placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
                   placeholder={t("searchAccounts")}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -5436,7 +5436,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
                 <button
                   type="button"
                   onClick={() => setSelectedIds(new Set())}
-                  className="text-[11.5px] font-medium text-blue-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400"
+                  className="text-[11.5px] font-medium text-blue-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-blue-400"
                 >
                   {t("deselectAll")}
                 </button>
@@ -5501,7 +5501,7 @@ function AccountTracker({ accounts, onUpdate, firms }) {
       </div>
 
       {archivedAccounts.length > 0 && (
-        <details className="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900/60">
+        <details className="mt-4 rounded-none border border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900/60">
           <summary className="cursor-pointer text-[13px] font-medium text-slate-500 transition-colors hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
             Archived accounts ({archivedAccounts.length})
           </summary>
@@ -5595,19 +5595,19 @@ function AuthInline() {
   };
 
   const inputCls =
-    "h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-[14px] text-slate-900 shadow-sm " +
-    "transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 " +
+    "h-10 w-full rounded-none border border-slate-300 bg-white px-3 text-[14px] text-slate-900 shadow-sm " +
+    "transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 " +
     "disabled:opacity-50 disabled:cursor-not-allowed " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100";
 
   return (
     <div className="mx-auto mt-8 max-w-md">
-      <div className="rounded-xl border border-slate-200 bg-white p-7 shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-none border border-slate-200 bg-white p-7 shadow-soft-md dark:border-slate-800 dark:bg-slate-900">
         {/* Brand lockup */}
         <div className="mb-5 flex flex-col items-center text-center">
           <div
             aria-hidden="true"
-            className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 shadow-soft"
+            className="mb-3 flex h-10 w-10 items-center justify-center rounded-none bg-gradient-to-br from-amber-400 to-amber-500 shadow-soft"
           >
             <Lock size={17} strokeWidth={2.25} className="text-white" />
           </div>
@@ -5692,7 +5692,7 @@ function AuthInline() {
           <button
             type="button"
             onClick={() => { setIsSignUp(!isSignUp); setError(""); setSuccessMessage(""); }}
-            className="ml-1.5 font-semibold text-blue-600 transition-colors hover:text-blue-700 focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            className="ml-1.5 font-semibold text-blue-600 transition-colors hover:text-blue-700 focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-blue-400 dark:hover:text-blue-300"
           >
             {isSignUp ? t("authSignIn") : t("authSignUp")}
           </button>
@@ -5774,13 +5774,13 @@ function AdminPanel({ getAdminUsers, addAdminUser, removeAdminUser, currentUserI
 
   return (
     <div className="mx-auto mt-2 max-w-2xl">
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="overflow-hidden rounded-none border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
           <div className="flex items-center gap-2.5">
             <div
               aria-hidden="true"
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+              className="flex h-8 w-8 items-center justify-center rounded-none bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
             >
               <Shield size={15} strokeWidth={2.25} />
             </div>
@@ -5810,7 +5810,7 @@ function AdminPanel({ getAdminUsers, addAdminUser, removeAdminUser, currentUserI
               onChange={e => setNewEmail(e.target.value)}
               placeholder={t("adminEmailPlaceholder")}
               aria-label={t("adminEmailPlaceholder")}
-              className="h-9 min-w-[200px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-[13.5px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="h-9 min-w-[200px] flex-1 rounded-none border border-slate-300 bg-white px-3 text-[13.5px] text-slate-900 shadow-sm transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
             <Button
               type="submit"
@@ -5838,7 +5838,7 @@ function AdminPanel({ getAdminUsers, addAdminUser, removeAdminUser, currentUserI
               description="Add a user above to grant admin privileges."
             />
           ) : (
-            <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-none border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
               {admins.map(admin => {
                 const isYou = admin.user_id === currentUserId;
                 return (
@@ -6020,7 +6020,7 @@ export default function App({ session, onSignOut }) {
       <button
         onClick={toggleLang}
         title={lang === "en" ? "Schimbă în Română" : "Switch to English"}
-        className="inline-flex h-8 items-center gap-1 rounded-md px-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+        className="inline-flex h-8 items-center gap-1 rounded-none px-2 text-[12px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
       >
         <Globe size={13} strokeWidth={2.25} />
         {lang === "en" ? "RO" : "EN"}
@@ -6086,11 +6086,11 @@ export default function App({ session, onSignOut }) {
             </Badge>
             <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
               <TrendingUp size={12} strokeWidth={2.25} aria-hidden="true" className="text-emerald-500" />
-              <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.maxNetProfit)}</span>
+              <span className="font-mono tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.maxNetProfit)}</span>
               <span className="text-slate-500 dark:text-slate-500">{t("maxProfit")}</span>
             </span>
             <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-              <span className="tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.totalCost)}</span>
+              <span className="font-mono tabular-nums font-medium text-slate-700 dark:text-slate-300">{money(best.totalCost)}</span>
               <span className="text-slate-500 dark:text-slate-500">{t("cost")}</span>
             </span>
           </div>
@@ -6131,7 +6131,7 @@ export default function App({ session, onSignOut }) {
                     id="firm-details-sort"
                     value={sortBy}
                     onChange={e => setSortBy(e.target.value)}
-                    className="h-8 appearance-none rounded-md border border-slate-300 bg-white pl-3 pr-8 text-[13px] text-slate-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    className="h-8 appearance-none rounded-none border border-slate-300 bg-white pl-3 pr-8 text-[13px] text-slate-900 shadow-sm transition-colors focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   >
                     {getSortOpts().map(o => (
                       <option key={o.key} value={o.key}>{o.label}</option>
