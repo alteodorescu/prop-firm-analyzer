@@ -19,6 +19,58 @@ import {
 } from "lucide-react";
 import { supabase } from "./supabaseClient.js";
 
+// ── UTM capture (first-touch attribution) ──────────────────────────────────
+// On first visit, parse utm_* params from the URL and persist them in
+// localStorage for up to 30 days. When the user finally signs up — possibly
+// days later, possibly after navigating around — we send those original
+// values along with the email. This is what tells the marketing prompt
+// which posts/threads/replies are actually converting.
+//
+// First-touch (not last-touch): we keep the originating UTM even if a later
+// visit lacks them. Pre-launch we care about *what brought them in*, not
+// *what triggered the click*.
+const UTM_KEY = "ppfa.utm";
+const UTM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function readPersistedUtm() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(UTM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.capturedAt) return null;
+    if (Date.now() - parsed.capturedAt > UTM_TTL_MS) return null;
+    return parsed;
+  } catch { return null; }
+}
+
+function captureFromUrl() {
+  if (typeof window === "undefined") return null;
+  const p = new URLSearchParams(window.location.search);
+  const utm = {
+    utm_source:   p.get("utm_source")   || null,
+    utm_medium:   p.get("utm_medium")   || null,
+    utm_campaign: p.get("utm_campaign") || null,
+    referrer:     (typeof document !== "undefined" && document.referrer) || null,
+    landing_path: window.location.pathname || null,
+    capturedAt:   Date.now(),
+  };
+  // Only persist if we got at least one UTM param — otherwise direct/organic
+  // visits would overwrite a prior real attribution.
+  const hasUtm = utm.utm_source || utm.utm_medium || utm.utm_campaign;
+  if (hasUtm) {
+    try { localStorage.setItem(UTM_KEY, JSON.stringify(utm)); } catch { /* noop */ }
+  }
+  return utm;
+}
+
+function getAttribution() {
+  // Prefer existing first-touch over fresh URL.
+  const existing = readPersistedUtm();
+  if (existing) return existing;
+  return captureFromUrl();
+}
+
 // Detect user's preferred theme. We don't use i18n on the landing page
 // — it's English-only for MVP since the waitlist is global-reach.
 function useDarkMode() {
@@ -49,12 +101,20 @@ function WaitlistForm({ size = "md", autoFocus = false, className }) {
     if (!trimmed) return;
     setStatus("loading");
     try {
+      // First-touch UTM capture. The function tries persisted localStorage
+      // first, then falls back to the current URL's utm_* params.
+      const attr = getAttribution() || {};
       const { error: err } = await supabase
         .from("waitlist")
         .insert({
           email: trimmed,
           source: "landing",
-          user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 255) : null,
+          utm_source:   attr.utm_source   || null,
+          utm_medium:   attr.utm_medium   || null,
+          utm_campaign: attr.utm_campaign || null,
+          referrer:     attr.referrer     || null,
+          landing_path: attr.landing_path || null,
+          user_agent:   typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 255) : null,
         });
       if (err) {
         // 23505 = unique violation (already on the list). Treat as a friendly success.
@@ -270,6 +330,11 @@ export default function Landing() {
   const [dark, setDark] = useDarkMode();
   const waitlistRef = useRef(null);
   const faqRef = useRef(null);
+
+  // Capture UTM on first paint so attribution is locked in even if the user
+  // bounces without filling the form. WaitlistForm reads localStorage at
+  // submit time — this effect just makes sure the entry is there early.
+  useEffect(() => { getAttribution(); }, []);
 
   const scrollTo = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
