@@ -4,8 +4,12 @@
 
 const translations = {
   // ── App title & header ──
-  appTitle: { en: "Futures Prop Firm Analyzer", ro: "Analizor Firme Prop Futures" },
-  appSubtitle: { en: "Compare, rank, and plan across {0} firms — auto-calculated", ro: "Compară, clasifică și planifică pentru {0} firme — calcul automat" },
+  // Brand: mindOS (wordmark "mind/os" with amber slash). The product line
+  // under the brand is "Futures Prop Firm Analyzer" — surfaced as a subtitle
+  // only on the landing/marketing pages.
+  appTitle: { en: "mindOS", ro: "mindOS" },
+  appSubtitle: { en: "prop firm rules, decoded", ro: "regulile prop firm, decodate" },
+  appProductLine: { en: "Futures Prop Firm Analyzer", ro: "Analizor Firme Prop Futures" },
   topPick: { en: "Top pick:", ro: "Prima alegere:" },
   overallEase: { en: "Overall Ease", ro: "Ușurință Generală" },
   maxProfit: { en: "max profit", ro: "profit maxim" },

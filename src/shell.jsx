@@ -23,6 +23,48 @@ const COLLAPSED_W = 64;
 const EXPANDED_W = 240;
 const STORAGE_KEY = "ppfa.navCollapsed";
 
+// ── BrandMark ───────────────────────────────────────────────────
+// The mindOS wordmark, rendered in code (no SVG asset needed).
+// Per brand-identity.md: lowercase `mind/os` with the slash in amber.
+// `compact` collapses to just the amber slash for narrow rails / favicons.
+// Sizes are tied to the rail / topbar 32px brand-mark slot.
+export function BrandMark({ compact = false, size = "md", className }) {
+  // Slot size: md = 32px tall (default sidebar/topbar), lg = bigger for hero
+  const slot = size === "lg" ? "h-10 text-[28px]" : size === "sm" ? "h-7 text-[18px]" : "h-8 text-[22px]";
+
+  if (compact) {
+    return (
+      <span
+        aria-label="mindOS"
+        className={cx(
+          "inline-flex items-center justify-center font-black leading-none text-amber-500",
+          slot,
+          "w-[1em]", // square-ish slot proportional to font size
+          className,
+        )}
+      >
+        /
+      </span>
+    );
+  }
+
+  return (
+    <span
+      aria-label="mindOS"
+      className={cx(
+        "inline-flex items-baseline font-black leading-none tracking-tight text-slate-900 dark:text-slate-100",
+        slot,
+        className,
+      )}
+      style={{ letterSpacing: "-0.02em" }}
+    >
+      <span>mind</span>
+      <span className="text-amber-500">/</span>
+      <span>os</span>
+    </span>
+  );
+}
+
 // ── NavRail ─────────────────────────────────────────────────
 
 export function NavRail({
@@ -40,7 +82,6 @@ export function NavRail({
     document.documentElement.style.setProperty("--nav-w", `${collapsed ? COLLAPSED_W : EXPANDED_W}px`);
   }, [collapsed]);
 
-  const Brand = brand?.icon;
   return (
     <aside
       aria-label="Primary navigation"
@@ -52,23 +93,14 @@ export function NavRail({
       )}
       style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
     >
-      {/* Brand */}
-      <div className={cx("flex h-14 items-center gap-2.5 border-b border-slate-200 dark:border-slate-800", collapsed ? "justify-center px-0" : "px-3.5")}>
-        {Brand && (
-          <div aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm">
-            <Brand size={16} strokeWidth={2.5} className="text-white" />
-          </div>
-        )}
-        {!collapsed && brand && (
+      {/* Brand — compact slash when collapsed, full wordmark expanded */}
+      <div className={cx("flex h-14 items-center gap-2 border-b border-slate-200 dark:border-slate-800", collapsed ? "justify-center px-0" : "px-3.5")}>
+        <BrandMark compact={collapsed} size="md" />
+        {!collapsed && brand?.subtitle && (
           <div className="min-w-0">
-            <div className="truncate text-[13px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
-              {brand.title}
+            <div className="truncate text-[10.5px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {brand.subtitle}
             </div>
-            {brand.subtitle && (
-              <div className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">
-                {brand.subtitle}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -276,23 +308,16 @@ export function BottomNav({ items, activeKey, onSelect, maxVisible = 5 }) {
 // sidebar already handles brand + nav). On mobile it shows brand + actions.
 
 export function TopBar({ brand, actions, children }) {
-  const Brand = brand?.icon;
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/85">
       <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-5">
         {/* Mobile brand (desktop shows it in the sidebar) */}
-        <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-          {Brand && (
-            <div aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm">
-              <Brand size={16} strokeWidth={2.5} className="text-white" />
-            </div>
-          )}
-          {brand && (
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-tight text-slate-900 dark:text-slate-100">
-                {brand.title}
-              </div>
-            </div>
+        <div className="flex min-w-0 items-center gap-2 lg:hidden">
+          <BrandMark size="md" />
+          {brand?.subtitle && (
+            <span className="hidden truncate text-[10.5px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:inline">
+              {brand.subtitle}
+            </span>
           )}
         </div>
         {/* Desktop: title/context (caller can provide) */}

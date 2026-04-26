@@ -18,6 +18,7 @@ import {
   TrendingUp, Mail, Globe, Sun, Moon,
 } from "lucide-react";
 import { supabase } from "./supabaseClient.js";
+import { BrandMark } from "./shell.jsx";
 
 // ── UTM capture (first-touch attribution) ──────────────────────────────────
 // On first visit, parse utm_* params from the URL and persist them in
@@ -227,8 +228,8 @@ function MockTracker() {
         <div className="space-y-2.5 p-3.5">
           <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
-              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-500">
-                <Zap size={10} strokeWidth={3} className="text-white" />
+              <div className="flex h-5 w-5 items-center justify-center bg-amber-500">
+                <Zap size={10} strokeWidth={3} className="text-slate-950" />
               </div>
               <div className="min-w-0">
                 <div className="truncate text-[11.5px] font-semibold text-slate-900 dark:text-slate-100">Trade Copier — Unified Plan</div>
@@ -376,14 +377,9 @@ export default function Landing() {
       {/* ── NAV ─────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur-md dark:border-slate-800/60 dark:bg-slate-950/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <a href="/" className="flex min-w-0 items-center gap-2.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950">
-            <div aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 shadow-sm">
-              <Award size={16} strokeWidth={2.5} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-tight tracking-tight">Futures Prop Firm Analyzer</div>
-              <div className="hidden text-[10.5px] leading-tight text-slate-500 dark:text-slate-400 sm:block">Pick. Pass. Get paid.</div>
-            </div>
+          <a href="/" className="flex min-w-0 items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950">
+            <BrandMark size="md" />
+            <span className="hidden text-[10.5px] leading-tight text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wide sm:inline">prop firm rules, decoded</span>
           </a>
           <nav className="flex items-center gap-1">
             <button type="button" onClick={() => scrollTo(faqRef)} className="hidden h-8 rounded-md px-2.5 text-[13px] font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-white sm:inline-flex">FAQ</button>
@@ -575,10 +571,8 @@ export default function Landing() {
       <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-[12px] text-slate-500 dark:text-slate-500 sm:flex-row sm:px-6">
           <div className="flex items-center gap-2">
-            <div aria-hidden="true" className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-amber-500">
-              <Award size={10} strokeWidth={2.5} className="text-white" />
-            </div>
-            <span>© {new Date().getFullYear()} Futures Prop Firm Analyzer</span>
+            <BrandMark size="sm" />
+            <span>© {new Date().getFullYear()} mindOS · Futures Prop Firm Analyzer</span>
           </div>
           <div className="flex items-center gap-4">
             <a href="/app" className="transition-colors hover:text-slate-700 dark:hover:text-slate-300">Preview app</a>

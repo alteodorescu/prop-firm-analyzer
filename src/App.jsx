@@ -6069,7 +6069,7 @@ export default function App({ session, onSignOut }) {
       navItems={tabDefs}
       activeKey={tab === "login" ? null : tab}
       onSelect={handleTabChange}
-      brand={{ icon: Award, title: t("appTitle"), subtitle: t("appSubtitle", firms.length) }}
+      brand={{ icon: Award, title: t("appTitle"), subtitle: t("appSubtitle") }}
       topBarActions={shellActions}
     >
       {/* ── TOP PICK BANNER ── */}
