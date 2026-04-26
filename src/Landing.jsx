@@ -89,7 +89,11 @@ function useDarkMode() {
 }
 
 // ── Waitlist form: handles submit + dedup + success state ──────────────────
-function WaitlistForm({ size = "md", autoFocus = false, className }) {
+// `onSuccess` is fired only on a brand-new signup (not on duplicate-email
+// "already on the list" — that one didn't add a row, so the count shouldn't
+// tick). The Landing component uses this to optimistically increment the
+// displayed count.
+function WaitlistForm({ size = "md", autoFocus = false, className, onSuccess }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | success | already | error
   const [error, setError] = useState("");
@@ -133,6 +137,7 @@ function WaitlistForm({ size = "md", autoFocus = false, className }) {
         return;
       }
       setStatus("success");
+      if (typeof onSuccess === "function") onSuccess();
     } catch (err) {
       setStatus("error");
       setError(err.message || "Network error. Try again?");
@@ -239,10 +244,11 @@ function MockTracker() {
             </div>
           </div>
 
-          {/* Fake account rows */}
-          <MockRow badge="CHALLENGE" badgeTone="amber" label="FNFTFAALEXANDRUTEODO52275" pnl="+$3,359" dd="100%" ok />
-          <MockRow badge="CHALLENGE" badgeTone="amber" label="FNFTFAALEXANDRUTEODO11619" pnl="+$3,294" dd="100%" ok />
-          <MockRow badge="FUNDED"    badgeTone="blue"  label="PAAPEX1646010000009"       pnl="$0"     dd="100%" ok />
+          {/* Fake account rows — synthetic IDs only. Never use real account
+              numbers in the marketing preview. */}
+          <MockRow badge="CHALLENGE" badgeTone="amber" label="DEMO-CHAL-50K-A91F"  pnl="+$3,359" dd="100%" ok />
+          <MockRow badge="CHALLENGE" badgeTone="amber" label="DEMO-CHAL-100K-K42B" pnl="+$3,294" dd="100%" ok />
+          <MockRow badge="FUNDED"    badgeTone="blue"  label="DEMO-FUND-25K-Z78D"  pnl="$0"      dd="100%" ok />
         </div>
       </div>
 
@@ -331,10 +337,35 @@ export default function Landing() {
   const waitlistRef = useRef(null);
   const faqRef = useRef(null);
 
+  // Live waitlist counter — shown as social proof under the form.
+  // Backed by the SECURITY DEFINER RPC `waitlist_count()` so anon clients
+  // can read the count without being able to enumerate any row data.
+  // We bump optimistically on a successful submit so the user sees their
+  // own contribution immediately.
+  const [waitlistCount, setWaitlistCount] = useState(null);
+
   // Capture UTM on first paint so attribution is locked in even if the user
   // bounces without filling the form. WaitlistForm reads localStorage at
   // submit time — this effect just makes sure the entry is there early.
   useEffect(() => { getAttribution(); }, []);
+
+  // Fetch the live count once on mount. Failures are silently ignored —
+  // microcopy falls back to the generic "no spam" line.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("waitlist_count");
+        if (cancelled) return;
+        if (!error && typeof data === "number") setWaitlistCount(data);
+      } catch { /* network blip — don't break the page */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSignupSuccess = () => {
+    setWaitlistCount(c => (c == null ? c : c + 1));
+  };
 
   const scrollTo = (ref) => {
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -395,9 +426,11 @@ export default function Landing() {
               Stop guessing which firm to buy, which rules bite, or how many contracts to trade today.
               One dashboard for <b className="text-slate-900 dark:text-slate-200">20+ firms</b>, all your accounts, and every payout — auto-calculated from your live balance.
             </p>
-            <WaitlistForm size="lg" className="mt-6 max-w-lg" />
+            <WaitlistForm size="lg" className="mt-6 max-w-lg" onSuccess={handleSignupSuccess} />
             <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">
-              No spam. Early access drops when we hit 100 signups.
+              {waitlistCount != null
+                ? <><b className="tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} on the list — early access drops at 100. No spam.</>
+                : <>No spam. Early access drops when we hit 100 signups.</>}
             </p>
           </div>
           <div className="flex justify-center lg:justify-end">
@@ -531,8 +564,12 @@ export default function Landing() {
           <p className="mt-3 text-[14.5px] text-slate-600 dark:text-slate-400">
             Get the scoreboard, rules translator, and daily plan the moment early access drops.
           </p>
-          <WaitlistForm size="lg" className="mx-auto mt-8 max-w-lg" />
-          <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">No spam. Unsubscribe any time.</p>
+          <WaitlistForm size="lg" className="mx-auto mt-8 max-w-lg" onSuccess={handleSignupSuccess} />
+          <p className="mt-3 text-[12px] text-slate-500 dark:text-slate-500">
+            {waitlistCount != null
+              ? <>Join <b className="tabular-nums text-slate-700 dark:text-slate-300">{waitlistCount.toLocaleString()}</b> trader{waitlistCount === 1 ? "" : "s"} already on the list. No spam.</>
+              : <>No spam. Unsubscribe any time.</>}
+          </p>
         </div>
       </section>
 
