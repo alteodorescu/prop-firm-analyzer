@@ -487,17 +487,16 @@ export default function Landing() {
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Manual trading</li>
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Tradesyncer + NinjaTrader</li>
               <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />Tradovate / Rithmic</li>
-              <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />20+ plans</li>
+              <li className="inline-flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />5 firms · 20 plans</li>
             </ul>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[12px] text-slate-500 dark:text-slate-500">
             <span className="font-medium text-slate-600 dark:text-slate-400">Firms tracked:</span>
-            <span>FundedNext</span>
-            <span>Top One Futures</span>
+            <span>FundedNext Futures</span>
+            <span>Apex Trader Funding</span>
             <span>Tradeify</span>
-            <span>Apex</span>
+            <span>Top One Futures</span>
             <span>Lucid Trading</span>
-            <span className="text-slate-400 dark:text-slate-600">+ 15 more</span>
           </div>
         </div>
       </section>
