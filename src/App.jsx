@@ -1953,13 +1953,22 @@ function calcLiveMetrics(account, firmData) {
   // Max safe single-day profit: if you already have totalPnl and biggest day is X,
   // any new day > (totalPnl * consistency / (1 - consistency)) would breach.
   // For funded: the target is just eligibility, so frame as a daily profit cap.
-  // Max safe profit on a single NEW day while keeping consistency OK:
-  // If new day D becomes the biggest: need D / (totalPnl + D) <= C
-  //   → D(1-C) <= C*totalPnl → D <= C * totalPnl / (1 - C)
-  // If new day D stays below current biggest: ratio only improves (more total, same biggest)
-  // So the binding constraint is: D <= C * totalPnl / (1 - C)
-  const maxSafeDayProfit = (consistency && totalPnl > 0)
+  // Max safe profit on a single NEW day while keeping consistency OK. Two branches:
+  //  (a) New day D ≤ current biggestDay → biggestDay stays the biggest. Adding D only
+  //      grows the denominator, so future ratio biggestDay/(total+D) improves.
+  //      Cap from this branch: D ≤ biggestDay.
+  //  (b) New day D > current biggestDay → D becomes new biggest. Need D/(total+D) ≤ C
+  //      → D ≤ C·total/(1-C).
+  // Overall cap = max of the two branches. When biggestDay > formula (early-account or
+  // single-big-day case), branch (a) gives the better answer — you can safely match
+  // (not exceed) your existing best day, which the old single-formula logic missed.
+  const formulaCap = (consistency && totalPnl > 0)
     ? Math.floor(consistency * totalPnl / (1 - consistency))
+    : null;
+  const maxSafeDayProfit = consistency
+    ? (biggestDay > 0
+        ? Math.max(Math.floor(biggestDay), formulaCap || 0)
+        : formulaCap)
     : null;
   // If already breached, how large could the next day be to fix it?
   // They need totalPnl to grow so that biggestDay / newTotal <= consistency
@@ -4480,8 +4489,8 @@ const roundTick = (v) => Math.round(v * 4) / 4;
 const moneyAbs = (n) => `$${Math.round(Math.abs(n)).toLocaleString()}`;
 
 function UnifiedObjectiveCard({ withMetrics, firms }) {
-  // ── Group filter state (null = All accounts, otherwise a firmId) ──
-  const [groupFilter, setGroupFilter] = useState(null);
+  // ── Group filter state (empty array = All accounts; otherwise list of firmIds) ──
+  const [selectedFirmIds, setSelectedFirmIds] = useState([]);
   const [expanded, setExpanded] = useState(false);
   const [nsExpanded, setNsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -4500,20 +4509,48 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
     return Array.from(byFirm.values()).sort((a, b) => a.label.localeCompare(b.label));
   }, [withMetrics, firms]);
 
-  // Narrow metrics to the selected group (or show all)
+  // Drop selected ids that no longer exist in the available options (e.g. account deleted)
+  useEffect(() => {
+    const validIds = new Set(groupOptions.map(g => g.firmId));
+    setSelectedFirmIds(prev => {
+      const next = prev.filter(id => validIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [groupOptions]);
+
+  const toggleFirm = (firmId) => {
+    setSelectedFirmIds(prev => {
+      if (firmId == null) return [];                     // "All" → clear
+      if (prev.includes(firmId)) return prev.filter(id => id !== firmId);
+      return [...prev, firmId];
+    });
+  };
+
+  // Narrow metrics to the selected groups (empty selection = show all)
   const scopedMetrics = useMemo(() => {
-    if (groupFilter == null) return withMetrics;
-    return withMetrics.filter(({ acc }) => acc.firmId === groupFilter);
-  }, [withMetrics, groupFilter]);
+    if (selectedFirmIds.length === 0) return withMetrics;
+    const set = new Set(selectedFirmIds);
+    return withMetrics.filter(({ acc }) => set.has(acc.firmId));
+  }, [withMetrics, selectedFirmIds]);
 
   const result = useMemo(() => calcUnifiedObjective(scopedMetrics), [scopedMetrics]);
   const { unified, active, excluded, warnings, firmGroups } = result;
 
-  const activeGroup = groupOptions.find(g => g.firmId === groupFilter) || null;
-  const scopeLabel = activeGroup ? activeGroup.label : "All accounts";
-  const profileName = activeGroup
-    ? `${activeGroup.label.replace(/\s+/g, "-")}-group`
-    : "Unified";
+  const activeGroups = useMemo(
+    () => groupOptions.filter(g => selectedFirmIds.includes(g.firmId)),
+    [groupOptions, selectedFirmIds]
+  );
+  const isAllScope = activeGroups.length === 0;
+  const scopeLabel = isAllScope
+    ? "All accounts"
+    : activeGroups.length === 1
+      ? activeGroups[0].label
+      : `${activeGroups.length} firms (${activeGroups.map(g => g.label).join(", ")})`;
+  const profileName = isAllScope
+    ? "Unified"
+    : activeGroups.length === 1
+      ? `${activeGroups[0].label.replace(/\s+/g, "-")}-group`
+      : `Multi-${activeGroups.length}-group`;
 
   // ── Empty state: no eligible accounts in the selected scope ──
   if (!unified) {
@@ -4525,8 +4562,8 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
             <GroupSelector
               options={groupOptions}
               allCount={withMetrics.length}
-              value={groupFilter}
-              onChange={setGroupFilter}
+              selectedIds={selectedFirmIds}
+              onToggle={toggleFirm}
             />
           </div>
         )}
@@ -4538,7 +4575,7 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
           <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
           <div className="text-sm">
             <div className="font-semibold text-red-900 dark:text-red-200">
-              Trade Copier — No eligible accounts{activeGroup ? ` in ${activeGroup.label}` : ""}
+              Trade Copier — No eligible accounts{isAllScope ? "" : ` in ${scopeLabel}`}
             </div>
             <div className="mt-0.5 text-red-700 dark:text-red-300">
               {warnings[0]?.msg || "No accounts are eligible to trade today."}
@@ -4607,9 +4644,11 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
               Trade Copier — Unified Daily Objective
             </h2>
             <p className="truncate text-[11px] leading-tight text-slate-500 dark:text-slate-400">
-              {activeGroup
-                ? <>Scoped to <span className="font-medium text-slate-700 dark:text-slate-300">{activeGroup.label}</span> · plan copies within this group only</>
-                : "Single plan that copies across all accounts"}
+              {isAllScope
+                ? "Single plan that copies across all accounts"
+                : activeGroups.length === 1
+                  ? <>Scoped to <span className="font-medium text-slate-700 dark:text-slate-300">{activeGroups[0].label}</span> · plan copies within this group only</>
+                  : <>Scoped to <span className="font-medium text-slate-700 dark:text-slate-300">{activeGroups.length} firms</span> ({activeGroups.map(g => g.label).join(", ")}) · plan copies within these groups only</>}
             </p>
           </div>
         </div>
@@ -4637,8 +4676,8 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
           <GroupSelector
             options={groupOptions}
             allCount={withMetrics.length}
-            value={groupFilter}
-            onChange={setGroupFilter}
+            selectedIds={selectedFirmIds}
+            onToggle={toggleFirm}
           />
         </div>
       )}
@@ -4977,49 +5016,66 @@ function UnifiedObjectiveCard({ withMetrics, firms }) {
 }
 
 // ─── Group selector (segmented control used inside UnifiedObjectiveCard) ───
-function GroupSelector({ options, allCount, value, onChange }) {
+function GroupSelector({ options, allCount, selectedIds = [], onToggle }) {
   const pillBase =
     "inline-flex h-7 items-center gap-1.5 rounded-none border px-2.5 text-[11.5px] font-medium " +
     "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
   const active =
-    "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/60 dark:text-blue-300";
+    "border-amber-500 bg-amber-50 text-amber-800 dark:border-amber-500 dark:bg-amber-950/60 dark:text-amber-300";
   const inactive =
     "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 " +
     "dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/60";
+
+  const isAll = selectedIds.length === 0;
+  const selectedCount = options
+    .filter(o => selectedIds.includes(o.firmId))
+    .reduce((sum, o) => sum + o.count, 0);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
         Scope
       </span>
-      <div role="tablist" aria-label="Account group filter" className="flex flex-wrap items-center gap-1.5">
+      <div
+        role="group"
+        aria-label="Account group filter (multi-select)"
+        className="flex flex-wrap items-center gap-1.5"
+      >
         <button
-          role="tab"
-          aria-selected={value == null}
           type="button"
-          onClick={() => onChange(null)}
-          className={`${pillBase} ${value == null ? active : inactive}`}
+          aria-pressed={isAll}
+          onClick={() => onToggle(null)}
+          title="Show all accounts"
+          className={`${pillBase} ${isAll ? active : inactive}`}
         >
           <span>All</span>
-          <span className={value == null ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}>
+          <span className={isAll ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}>
             {allCount}
           </span>
         </button>
-        {options.map(opt => (
-          <button
-            key={opt.firmId}
-            role="tab"
-            aria-selected={value === opt.firmId}
-            type="button"
-            onClick={() => onChange(opt.firmId)}
-            className={`${pillBase} ${value === opt.firmId ? active : inactive}`}
-          >
-            <span className="truncate max-w-[180px]">{opt.label}</span>
-            <span className={value === opt.firmId ? "text-blue-500 dark:text-blue-400" : "text-slate-400 dark:text-slate-500"}>
-              {opt.count}
-            </span>
-          </button>
-        ))}
+        {options.map(opt => {
+          const on = selectedIds.includes(opt.firmId);
+          return (
+            <button
+              key={opt.firmId}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onToggle(opt.firmId)}
+              title={on ? `Remove ${opt.label} from scope` : `Add ${opt.label} to scope`}
+              className={`${pillBase} ${on ? active : inactive}`}
+            >
+              <span className="truncate max-w-[180px]">{opt.label}</span>
+              <span className={on ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}>
+                {opt.count}
+              </span>
+            </button>
+          );
+        })}
+        {!isAll && (
+          <span className="ml-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+            {selectedIds.length} firm{selectedIds.length === 1 ? "" : "s"} · {selectedCount} acct{selectedCount === 1 ? "" : "s"}
+          </span>
+        )}
       </div>
     </div>
   );
