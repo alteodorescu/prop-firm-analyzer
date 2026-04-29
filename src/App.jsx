@@ -4407,16 +4407,29 @@ function calcUnifiedObjective(withMetrics) {
     warnings.push({ level: "info", msg: `Contracts reduced to ${unifiedContracts} (${reducedAccounts.length} account${reducedAccounts.length > 1 ? "s" : ""} could use more).` });
   }
 
-  // Unified target: max(idealDailyTarget) capped at min(maxDailyProfit)
+  // Unified target: max(idealDailyTarget) capped at min(HARD caps only).
+  // Each account's maxDailyProfit can come from either:
+  //   • "consistency" — a real rule. Exceeding it breaks the account.
+  //   • "target"      — just "$ remaining to target". Exceeding is harmless overshoot.
+  // Only the consistency cap is a true ceiling on what the unified plan can aim for.
+  // Including target-reason caps causes off-by-a-few-dollars conflicts (e.g. account A
+  // needs $4,487, account B needs $4,592 → unified gets dragged to $4,487, pushing
+  // account B from 1 day → 2 for $105 of difference).
   const maxTarget = Math.max(...active.map(({ m }) => m.todayPlan.idealDailyTarget));
-  const caps = active.map(({ m }) => m.todayPlan.maxDailyProfit).filter(c => c != null && c > 0);
-  const minCap = caps.length > 0 ? Math.min(...caps) : Infinity;
+  const hardCapAccounts = active.filter(({ m }) =>
+    m.todayPlan.maxDailyProfit != null
+    && m.todayPlan.maxDailyProfit > 0
+    && m.todayPlan.maxDailyProfitReason && m.todayPlan.maxDailyProfitReason !== "target"
+  );
+  const minCap = hardCapAccounts.length > 0
+    ? Math.min(...hardCapAccounts.map(({ m }) => m.todayPlan.maxDailyProfit))
+    : Infinity;
   const hasConflict = maxTarget > minCap;
   const unifiedTarget = hasConflict ? minCap : maxTarget;
 
   if (hasConflict) {
-    const capAccounts = active.filter(({ m }) => m.todayPlan.maxDailyProfit != null && m.todayPlan.maxDailyProfit === minCap);
-    warnings.push({ level: "warning", msg: `Target capped at $${Math.round(minCap).toLocaleString()} (${capAccounts.map(({ acc }) => acc.label || acc.id).join(", ")} daily cap) — ${active.filter(({ m }) => m.todayPlan.idealDailyTarget > minCap).length} account(s) need more.` });
+    const capAccounts = hardCapAccounts.filter(({ m }) => m.todayPlan.maxDailyProfit === minCap);
+    warnings.push({ level: "warning", msg: `Target capped at $${Math.round(minCap).toLocaleString()} (${capAccounts.map(({ acc }) => acc.label || acc.id).join(", ")} consistency cap) — ${active.filter(({ m }) => m.todayPlan.idealDailyTarget > minCap).length} account(s) need more.` });
   }
 
   // Unified max daily loss = min across all
