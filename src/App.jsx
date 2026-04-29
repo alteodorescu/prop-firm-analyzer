@@ -4422,11 +4422,21 @@ function calcUnifiedObjective(withMetrics) {
   // Unified max daily loss = min across all
   const unifiedMaxLoss = Math.min(...active.map(({ m }) => m.todayPlan.maxDailyLoss));
 
-  // Per-account impact: days at individual vs unified target
+  // Per-account impact: days at individual vs unified target.
+  // daysUnified must respect the SAME floors as daysIndividual:
+  //   • min profit days remaining (firm rule)
+  //   • consistency cap (can't exceed maxSafeDayProfit per day, no matter the unified target)
+  // Otherwise we'd suggest e.g. "2 days" for an account whose 40% consistency rule
+  // mathematically requires ≥3 days regardless of how much profit-per-day the trader hits.
   const accountDetails = active.map(({ acc, firmData, m }) => {
     const remaining = m.remainingProfit || 0;
     const daysIndividual = m.todayPlan.minDaysToComplete || 1;
-    const daysUnified = unifiedTarget > 0 ? Math.max(1, Math.ceil(remaining / unifiedTarget)) : daysIndividual;
+    const daysFromTarget = unifiedTarget > 0 ? Math.ceil(remaining / unifiedTarget) : 1;
+    const daysFromMinProfit = Math.max(0, m.daysRemaining || 0);
+    const daysFromCap = (m.maxSafeDayProfit && m.maxSafeDayProfit > 0)
+      ? Math.ceil(remaining / m.maxSafeDayProfit)
+      : 0;
+    const daysUnified = Math.max(1, daysFromTarget, daysFromMinProfit, daysFromCap);
     const diff = daysUnified - daysIndividual;
     let impact = null;
     if (diff > 0) impact = `+${diff} day${diff > 1 ? "s" : ""}`;
